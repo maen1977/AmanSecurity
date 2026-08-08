@@ -11,6 +11,9 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import com.aman.security.databinding.ActivityMainBinding
 import com.aman.security.databinding.ItemInstalledAppBinding
+import com.aman.security.databinding.ItemExclusionBinding
+import com.aman.security.databinding.ItemHistoryBinding
+import com.aman.security.databinding.ItemQuarantineBinding
 import com.aman.security.scanner.AppInstallSource
 import com.aman.security.scanner.AppRiskLevel
 import com.aman.security.scanner.AppRiskSignal
@@ -22,10 +25,18 @@ import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.ThreatDatabaseUpdater
+import com.aman.security.security.ExclusionEntry
+import com.aman.security.security.QuarantineEntry
+import com.aman.security.security.QuarantineManager
+import com.aman.security.security.QuarantinePolicy
+import com.aman.security.security.ScanHistoryEntry
+import com.aman.security.security.SecurityRecordStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
 import java.text.NumberFormat
+import java.util.Date
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -33,18 +44,37 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanner: FileScanner
     private lateinit var installedAppScanner: InstalledAppScanner
     private lateinit var updater: ThreatDatabaseUpdater
+    private lateinit var recordStore: SecurityRecordStore
+    private lateinit var quarantineManager: QuarantineManager
     private var selectedUri: Uri? = null
+    private var lastScanResult: ScanResult? = null
+    private var pendingRestoreId: String? = null
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             selectedUri = uri
             runCatching {
-                contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
             }
             binding.txtSelectedFile.text = uri.lastPathSegment ?: getString(R.string.selected_file_title)
             binding.btnScanFile.isEnabled = true
             resetResult()
         }
+    }
+
+    private val restorePicker = registerForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
+        val id = pendingRestoreId
+        pendingRestoreId = null
+        if (uri != null && id != null) restoreQuarantinedFile(id, uri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,13 +86,19 @@ class MainActivity : AppCompatActivity() {
         scanner = FileScanner(contentResolver, database)
         installedAppScanner = InstalledAppScanner(this, database)
         updater = ThreatDatabaseUpdater(this, database)
+        recordStore = SecurityRecordStore(this)
+        quarantineManager = QuarantineManager(this, recordStore)
         renderDatabaseInfo()
+        renderSecurityManagement()
 
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
+        binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
+        binding.btnExclusion.setOnClickListener { toggleExclusion() }
+        binding.btnClearHistory.setOnClickListener { confirmClearHistory() }
     }
 
     private fun renderDatabaseInfo() {
@@ -229,9 +265,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetResult() {
+        lastScanResult = null
         binding.txtClassification.setText(R.string.result_not_scanned)
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
+        binding.resultActions.visibility = View.GONE
+        binding.btnQuarantine.isEnabled = false
+        binding.btnExclusion.isEnabled = false
     }
 
     private fun scanSelectedFile() {
@@ -241,20 +281,27 @@ class MainActivity : AppCompatActivity() {
         binding.txtClassification.setText(R.string.scanning)
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
+        binding.resultActions.visibility = View.GONE
 
         lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) { runCatching { scanner.scan(uri) } }
+            val outcome = withContext(Dispatchers.IO) { runCatching { scanner.scan(uri) } }
             binding.btnScanFile.isEnabled = true
             binding.btnChooseFile.isEnabled = true
-            result.onSuccess(::renderResult)
-                .onFailure {
-                    binding.txtClassification.setText(R.string.scan_failed)
-                    binding.txtReason.setText(R.string.file_access_error)
-                }
+            outcome.onSuccess { result ->
+                lastScanResult = result
+                withContext(Dispatchers.IO) { recordStore.recordScan(result) }
+                renderResult(result)
+                renderSecurityManagement()
+            }.onFailure {
+                lastScanResult = null
+                binding.txtClassification.setText(R.string.scan_failed)
+                binding.txtReason.setText(R.string.file_access_error)
+            }
         }
     }
 
     private fun renderResult(result: ScanResult) {
+        val excluded = recordStore.isExcluded(result.sha256)
         val titleRes = when (result.classification) {
             ScanClassification.NO_KNOWN_THREAT -> R.string.result_no_known_threat
             ScanClassification.UNKNOWN_APK -> R.string.result_unknown_apk
@@ -271,7 +318,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.txtClassification.setText(titleRes)
-        binding.txtReason.setText(reasonRes)
+        binding.txtReason.text = if (excluded) {
+            getString(R.string.result_excluded_reason, getString(reasonRes))
+        } else {
+            getString(reasonRes)
+        }
         val formattedSize = if (result.sizeBytes >= 0) {
             NumberFormat.getIntegerInstance().format(result.sizeBytes)
         } else {
@@ -292,6 +343,238 @@ class MainActivity : AppCompatActivity() {
                 append(result.signatureId)
             }
         }
+
+        binding.resultActions.visibility = View.VISIBLE
+        binding.btnExclusion.isEnabled = true
+        binding.btnExclusion.setText(if (excluded) R.string.remove_exclusion_action else R.string.add_exclusion_action)
+        val quarantineEligible = QuarantinePolicy.canOfferQuarantine(result.classification, excluded)
+        binding.btnQuarantine.isEnabled = quarantineEligible
+        binding.btnQuarantine.visibility = if (quarantineEligible) View.VISIBLE else View.GONE
+    }
+
+    private fun toggleExclusion() {
+        val result = lastScanResult ?: return
+        if (recordStore.isExcluded(result.sha256)) {
+            recordStore.removeExclusion(result.sha256)
+            renderResult(result)
+            renderSecurityManagement()
+            showInfo(R.string.exclusion_removed_success)
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.exclusion_confirm_title)
+            .setMessage(R.string.exclusion_confirm_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.add_exclusion_action) { _, _ ->
+                recordStore.addExclusion(result)
+                renderResult(result)
+                renderSecurityManagement()
+                showInfo(R.string.exclusion_added_success)
+            }
+            .show()
+    }
+
+    private fun confirmQuarantine() {
+        val result = lastScanResult ?: return
+        val uri = selectedUri ?: return
+        if (recordStore.isExcluded(result.sha256)) return
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.quarantine_confirm_title)
+            .setMessage(R.string.quarantine_confirm_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.quarantine_action) { _, _ -> quarantineSelectedFile(uri, result) }
+            .show()
+    }
+
+    private fun quarantineSelectedFile(uri: Uri, result: ScanResult) {
+        binding.btnQuarantine.isEnabled = false
+        binding.btnChooseFile.isEnabled = false
+        binding.btnScanFile.isEnabled = false
+        binding.txtReason.setText(R.string.quarantine_progress)
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) { quarantineManager.quarantine(uri, result) }
+            binding.btnChooseFile.isEnabled = true
+            when (outcome) {
+                is QuarantineManager.QuarantineResult.Success -> {
+                    selectedUri = null
+                    binding.txtSelectedFile.setText(R.string.no_file_selected)
+                    binding.btnScanFile.isEnabled = false
+                    resetResult()
+                    renderSecurityManagement()
+                    showInfo(R.string.quarantine_success)
+                }
+                QuarantineManager.QuarantineResult.SourceChanged -> {
+                    binding.btnScanFile.isEnabled = true
+                    renderResult(result)
+                    showInfo(R.string.quarantine_source_changed)
+                }
+                QuarantineManager.QuarantineResult.SourceRemovalFailed -> {
+                    binding.btnScanFile.isEnabled = true
+                    renderResult(result)
+                    showInfo(R.string.quarantine_source_remove_failed)
+                }
+                QuarantineManager.QuarantineResult.Failed -> {
+                    binding.btnScanFile.isEnabled = true
+                    renderResult(result)
+                    showInfo(R.string.quarantine_failed)
+                }
+            }
+        }
+    }
+
+    private fun renderSecurityManagement() {
+        renderQuarantine()
+        renderExclusions()
+        renderHistory()
+    }
+
+    private fun renderQuarantine() {
+        val entries = recordStore.quarantineEntries()
+        binding.txtQuarantineCount.text = getString(
+            R.string.quarantine_count,
+            NumberFormat.getIntegerInstance().format(entries.size)
+        )
+        binding.txtQuarantineEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        binding.quarantineContainer.removeAllViews()
+        entries.take(MAX_VISIBLE_SECURITY_RECORDS).forEach { entry ->
+            val item = ItemQuarantineBinding.inflate(layoutInflater, binding.quarantineContainer, false)
+            renderQuarantineItem(item, entry)
+            binding.quarantineContainer.addView(item.root)
+        }
+    }
+
+    private fun renderQuarantineItem(binding: ItemQuarantineBinding, entry: QuarantineEntry) {
+        binding.txtQuarantineName.text = entry.fileName
+        binding.txtQuarantineClassification.setText(classificationString(entry.classification))
+        binding.txtQuarantineHash.text = getString(R.string.quarantine_item_hash, entry.sha256)
+        binding.txtQuarantineDate.text = getString(R.string.quarantine_item_date, formatDate(entry.quarantinedAt))
+        binding.btnRestore.setOnClickListener { confirmRestore(entry) }
+        binding.btnDeleteQuarantine.setOnClickListener { confirmDeleteQuarantine(entry) }
+    }
+
+    private fun confirmRestore(entry: QuarantineEntry) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.restore_confirm_title)
+            .setMessage(R.string.restore_confirm_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.restore_action) { _, _ ->
+                pendingRestoreId = entry.id
+                restorePicker.launch(entry.fileName)
+            }
+            .show()
+    }
+
+    private fun restoreQuarantinedFile(id: String, destination: Uri) {
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) { quarantineManager.restore(id, destination) }
+            when (outcome) {
+                QuarantineManager.RestoreResult.Success -> {
+                    renderSecurityManagement()
+                    showInfo(R.string.restore_success)
+                }
+                QuarantineManager.RestoreResult.IntegrityFailed -> showInfo(R.string.restore_integrity_failed)
+                QuarantineManager.RestoreResult.Failed -> showInfo(R.string.restore_failed)
+            }
+        }
+    }
+
+    private fun confirmDeleteQuarantine(entry: QuarantineEntry) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.delete_quarantine_confirm_title)
+            .setMessage(R.string.delete_quarantine_confirm_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.delete_action) { _, _ ->
+                lifecycleScope.launch {
+                    val deleted = withContext(Dispatchers.IO) { quarantineManager.deletePermanently(entry.id) }
+                    renderSecurityManagement()
+                    showInfo(if (deleted) R.string.delete_quarantine_success else R.string.delete_quarantine_failed)
+                }
+            }
+            .show()
+    }
+
+    private fun renderExclusions() {
+        val entries = recordStore.exclusions()
+        binding.txtExclusionsCount.text = getString(
+            R.string.exclusions_count,
+            NumberFormat.getIntegerInstance().format(entries.size)
+        )
+        binding.txtExclusionsEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        binding.exclusionsContainer.removeAllViews()
+        entries.take(MAX_VISIBLE_SECURITY_RECORDS).forEach { entry ->
+            val item = ItemExclusionBinding.inflate(layoutInflater, binding.exclusionsContainer, false)
+            renderExclusionItem(item, entry)
+            binding.exclusionsContainer.addView(item.root)
+        }
+    }
+
+    private fun renderExclusionItem(binding: ItemExclusionBinding, entry: ExclusionEntry) {
+        binding.txtExclusionName.text = entry.fileName
+        binding.txtExclusionHash.text = getString(R.string.exclusion_item_hash, entry.sha256)
+        binding.txtExclusionDate.text = getString(R.string.exclusion_item_date, formatDate(entry.addedAt))
+        binding.btnRemoveExclusion.setOnClickListener {
+            recordStore.removeExclusion(entry.sha256)
+            lastScanResult?.takeIf { it.sha256.equals(entry.sha256, ignoreCase = true) }?.let(::renderResult)
+            renderSecurityManagement()
+            showInfo(R.string.exclusion_removed_success)
+        }
+    }
+
+    private fun renderHistory() {
+        val entries = recordStore.history()
+        binding.txtHistoryCount.text = getString(
+            R.string.history_count,
+            NumberFormat.getIntegerInstance().format(entries.size)
+        )
+        binding.txtHistoryEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        binding.btnClearHistory.isEnabled = entries.isNotEmpty()
+        binding.historyContainer.removeAllViews()
+        entries.take(MAX_VISIBLE_HISTORY).forEach { entry ->
+            val item = ItemHistoryBinding.inflate(layoutInflater, binding.historyContainer, false)
+            renderHistoryItem(item, entry)
+            binding.historyContainer.addView(item.root)
+        }
+    }
+
+    private fun renderHistoryItem(binding: ItemHistoryBinding, entry: ScanHistoryEntry) {
+        binding.txtHistoryName.text = entry.fileName
+        binding.txtHistoryClassification.setText(classificationString(entry.classification))
+        binding.txtHistoryDate.text = getString(R.string.history_item_date, formatDate(entry.scannedAt))
+        binding.txtHistoryHash.text = getString(R.string.history_item_hash, entry.sha256)
+    }
+
+    private fun confirmClearHistory() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.clear_history_confirm_title)
+            .setMessage(R.string.clear_history_confirm_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.clear_history_action) { _, _ ->
+                recordStore.clearHistory()
+                renderHistory()
+            }
+            .show()
+    }
+
+    private fun classificationString(classification: ScanClassification): Int = when (classification) {
+        ScanClassification.NO_KNOWN_THREAT -> R.string.result_no_known_threat
+        ScanClassification.UNKNOWN_APK -> R.string.result_unknown_apk
+        ScanClassification.SUSPICIOUS -> R.string.result_suspicious
+        ScanClassification.KNOWN_THREAT -> R.string.result_threat
+        ScanClassification.TEST_SIGNATURE -> R.string.result_test_signature
+    }
+
+    private fun formatDate(timestamp: Long): String = DateFormat.getDateTimeInstance(
+        DateFormat.MEDIUM,
+        DateFormat.SHORT
+    ).format(Date(timestamp))
+
+    private fun showInfo(messageRes: Int) {
+        AlertDialog.Builder(this)
+            .setMessage(messageRes)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun showLanguageDialog() {
@@ -314,5 +597,7 @@ class MainActivity : AppCompatActivity() {
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"
         private const val INSTALLED_SCAN_DISCLOSURE_VERSION = 1
         private const val MAX_VISIBLE_APP_RESULTS = 20
+        private const val MAX_VISIBLE_SECURITY_RECORDS = 20
+        private const val MAX_VISIBLE_HISTORY = 20
     }
 }

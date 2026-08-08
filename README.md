@@ -1,25 +1,28 @@
-# Aman Security — Phase 3
+# Aman Security — Phase 4
 
-Android security scanner with strict Arabic/English UI separation, signed threat-database updates, file/APK scanning, and local installed-app risk review.
+Android security scanner with strict Arabic/English UI separation, signed threat-database updates, file/APK scanning, installed-app risk review, encrypted quarantine, exact-hash exclusions, and local scan history.
 
-## Phase 3 features
+## Phase 4 features
 
-- Everything from Phase 2 remains in place.
-- User-triggered scan of user-installed Android apps.
-- Installed app inventory is processed locally on the device and is not uploaded.
-- System packages and Aman Security itself are excluded from the user-app review list.
-- Checks requested permissions, declared accessibility services, and install-source category.
-- Calculates the installed base package SHA-256 fingerprint and compares it with the active signed threat database.
-- Calculates the signing-certificate SHA-256 fingerprint for technical review and later reputation features.
-- Risk scoring emphasizes suspicious combinations instead of labeling a normal permission as malware.
-- A known local threat-database hash overrides heuristic scoring and is classified as a known threat.
-- Prominent first-use disclosure before the installed-app inventory is scanned.
-- The UI shows only apps that need review; low-indicator apps are counted in the summary without creating noise.
-- Strict Arabic and English resources with an automated localization gate.
+- Everything from Phases 1–3 remains in place.
+- User-triggered quarantine for files that need review.
+- Quarantined content is encrypted with AES-GCM in app-private storage using a key generated in Android Keystore.
+- Aman recomputes SHA-256 while copying the selected source into quarantine. If it no longer matches the scan, the operation stops.
+- The source file is removed only when the document provider grants deletion. If source removal fails, the encrypted copy is discarded and Aman clearly reports that the original remains in place.
+- Restore uses Android's document creation flow and verifies SHA-256 again before removing the quarantine copy.
+- Permanent delete requires confirmation and removes only the encrypted quarantine copy.
+- Exact SHA-256 exclusions. The original threat/suspicion classification remains visible; exclusion only suppresses the quarantine recommendation for that exact hash.
+- Local scan history capped at 100 records and clearable independently of quarantine and exclusions.
+- No broad external-storage permission.
+- Arabic and English remain separated through resource-only UI text plus the localization quality gate.
+
+See the Phase 4 security design in:
+
+`docs/PHASE4_SECURITY_MODEL.md`
 
 ## Package visibility
 
-Phase 3 declares `android.permission.QUERY_ALL_PACKAGES` because broad installed-app visibility is part of the core antivirus/security function. Installed-app data stays on-device. Before Google Play publication, complete the package-visibility permission declaration and keep the store disclosure/privacy policy aligned with the in-app disclosure. See:
+The app declares `android.permission.QUERY_ALL_PACKAGES` because broad installed-app visibility is part of the core antivirus/security function from Phase 3. Installed-app data stays on-device. Before Google Play publication, complete the package-visibility permission declaration and keep the store disclosure/privacy policy aligned with the in-app disclosure. See:
 
 `docs/PLAY_QUERY_ALL_PACKAGES_DECLARATION.md`
 
@@ -57,4 +60,4 @@ gradle :app:testDebugUnitTest
 gradle :app:assembleDebug
 ```
 
-GitHub Actions runs the checks, unit tests, and Android build automatically and uploads `AmanSecurity-Phase3-APK` as the build artifact.
+GitHub Actions runs the checks, unit tests, and Android build automatically and uploads `AmanSecurity-Phase4-APK` as the build artifact.
