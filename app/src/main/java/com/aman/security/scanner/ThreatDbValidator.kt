@@ -6,7 +6,8 @@ object ThreatDbValidator {
     data class ValidatedPackage(
         val manifest: ThreatDbManifest,
         val signatures: Map<String, ThreatSignature>,
-        val urlIndicators: Map<String, UrlThreatIndicator>
+        val urlIndicators: Map<String, UrlThreatIndicator>,
+        val apkIdentityIndicators: Map<String, ApkIdentityIndicator>
     )
 
     fun validate(
@@ -14,7 +15,8 @@ object ThreatDbValidator {
         manifestBytes: ByteArray,
         signatureBytes: ByteArray,
         databaseBytes: ByteArray,
-        urlDatabaseBytes: ByteArray? = null
+        urlDatabaseBytes: ByteArray? = null,
+        apkIdentityDatabaseBytes: ByteArray? = null
     ): ValidatedPackage {
         require(manifestBytes.size <= 64 * 1024)
         require(signatureBytes.size <= 16 * 1024)
@@ -45,14 +47,27 @@ object ThreatDbValidator {
             require(parsedUrls.size == manifest.urlEntries)
             require(parsedUrls.map { "${it.kind}:${it.sha256}" }.distinct().size == parsedUrls.size)
             parsedUrls
-        } else {
-            emptyList()
-        }
+        } else emptyList()
+
+        val apkIdentities = if (manifest.schema >= 3) {
+            val apkBytes = requireNotNull(apkIdentityDatabaseBytes)
+            require(apkBytes.size <= 16 * 1024 * 1024)
+            require(ThreatDbCrypto.sha256(apkBytes) == manifest.apkIdentityDbSha256)
+            val parsedApk = apkBytes.toString(Charsets.UTF_8)
+                .lineSequence()
+                .filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
+                .mapNotNull(::parseApkIdentityLine)
+                .toList()
+            require(parsedApk.size == manifest.apkIdentityEntries)
+            require(parsedApk.map { "${it.kind}:${it.sha256}" }.distinct().size == parsedApk.size)
+            parsedApk
+        } else emptyList()
 
         return ValidatedPackage(
             manifest = manifest,
             signatures = parsed.associateBy { it.sha256 },
-            urlIndicators = urls.associateBy { "${it.kind}:${it.sha256}" }
+            urlIndicators = urls.associateBy { "${it.kind}:${it.sha256}" },
+            apkIdentityIndicators = apkIdentities.associateBy { "${it.kind}:${it.sha256}" }
         )
     }
 
@@ -63,11 +78,8 @@ object ThreatDbValidator {
         if (!hash.matches(Regex("^[a-f0-9]{64}$"))) return null
         val id = parts[1].trim()
         if (!id.matches(Regex("^[A-Z0-9_]{3,96}$"))) return null
-        val classification = runCatching { ScanClassification.valueOf(parts[2].trim()) }.getOrNull()
-            ?: return null
-        if (classification == ScanClassification.NO_KNOWN_THREAT || classification == ScanClassification.UNKNOWN_APK) {
-            return null
-        }
+        val classification = runCatching { ScanClassification.valueOf(parts[2].trim()) }.getOrNull() ?: return null
+        if (classification == ScanClassification.NO_KNOWN_THREAT || classification == ScanClassification.UNKNOWN_APK) return null
         return ThreatSignature(hash, id, classification)
     }
 
@@ -81,5 +93,17 @@ object ThreatDbValidator {
         if (!id.matches(Regex("^[A-Z0-9_]{3,96}$"))) return null
         val classification = runCatching { UrlThreatClassification.valueOf(parts[3].trim()) }.getOrNull() ?: return null
         return UrlThreatIndicator(kind, hash, id, classification)
+    }
+
+    private fun parseApkIdentityLine(line: String): ApkIdentityIndicator? {
+        val parts = line.split('|')
+        if (parts.size != 4) return null
+        val kind = runCatching { ApkIndicatorKind.valueOf(parts[0].trim()) }.getOrNull() ?: return null
+        val hash = parts[1].trim().lowercase()
+        if (!hash.matches(Regex("^[a-f0-9]{64}$"))) return null
+        val id = parts[2].trim()
+        if (!id.matches(Regex("^[A-Z0-9_]{3,96}$"))) return null
+        val classification = runCatching { ApkIdentityClassification.valueOf(parts[3].trim()) }.getOrNull() ?: return null
+        return ApkIdentityIndicator(kind, hash, id, classification)
     }
 }

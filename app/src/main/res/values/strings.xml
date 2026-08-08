@@ -33,12 +33,12 @@
     <string name="file_access_error">File access error</string>
     <string name="privacy_note">Files, installed-app scan data, and scanned links stay on the device. Internet access is used only for signed threat-database updates.</string>
     <string name="database_version">Threat database: %1$s</string>
-    <string name="database_entries">File indicators: %1$s • Link indicators: %2$s</string>
+    <string name="database_entries">File indicators: %1$s • Link indicators: %2$s • APK identity indicators: %3$s</string>
     <string name="update_database">Update database</string>
     <string name="update_idle">Updates are verified before activation.</string>
     <string name="update_checking">Checking for a signed update…</string>
     <string name="update_up_to_date">Threat database is up to date.</string>
-    <string name="update_success">Updated to %1$s with %2$s file indicators and %3$s link indicators.</string>
+    <string name="update_success">Updated to %1$s with %2$s file indicators, %3$s link indicators, and %4$s APK identity indicators.</string>
     <string name="update_invalid_signature">Update rejected: digital signature verification failed.</string>
     <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
     <string name="update_network_error">Could not reach the update server.</string>
@@ -168,4 +168,48 @@
     <string name="url_threat_reference_line">Link threat reference: %1$s</string>
     <string name="url_privacy_note">Link scanning is on-device. The link is not sent to Aman or to a third-party lookup service.</string>
     <string name="url_share_note">You can also use the Android Share menu on a text link and choose Aman Security.</string>
+
+    <string name="apk_analysis_title">Advanced APK analysis</string>
+    <string name="apk_analysis_low">No elevated static indicators</string>
+    <string name="apk_analysis_review">Static indicators need review</string>
+    <string name="apk_analysis_high">High-risk static indicators</string>
+    <string name="apk_analysis_invalid">APK structure could not be parsed</string>
+    <string name="apk_analysis_limit">Advanced APK analysis stopped because the archive exceeded local safety limits.</string>
+    <string name="apk_analysis_changed">Advanced APK analysis stopped because the file changed during scanning.</string>
+    <string name="apk_analysis_failed">Advanced APK analysis could not be completed.</string>
+    <string name="apk_analysis_summary">Static indicator score: %1$s/100 • Permissions: %2$s • Components: %3$s • Code files: %4$s • Native libraries: %5$s</string>
+    <string name="apk_analysis_signer_hash">Signing certificate SHA-256: %1$s</string>
+    <string name="apk_analysis_identity_known">A signed package-identity threat indicator matched the active database.</string>
+    <string name="apk_analysis_identity_test">A safe package-identity test indicator matched.</string>
+    <string name="apk_analysis_truncated">Code-pattern inspection reached its local safety limit. Manifest, certificate, and package-identity checks are still shown.</string>
+    <string name="apk_analysis_indicators_title">Static indicators</string>
+    <string name="apk_analysis_no_indicators">No elevated static indicators were found.</string>
+    <string name="apk_signal_accessibility">Declares an accessibility service</string>
+    <string name="apk_signal_device_admin">Declares a device-administration receiver</string>
+    <string name="apk_signal_notification_listener">Declares a notification-listener service</string>
+    <string name="apk_signal_vpn">Declares a virtual private network service</string>
+    <string name="apk_signal_overlay">Requests permission to appear over other apps</string>
+    <string name="apk_signal_install_packages">Requests permission to initiate app installation</string>
+    <string name="apk_signal_sms">Requests text-message access</string>
+    <string name="apk_signal_contacts">Requests contacts access</string>
+    <string name="apk_signal_call_log">Requests call-log access</string>
+    <string name="apk_signal_microphone">Requests microphone access</string>
+    <string name="apk_signal_camera">Requests camera access</string>
+    <string name="apk_signal_location">Requests precise location</string>
+    <string name="apk_signal_boot">Can start after device boot</string>
+    <string name="apk_signal_query_packages">Requests broad installed-app visibility</string>
+    <string name="apk_signal_debuggable">Package is marked debuggable</string>
+    <string name="apk_signal_native_code">Contains native executable libraries</string>
+    <string name="apk_signal_many_code_files">Contains an unusually high number of code files</string>
+    <string name="apk_signal_dynamic_loading">Code references dynamic code loading</string>
+    <string name="apk_signal_runtime_execution">Code references runtime command execution</string>
+    <string name="apk_signal_sms_api">Code references text-message sending interfaces</string>
+    <string name="apk_signal_device_identifier">Code references device-identifier interfaces</string>
+    <string name="reason_apk_static_high_risk">Several independent APK indicators combined to a high review score. This does not prove malware by itself.</string>
+    <string name="reason_apk_invalid">The file uses an APK extension, but Android package metadata could not be parsed. Treat the archive as untrusted until its source is verified.</string>
+    <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a signed threat indicator, even though the file SHA-256 may differ.</string>
+    <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
+
+    <string name="reason_apk_identity_test">A safe signed package-identity test indicator matched. It is not a malware verdict.</string>
+
 </resources>

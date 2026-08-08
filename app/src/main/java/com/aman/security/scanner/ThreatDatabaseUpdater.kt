@@ -12,7 +12,12 @@ class ThreatDatabaseUpdater(
 ) {
     sealed class Result {
         data object UpToDate : Result()
-        data class Updated(val version: String, val fileEntries: Int, val urlEntries: Int) : Result()
+        data class Updated(
+            val version: String,
+            val fileEntries: Int,
+            val urlEntries: Int,
+            val apkIdentityEntries: Int
+        ) : Result()
         data object InvalidSignature : Result()
         data object InvalidDatabase : Result()
         data object NetworkError : Result()
@@ -31,23 +36,23 @@ class ThreatDatabaseUpdater(
             val manifest = runCatching { ThreatDbManifest.parse(manifestBytes) }
                 .getOrElse { return Result.InvalidDatabase }
             if (manifest.minAppVersionCode > BuildConfig.VERSION_CODE) return Result.InvalidDatabase
-            if (manifest.schema < 2) return Result.InvalidDatabase
+            if (manifest.schema < 3) return Result.InvalidDatabase
             if (manifest.serial <= database.info.serial) return Result.UpToDate
 
             val dbBytes = download(base + manifest.dbPath, 16 * 1024 * 1024)
-            val urlBytes = if (manifest.schema >= 2) {
-                download(base + requireNotNull(manifest.urlDbPath), 32 * 1024 * 1024)
-            } else null
+            val urlBytes = download(base + requireNotNull(manifest.urlDbPath), 32 * 1024 * 1024)
+            val apkBytes = download(base + requireNotNull(manifest.apkIdentityDbPath), 16 * 1024 * 1024)
             val validated = runCatching {
-                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes, urlBytes)
+                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes)
             }.getOrElse { return Result.InvalidDatabase }
 
-            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes, urlBytes)
+            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes)
             database.reloadAfterUpdate()
             Result.Updated(
                 validated.manifest.version,
                 validated.signatures.size,
-                validated.urlIndicators.size
+                validated.urlIndicators.size,
+                validated.apkIdentityIndicators.size
             )
         } catch (_: java.io.IOException) {
             Result.NetworkError

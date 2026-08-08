@@ -28,9 +28,17 @@ class ThreatDbStorage(private val context: Context) {
         manifestBytes: ByteArray,
         signatureBytes: ByteArray,
         databaseBytes: ByteArray,
-        urlDatabaseBytes: ByteArray?
+        urlDatabaseBytes: ByteArray?,
+        apkIdentityDatabaseBytes: ByteArray?
     ) {
-        val validated = ThreatDbValidator.validate(context, manifestBytes, signatureBytes, databaseBytes, urlDatabaseBytes)
+        val validated = ThreatDbValidator.validate(
+            context,
+            manifestBytes,
+            signatureBytes,
+            databaseBytes,
+            urlDatabaseBytes,
+            apkIdentityDatabaseBytes
+        )
         val serial = validated.manifest.serial
         val finalDir = File(packages, serial.toString())
         val staging = File(packages, ".staging-$serial")
@@ -44,6 +52,9 @@ class ThreatDbStorage(private val context: Context) {
         File(staging, "signatures.csv").writeBytes(databaseBytes)
         if (validated.manifest.schema >= 2) {
             File(staging, "url_indicators.csv").writeBytes(requireNotNull(urlDatabaseBytes))
+        }
+        if (validated.manifest.schema >= 3) {
+            File(staging, "apk_indicators.csv").writeBytes(requireNotNull(apkIdentityDatabaseBytes))
         }
 
         val staged = loadFromDirectory(staging) ?: run {
@@ -87,7 +98,19 @@ class ThreatDbStorage(private val context: Context) {
                 if (!urlFile.isFile) return null
                 urlFile.readBytes()
             } else null
-            ThreatDbValidator.validate(context, manifestBytes, signature.readBytes(), database.readBytes(), urlBytes)
+            val apkBytes = if (manifest.schema >= 3) {
+                val apkFile = File(dir, "apk_indicators.csv")
+                if (!apkFile.isFile) return null
+                apkFile.readBytes()
+            } else null
+            ThreatDbValidator.validate(
+                context,
+                manifestBytes,
+                signature.readBytes(),
+                database.readBytes(),
+                urlBytes,
+                apkBytes
+            )
         }.getOrNull()
     }
 

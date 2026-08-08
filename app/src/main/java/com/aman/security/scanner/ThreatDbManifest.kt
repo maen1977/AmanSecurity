@@ -13,13 +13,16 @@ data class ThreatDbManifest(
     val dbSha256: String,
     val urlEntries: Int,
     val urlDbPath: String?,
-    val urlDbSha256: String?
+    val urlDbSha256: String?,
+    val apkIdentityEntries: Int,
+    val apkIdentityDbPath: String?,
+    val apkIdentityDbSha256: String?
 ) {
     companion object {
         fun parse(bytes: ByteArray): ThreatDbManifest {
             val json = JSONObject(bytes.toString(Charsets.UTF_8))
             val schema = json.getInt("schema")
-            require(schema == 1 || schema == 2)
+            require(schema in 1..3)
             val manifest = ThreatDbManifest(
                 schema = schema,
                 serial = json.getLong("serial"),
@@ -31,7 +34,10 @@ data class ThreatDbManifest(
                 dbSha256 = json.getString("dbSha256").lowercase(),
                 urlEntries = if (schema >= 2) json.getInt("urlEntries") else 0,
                 urlDbPath = if (schema >= 2) json.getString("urlDbPath") else null,
-                urlDbSha256 = if (schema >= 2) json.getString("urlDbSha256").lowercase() else null
+                urlDbSha256 = if (schema >= 2) json.getString("urlDbSha256").lowercase() else null,
+                apkIdentityEntries = if (schema >= 3) json.getInt("apkIdentityEntries") else 0,
+                apkIdentityDbPath = if (schema >= 3) json.getString("apkIdentityDbPath") else null,
+                apkIdentityDbSha256 = if (schema >= 3) json.getString("apkIdentityDbSha256").lowercase() else null
             )
             require(manifest.serial >= 1)
             require(manifest.version.length in 1..64)
@@ -42,6 +48,11 @@ data class ThreatDbManifest(
                 require(manifest.urlEntries in 1..500_000)
                 require(manifest.urlDbPath == "url_indicators.csv")
                 require(manifest.urlDbSha256?.matches(Regex("^[a-f0-9]{64}$")) == true)
+            }
+            if (schema >= 3) {
+                require(manifest.apkIdentityEntries in 1..250_000)
+                require(manifest.apkIdentityDbPath == "apk_indicators.csv")
+                require(manifest.apkIdentityDbSha256?.matches(Regex("^[a-f0-9]{64}$")) == true)
             }
             return manifest
         }

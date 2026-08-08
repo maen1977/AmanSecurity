@@ -16,6 +16,12 @@ import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
 import com.aman.security.databinding.ItemQuarantineBinding
 import com.aman.security.scanner.AppInstallSource
+import com.aman.security.scanner.ApkAnalysisState
+import com.aman.security.scanner.ApkIdentityClassification
+import com.aman.security.scanner.ApkRiskLevel
+import com.aman.security.scanner.ApkRiskSignal
+import com.aman.security.scanner.ApkStaticAnalysis
+import com.aman.security.scanner.ApkStaticAnalyzer
 import com.aman.security.scanner.AppRiskLevel
 import com.aman.security.scanner.AppRiskSignal
 import com.aman.security.scanner.FileScanner
@@ -23,6 +29,7 @@ import com.aman.security.scanner.InstalledAppScanResult
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
 import com.aman.security.scanner.ScanClassification
+import com.aman.security.scanner.ScanDetectionReason
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.ThreatDatabaseUpdater
@@ -48,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var database: SignatureDatabase
     private lateinit var scanner: FileScanner
+    private lateinit var apkStaticAnalyzer: ApkStaticAnalyzer
     private lateinit var installedAppScanner: InstalledAppScanner
     private lateinit var updater: ThreatDatabaseUpdater
     private lateinit var urlScanner: UrlScanner
@@ -90,7 +98,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         database = SignatureDatabase(this)
-        scanner = FileScanner(contentResolver, database)
+        apkStaticAnalyzer = ApkStaticAnalyzer(this, database)
+        scanner = FileScanner(contentResolver, database, apkStaticAnalyzer)
         installedAppScanner = InstalledAppScanner(this, database)
         updater = ThreatDatabaseUpdater(this, database)
         urlScanner = UrlScanner(database::findUrl)
@@ -123,7 +132,8 @@ class MainActivity : AppCompatActivity() {
         binding.txtDatabaseEntries.text = getString(
             R.string.database_entries,
             NumberFormat.getIntegerInstance().format(info.fileEntries),
-            NumberFormat.getIntegerInstance().format(info.urlEntries)
+            NumberFormat.getIntegerInstance().format(info.urlEntries),
+            NumberFormat.getIntegerInstance().format(info.apkIdentityEntries)
         )
     }
 
@@ -141,7 +151,8 @@ class MainActivity : AppCompatActivity() {
                         R.string.update_success,
                         result.version,
                         NumberFormat.getIntegerInstance().format(result.fileEntries),
-                        NumberFormat.getIntegerInstance().format(result.urlEntries)
+                        NumberFormat.getIntegerInstance().format(result.urlEntries),
+                        NumberFormat.getIntegerInstance().format(result.apkIdentityEntries)
                     )
                 }
                 ThreatDatabaseUpdater.Result.InvalidSignature -> binding.txtUpdateStatus.setText(R.string.update_invalid_signature)
@@ -369,6 +380,8 @@ class MainActivity : AppCompatActivity() {
         binding.txtClassification.setText(R.string.result_not_scanned)
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
+        binding.txtApkAnalysis.text = ""
+        binding.txtApkAnalysis.visibility = View.GONE
         binding.resultActions.visibility = View.GONE
         binding.btnQuarantine.isEnabled = false
         binding.btnExclusion.isEnabled = false
@@ -381,6 +394,8 @@ class MainActivity : AppCompatActivity() {
         binding.txtClassification.setText(R.string.scanning)
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
+        binding.txtApkAnalysis.text = ""
+        binding.txtApkAnalysis.visibility = View.GONE
         binding.resultActions.visibility = View.GONE
 
         lifecycleScope.launch {
@@ -409,12 +424,16 @@ class MainActivity : AppCompatActivity() {
             ScanClassification.KNOWN_THREAT -> R.string.result_threat
             ScanClassification.TEST_SIGNATURE -> R.string.result_test_signature
         }
-        val reasonRes = when {
-            result.classification == ScanClassification.TEST_SIGNATURE -> R.string.reason_eicar_test
-            result.classification == ScanClassification.KNOWN_THREAT -> R.string.reason_signature_match
-            result.classification == ScanClassification.SUSPICIOUS -> R.string.reason_double_extension
-            result.classification == ScanClassification.UNKNOWN_APK -> R.string.reason_unknown_apk
-            else -> R.string.reason_no_signature
+        val reasonRes = when (result.detectionReason) {
+            ScanDetectionReason.NO_SIGNATURE -> R.string.reason_no_signature
+            ScanDetectionReason.UNKNOWN_APK -> R.string.reason_unknown_apk
+            ScanDetectionReason.DOUBLE_EXTENSION -> R.string.reason_double_extension
+            ScanDetectionReason.APK_STATIC_HIGH_RISK -> R.string.reason_apk_static_high_risk
+            ScanDetectionReason.APK_INVALID -> R.string.reason_apk_invalid
+            ScanDetectionReason.APK_IDENTITY_MATCH -> R.string.reason_apk_identity_match
+            ScanDetectionReason.APK_IDENTITY_TEST -> R.string.reason_apk_identity_test
+            ScanDetectionReason.KNOWN_FILE_SIGNATURE -> R.string.reason_signature_match
+            ScanDetectionReason.TEST_SIGNATURE -> R.string.reason_eicar_test
         }
 
         binding.txtClassification.setText(titleRes)
@@ -444,12 +463,114 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        renderApkAnalysis(result.apkAnalysis)
+
         binding.resultActions.visibility = View.VISIBLE
         binding.btnExclusion.isEnabled = true
         binding.btnExclusion.setText(if (excluded) R.string.remove_exclusion_action else R.string.add_exclusion_action)
         val quarantineEligible = QuarantinePolicy.canOfferQuarantine(result.classification, excluded)
         binding.btnQuarantine.isEnabled = quarantineEligible
         binding.btnQuarantine.visibility = if (quarantineEligible) View.VISIBLE else View.GONE
+    }
+
+    private fun renderApkAnalysis(analysis: ApkStaticAnalysis?) {
+        if (analysis == null) {
+            binding.txtApkAnalysis.text = ""
+            binding.txtApkAnalysis.visibility = View.GONE
+            return
+        }
+        binding.txtApkAnalysis.visibility = View.VISIBLE
+        binding.txtApkAnalysis.text = when (analysis.state) {
+            ApkAnalysisState.INVALID_APK -> getString(R.string.apk_analysis_invalid)
+            ApkAnalysisState.LIMIT_EXCEEDED -> getString(R.string.apk_analysis_limit)
+            ApkAnalysisState.SOURCE_CHANGED -> getString(R.string.apk_analysis_changed)
+            ApkAnalysisState.FAILED -> getString(R.string.apk_analysis_failed)
+            ApkAnalysisState.VALID -> buildString {
+                append(getString(R.string.apk_analysis_title))
+                append('\n')
+                append(
+                    getString(
+                        when (analysis.riskLevel) {
+                            ApkRiskLevel.LOW -> R.string.apk_analysis_low
+                            ApkRiskLevel.REVIEW -> R.string.apk_analysis_review
+                            ApkRiskLevel.HIGH -> R.string.apk_analysis_high
+                        }
+                    )
+                )
+                append('\n')
+                append(
+                    getString(
+                        R.string.apk_analysis_summary,
+                        NumberFormat.getIntegerInstance().format(analysis.riskScore),
+                        NumberFormat.getIntegerInstance().format(analysis.requestedPermissionCount),
+                        NumberFormat.getIntegerInstance().format(analysis.componentCount),
+                        NumberFormat.getIntegerInstance().format(analysis.dexFileCount),
+                        NumberFormat.getIntegerInstance().format(analysis.nativeLibraryCount)
+                    )
+                )
+                analysis.signingCertificateSha256?.let {
+                    append('\n')
+                    append(getString(R.string.apk_analysis_signer_hash, it))
+                }
+                analysis.identityIndicator?.let { indicator ->
+                    append('\n')
+                    append(
+                        getString(
+                            if (indicator.classification == ApkIdentityClassification.KNOWN_THREAT) {
+                                R.string.apk_analysis_identity_known
+                            } else {
+                                R.string.apk_analysis_identity_test
+                            }
+                        )
+                    )
+                }
+                append('\n')
+                append(formatApkSignals(analysis.signals))
+                if (analysis.codeScanTruncated) {
+                    append('\n')
+                    append(getString(R.string.apk_analysis_truncated))
+                }
+                append('\n')
+                append(getString(R.string.apk_analysis_note))
+            }
+        }
+    }
+
+    private fun formatApkSignals(signals: Set<ApkRiskSignal>): String {
+        if (signals.isEmpty()) return getString(R.string.apk_analysis_no_indicators)
+        return buildString {
+            append(getString(R.string.apk_analysis_indicators_title))
+            signals.forEach { signal ->
+                append('\n')
+                append('•')
+                append(' ')
+                append(getString(apkSignalString(signal)))
+            }
+        }
+    }
+
+    private fun apkSignalString(signal: ApkRiskSignal): Int = when (signal) {
+        ApkRiskSignal.ACCESSIBILITY_SERVICE -> R.string.apk_signal_accessibility
+        ApkRiskSignal.DEVICE_ADMIN_RECEIVER -> R.string.apk_signal_device_admin
+        ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE -> R.string.apk_signal_notification_listener
+        ApkRiskSignal.VPN_SERVICE -> R.string.apk_signal_vpn
+        ApkRiskSignal.OVERLAY_PERMISSION -> R.string.apk_signal_overlay
+        ApkRiskSignal.REQUEST_INSTALL_PACKAGES -> R.string.apk_signal_install_packages
+        ApkRiskSignal.SMS_ACCESS -> R.string.apk_signal_sms
+        ApkRiskSignal.CONTACTS_ACCESS -> R.string.apk_signal_contacts
+        ApkRiskSignal.CALL_LOG_ACCESS -> R.string.apk_signal_call_log
+        ApkRiskSignal.MICROPHONE -> R.string.apk_signal_microphone
+        ApkRiskSignal.CAMERA -> R.string.apk_signal_camera
+        ApkRiskSignal.PRECISE_LOCATION -> R.string.apk_signal_location
+        ApkRiskSignal.BOOT_START -> R.string.apk_signal_boot
+        ApkRiskSignal.QUERY_ALL_PACKAGES -> R.string.apk_signal_query_packages
+        ApkRiskSignal.DEBUGGABLE -> R.string.apk_signal_debuggable
+        ApkRiskSignal.NATIVE_CODE -> R.string.apk_signal_native_code
+        ApkRiskSignal.MANY_DEX_FILES -> R.string.apk_signal_many_code_files
+        ApkRiskSignal.DYNAMIC_CODE_LOADING -> R.string.apk_signal_dynamic_loading
+        ApkRiskSignal.RUNTIME_EXECUTION -> R.string.apk_signal_runtime_execution
+        ApkRiskSignal.SMS_API -> R.string.apk_signal_sms_api
+        ApkRiskSignal.DEVICE_IDENTIFIER_API -> R.string.apk_signal_device_identifier
     }
 
     private fun toggleExclusion() {

@@ -15,3 +15,7 @@ Before publishing future updates, review source confidence and false-positive ri
 ## Phase 5 link indicators
 
 Phase 5 adds `url_indicators.csv`. The bundled URL rows are hashes of reserved `.test` values only, used as harmless test signatures. No live malicious URL is bundled. Future production URL/hash additions should come from reviewed high-confidence feeds, use exact URL hashes where broad host blocking could create false positives, and be signed with a higher manifest serial before publication.
+
+## Phase 6 APK identity indicators
+
+Phase 6 adds `apk_indicators.csv` under signed database schema 3. The bundled rows are harmless `TEST_SIGNATURE` values only: one package-name hash and one synthetic signer hash used to exercise the identity-detection path without labeling a real application or certificate as malicious. Future `KNOWN_THREAT` signer/package additions require reviewed high-confidence evidence, false-positive review, a higher manifest serial, and a new offline signature.

@@ -33,12 +33,12 @@
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
     <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة والروابط المفحوصة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
-    <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s</string>
+    <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s • مؤشرات هوية APK: %3$s</string>
     <string name="update_database">تحديث القاعدة</string>
     <string name="update_idle">يتم التحقق من التحديثات قبل تفعيلها.</string>
     <string name="update_checking">جارٍ التحقق من وجود تحديث موقع…</string>
     <string name="update_up_to_date">قاعدة التهديدات محدثة.</string>
-    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط.</string>
+    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط و%4$s مؤشر هوية APK.</string>
     <string name="update_invalid_signature">تم رفض التحديث لأن التحقق من التوقيع الرقمي فشل.</string>
     <string name="update_invalid_database">تم رفض التحديث لأن حزمة قاعدة البيانات غير صالحة.</string>
     <string name="update_network_error">تعذر الوصول إلى خادم التحديث.</string>
@@ -168,4 +168,48 @@
     <string name="url_threat_reference_line">الرقم المرجعي لتهديد الرابط: %1$s</string>
     <string name="url_privacy_note">يتم فحص الرابط على الجهاز، ولا يتم إرساله إلى أمان أو إلى خدمة فحص خارجية.</string>
     <string name="url_share_note">يمكنك أيضًا استخدام قائمة المشاركة في أندرويد على رابط نصي واختيار أمان.</string>
+
+    <string name="apk_analysis_title">التحليل المتقدم لملف APK</string>
+    <string name="apk_analysis_low">لا توجد مؤشرات تحليل ثابت مرتفعة</string>
+    <string name="apk_analysis_review">مؤشرات التحليل الثابت تحتاج للمراجعة</string>
+    <string name="apk_analysis_high">مؤشرات تحليل ثابت مرتفعة الخطورة</string>
+    <string name="apk_analysis_invalid">تعذر تحليل بنية ملف APK</string>
+    <string name="apk_analysis_limit">توقف التحليل المتقدم لملف APK لأن الحزمة تجاوزت حدود الأمان المحلية.</string>
+    <string name="apk_analysis_changed">توقف التحليل المتقدم لملف APK لأن الملف تغير أثناء الفحص.</string>
+    <string name="apk_analysis_failed">تعذر إكمال التحليل المتقدم لملف APK.</string>
+    <string name="apk_analysis_summary">درجة مؤشرات التحليل الثابت: %1$s من 100 • الصلاحيات: %2$s • المكونات: %3$s • ملفات الشفرة: %4$s • المكتبات الأصلية: %5$s</string>
+    <string name="apk_analysis_signer_hash">بصمة شهادة التوقيع SHA-256: %1$s</string>
+    <string name="apk_analysis_identity_known">تطابق مؤشر تهديد موقع لهوية الحزمة مع قاعدة البيانات النشطة.</string>
+    <string name="apk_analysis_identity_test">تطابق مؤشر اختبار آمن لهوية الحزمة.</string>
+    <string name="apk_analysis_truncated">وصل فحص أنماط الشفرة إلى حد الأمان المحلي، وما زالت نتائج بيانات الحزمة والشهادة وهوية الحزمة معروضة.</string>
+    <string name="apk_analysis_indicators_title">مؤشرات التحليل الثابت</string>
+    <string name="apk_analysis_no_indicators">لم يتم العثور على مؤشرات تحليل ثابت مرتفعة.</string>
+    <string name="apk_signal_accessibility">يعرّف خدمة لإمكانية الوصول</string>
+    <string name="apk_signal_device_admin">يعرّف مستقبلًا لإدارة الجهاز</string>
+    <string name="apk_signal_notification_listener">يعرّف خدمة لمراقبة الإشعارات</string>
+    <string name="apk_signal_vpn">يعرّف خدمة شبكة خاصة افتراضية</string>
+    <string name="apk_signal_overlay">يطلب صلاحية الظهور فوق التطبيقات الأخرى</string>
+    <string name="apk_signal_install_packages">يطلب صلاحية بدء تثبيت التطبيقات</string>
+    <string name="apk_signal_sms">يطلب الوصول إلى الرسائل النصية</string>
+    <string name="apk_signal_contacts">يطلب الوصول إلى جهات الاتصال</string>
+    <string name="apk_signal_call_log">يطلب الوصول إلى سجل المكالمات</string>
+    <string name="apk_signal_microphone">يطلب الوصول إلى الميكروفون</string>
+    <string name="apk_signal_camera">يطلب الوصول إلى الكاميرا</string>
+    <string name="apk_signal_location">يطلب الموقع الدقيق</string>
+    <string name="apk_signal_boot">يمكنه البدء بعد تشغيل الجهاز</string>
+    <string name="apk_signal_query_packages">يطلب رؤية واسعة للتطبيقات المثبتة</string>
+    <string name="apk_signal_debuggable">الحزمة مهيأة للسماح بأدوات تصحيح الأخطاء</string>
+    <string name="apk_signal_native_code">تحتوي الحزمة على مكتبات تنفيذية أصلية</string>
+    <string name="apk_signal_many_code_files">تحتوي الحزمة على عدد مرتفع بشكل غير معتاد من ملفات الشفرة</string>
+    <string name="apk_signal_dynamic_loading">تشير الشفرة إلى تحميل شفرة إضافية أثناء التشغيل</string>
+    <string name="apk_signal_runtime_execution">تشير الشفرة إلى تنفيذ أوامر أثناء التشغيل</string>
+    <string name="apk_signal_sms_api">تشير الشفرة إلى واجهات برمجية لإرسال الرسائل النصية</string>
+    <string name="apk_signal_device_identifier">تشير الشفرة إلى واجهات برمجية لمعرّفات الجهاز</string>
+    <string name="reason_apk_static_high_risk">اجتمعت عدة مؤشرات مستقلة في ملف APK ووصلت إلى درجة مرتفعة للمراجعة، وهذا لا يثبت وحده وجود برمجية ضارة.</string>
+    <string name="reason_apk_invalid">يستخدم الملف امتداد APK، لكن تعذر تحليل بيانات حزمة أندرويد. تعامل مع الحزمة على أنها غير موثوقة حتى تتحقق من مصدرها.</string>
+    <string name="reason_apk_identity_match">تطابق اسم الحزمة أو بصمة شهادة التوقيع مع مؤشر تهديد موقع، حتى لو اختلفت بصمة الملف SHA-256.</string>
+    <string name="apk_analysis_note">لا يشغّل التحليل الثابت ملف APK مطلقًا؛ بل يفحص بيانات الحزمة وبنية الأرشيف ضمن حدود آمنة وهوية التوقيع ومؤشرات مختارة في الشفرة محليًا على الجهاز.</string>
+
+    <string name="reason_apk_identity_test">تطابق مؤشر اختبار آمن وموقع لهوية الحزمة، وهذه ليست نتيجة تشير إلى برمجية ضارة.</string>
+
 </resources>

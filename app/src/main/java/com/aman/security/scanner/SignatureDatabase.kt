@@ -8,9 +8,10 @@ class SignatureDatabase(private val context: Context) {
         val serial: Long,
         val fileEntries: Int,
         val urlEntries: Int,
+        val apkIdentityEntries: Int,
         val downloaded: Boolean
     ) {
-        val entries: Int get() = fileEntries + urlEntries
+        val entries: Int get() = fileEntries + urlEntries + apkIdentityEntries
     }
 
     private val storage = ThreatDbStorage(context)
@@ -39,6 +40,7 @@ class SignatureDatabase(private val context: Context) {
             serial = active.manifest.serial,
             fileEntries = active.signatures.size,
             urlEntries = active.urlIndicators.size,
+            apkIdentityEntries = active.apkIdentityIndicators.size,
             downloaded = downloaded
         )
 
@@ -46,6 +48,9 @@ class SignatureDatabase(private val context: Context) {
 
     fun findUrl(kind: UrlIndicatorKind, sha256: String): UrlThreatIndicator? =
         active.urlIndicators["$kind:${sha256.lowercase()}"]
+
+    fun findApk(kind: ApkIndicatorKind, sha256: String): ApkIdentityIndicator? =
+        active.apkIdentityIndicators["$kind:${sha256.lowercase()}"]
 
     @Synchronized
     fun reloadAfterUpdate() {
@@ -68,6 +73,9 @@ class SignatureDatabase(private val context: Context) {
         val urls = if (parsedManifest.schema >= 2) {
             context.assets.open("threat-db/url_indicators.csv").use { it.readBytes() }
         } else null
-        return ThreatDbValidator.validate(context, manifest, signature, database, urls)
+        val apkIdentities = if (parsedManifest.schema >= 3) {
+            context.assets.open("threat-db/apk_indicators.csv").use { it.readBytes() }
+        } else null
+        return ThreatDbValidator.validate(context, manifest, signature, database, urls, apkIdentities)
     }
 }

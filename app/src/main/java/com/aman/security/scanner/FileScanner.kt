@@ -6,7 +6,8 @@ import android.provider.OpenableColumns
 
 class FileScanner(
     private val resolver: ContentResolver,
-    private val database: SignatureDatabase
+    private val database: SignatureDatabase,
+    private val apkStaticAnalyzer: ApkStaticAnalyzer? = null
 ) {
     fun scan(uri: Uri): ScanResult {
         val meta = queryMetadata(uri)
@@ -14,11 +15,60 @@ class FileScanner(
             ?: throw IllegalStateException()
 
         val signature = database.find(sha256)
-        val classification = when {
-            signature != null -> signature.classification
-            hasMisleadingDoubleExtension(meta.name) -> ScanClassification.SUSPICIOUS
-            meta.name.endsWith(".apk", ignoreCase = true) -> ScanClassification.UNKNOWN_APK
-            else -> ScanClassification.NO_KNOWN_THREAT
+        val looksLikeApk = meta.name.endsWith(".apk", ignoreCase = true)
+        val apkAnalysis = if (looksLikeApk) apkStaticAnalyzer?.analyze(uri, sha256) else null
+        val identityIndicator = apkAnalysis?.identityIndicator
+        val doubleExtension = hasMisleadingDoubleExtension(meta.name)
+
+        val classification: ScanClassification
+        val reason: ScanDetectionReason
+        val signatureId: String?
+
+        when {
+            signature != null -> {
+                classification = signature.classification
+                reason = if (signature.classification == ScanClassification.TEST_SIGNATURE) {
+                    ScanDetectionReason.TEST_SIGNATURE
+                } else {
+                    ScanDetectionReason.KNOWN_FILE_SIGNATURE
+                }
+                signatureId = signature.id
+            }
+            identityIndicator?.classification == ApkIdentityClassification.KNOWN_THREAT -> {
+                classification = ScanClassification.KNOWN_THREAT
+                reason = ScanDetectionReason.APK_IDENTITY_MATCH
+                signatureId = identityIndicator.id
+            }
+            identityIndicator?.classification == ApkIdentityClassification.TEST_SIGNATURE -> {
+                classification = ScanClassification.TEST_SIGNATURE
+                reason = ScanDetectionReason.APK_IDENTITY_TEST
+                signatureId = identityIndicator.id
+            }
+            doubleExtension -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.DOUBLE_EXTENSION
+                signatureId = null
+            }
+            apkAnalysis?.state == ApkAnalysisState.INVALID_APK -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.APK_INVALID
+                signatureId = null
+            }
+            apkAnalysis?.state == ApkAnalysisState.VALID && apkAnalysis.riskLevel == ApkRiskLevel.HIGH -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.APK_STATIC_HIGH_RISK
+                signatureId = null
+            }
+            looksLikeApk -> {
+                classification = ScanClassification.UNKNOWN_APK
+                reason = ScanDetectionReason.UNKNOWN_APK
+                signatureId = null
+            }
+            else -> {
+                classification = ScanClassification.NO_KNOWN_THREAT
+                reason = ScanDetectionReason.NO_SIGNATURE
+                signatureId = null
+            }
         }
 
         return ScanResult(
@@ -26,7 +76,9 @@ class FileScanner(
             sizeBytes = meta.size,
             sha256 = sha256,
             classification = classification,
-            signatureId = signature?.id
+            signatureId = signatureId,
+            detectionReason = reason,
+            apkAnalysis = apkAnalysis
         )
     }
 

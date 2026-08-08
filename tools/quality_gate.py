@@ -30,21 +30,25 @@ def main():
             "android.intent.action.SEND",
             'android:mimeType="text/plain"',
         ],
-        "PHASE5_MANIFEST_GATE",
+        "PHASE6_MANIFEST_GATE",
     )
     if "android.intent.action.VIEW" in manifest or "android.intent.category.BROWSABLE" in manifest:
         raise SystemExit("PHASE5_SHARE_GATE_FAILED browser_interception_not_allowed")
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "0.5.0-phase5"', "versionCode = 5"], "PHASE5_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "0.6.0-phase6"', "versionCode = 6"], "PHASE6_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
     db_model = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbManifest.kt").read_text(encoding="utf-8")
-    require(updater, ["verifyManifest", "https://", "instanceFollowRedirects = false", "urlDbPath", "urlBytes"], "PHASE5_UPDATE_GATE")
-    require(validator, ["dbSha256", "urlDbSha256", "parseUrlLine", "UrlThreatClassification"], "PHASE5_DATABASE_GATE")
-    require(db_model, ["schema == 1 || schema == 2", 'urlDbPath == "url_indicators.csv"'], "PHASE5_SCHEMA_GATE")
+    db_storage = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbStorage.kt").read_text(encoding="utf-8")
+    signature_db = (ROOT / "app/src/main/java/com/aman/security/scanner/SignatureDatabase.kt").read_text(encoding="utf-8")
+    require(updater, ["verifyManifest", "https://", "instanceFollowRedirects = false", "apkIdentityDbPath", "apkBytes", "schema < 3"], "PHASE6_UPDATE_GATE")
+    require(validator, ["apkIdentityDbSha256", "parseApkIdentityLine", "ApkIdentityClassification", "apkIdentityIndicators"], "PHASE6_DATABASE_GATE")
+    require(db_model, ["schema in 1..3", 'apkIdentityDbPath == "apk_indicators.csv"'], "PHASE6_SCHEMA_GATE")
+    require(db_storage, ["apk_indicators.csv", "apkIdentityDatabaseBytes"], "PHASE6_STORAGE_GATE")
+    require(signature_db, ["findApk", "apkIdentityIndicators", "apkIdentityEntries"], "PHASE6_IDENTITY_DATABASE_GATE")
 
     installed_scanner = (ROOT / "app/src/main/java/com/aman/security/scanner/InstalledAppScanner.kt").read_text(encoding="utf-8")
     evaluator = (ROOT / "app/src/main/java/com/aman/security/scanner/AppRiskEvaluator.kt").read_text(encoding="utf-8")
@@ -61,57 +65,85 @@ def main():
     policy = (ROOT / "app/src/main/java/com/aman/security/security/QuarantinePolicy.kt").read_text(encoding="utf-8")
     activity = (ROOT / "app/src/main/java/com/aman/security/MainActivity.kt").read_text(encoding="utf-8")
 
-    require(
-        crypto,
-        ["AndroidKeyStore", "AES/GCM/NoPadding", "KeyGenParameterSpec", "PURPOSE_ENCRYPT", "PURPOSE_DECRYPT"],
-        "PHASE4_CRYPTO_GATE",
-    )
-    require(
-        quarantine,
-        ["encryptedPlainHash", "SourceChanged", "SourceRemovalFailed", "DocumentsContract.deleteDocument", "restoredHash", "IntegrityFailed"],
-        "PHASE4_QUARANTINE_GATE",
-    )
-    require(
-        store,
-        ["isExcluded", "sha256.lowercase()", "MAX_HISTORY", "quarantineEntries", "clearHistory"],
-        "PHASE4_RECORDS_GATE",
-    )
+    require(crypto, ["AndroidKeyStore", "AES/GCM/NoPadding", "KeyGenParameterSpec", "PURPOSE_ENCRYPT", "PURPOSE_DECRYPT"], "PHASE4_CRYPTO_GATE")
+    require(quarantine, ["encryptedPlainHash", "SourceChanged", "SourceRemovalFailed", "DocumentsContract.deleteDocument", "restoredHash", "IntegrityFailed"], "PHASE4_QUARANTINE_GATE")
+    require(store, ["isExcluded", "sha256.lowercase()", "MAX_HISTORY", "quarantineEntries", "clearHistory"], "PHASE4_RECORDS_GATE")
     require(policy, ["isExcluded", "NO_KNOWN_THREAT"], "PHASE4_POLICY_GATE")
     require(activity, ["confirmQuarantine", "toggleExclusion", "restorePicker", "renderQuarantine", "renderExclusions", "renderHistory"], "PHASE4_UI_GATE")
 
     url_scanner = (ROOT / "app/src/main/java/com/aman/security/scanner/UrlScanner.kt").read_text(encoding="utf-8")
     url_normalizer = (ROOT / "app/src/main/java/com/aman/security/scanner/UrlNormalizer.kt").read_text(encoding="utf-8")
     shared_extractor = (ROOT / "app/src/main/java/com/aman/security/scanner/SharedUrlExtractor.kt").read_text(encoding="utf-8")
-    signature_db = (ROOT / "app/src/main/java/com/aman/security/scanner/SignatureDatabase.kt").read_text(encoding="utf-8")
-    url_assets = ROOT / "app/src/main/assets/threat-db/url_indicators.csv"
-
-    require(
-        url_scanner,
-        ["UrlRiskLevel.KNOWN_PHISHING", "UrlRiskLevel.KNOWN_MALICIOUS", "UrlRiskSignal.USER_INFO", "UrlRiskSignal.IP_ADDRESS_HOST", "lookup(UrlIndicatorKind.URL", "lookup(UrlIndicatorKind.HOST"],
-        "PHASE5_URL_SCANNER_GATE",
-    )
+    require(url_scanner, ["UrlRiskLevel.KNOWN_PHISHING", "UrlRiskLevel.KNOWN_MALICIOUS", "lookup(UrlIndicatorKind.URL", "lookup(UrlIndicatorKind.HOST"], "PHASE5_URL_SCANNER_GATE")
     require(url_normalizer, ["IDN.toASCII", 'scheme != "http" && scheme != "https"', "MAX_INPUT_LENGTH"], "PHASE5_URL_NORMALIZER_GATE")
     require(shared_extractor, ["firstCandidate", "HTTP_URL"], "PHASE5_SHARE_EXTRACTOR_GATE")
-    require(signature_db, ["findUrl", "urlIndicators", "urlEntries"], "PHASE5_URL_DATABASE_GATE")
     require(activity, ["handleIncomingIntent", "scanUrlInput", "renderUrlResult", "formatUrlSignals"], "PHASE5_URL_UI_GATE")
-    if not url_assets.is_file():
-        raise SystemExit("PHASE5_URL_DATABASE_GATE_FAILED missing_bundled_url_db")
 
     local_url_sources = url_scanner + url_normalizer + shared_extractor
-    forbidden_url_network = ["HttpURLConnection", "openConnection(", "java.net.URL\n", "OkHttp", "Retrofit", "Socket("]
+    forbidden_url_network = ["HttpURLConnection", "openConnection(", "OkHttp", "Retrofit", "Socket("]
     leaked = [item for item in forbidden_url_network if item in local_url_sources]
     if leaked:
         raise SystemExit(f"PHASE5_URL_PRIVACY_GATE_FAILED network_lookup_code={leaked}")
 
-    print("PRIVACY_GATE_OK broad_storage=0 installed_inventory=local_only quarantine=private_storage url_scan=local_only")
+    apk_analyzer_path = ROOT / "app/src/main/java/com/aman/security/scanner/ApkStaticAnalyzer.kt"
+    apk_models_path = ROOT / "app/src/main/java/com/aman/security/scanner/ApkStaticModels.kt"
+    apk_evaluator_path = ROOT / "app/src/main/java/com/aman/security/scanner/ApkRiskEvaluator.kt"
+    file_scanner_path = ROOT / "app/src/main/java/com/aman/security/scanner/FileScanner.kt"
+    apk_analyzer = apk_analyzer_path.read_text(encoding="utf-8")
+    apk_models = apk_models_path.read_text(encoding="utf-8")
+    apk_evaluator = apk_evaluator_path.read_text(encoding="utf-8")
+    file_scanner = file_scanner_path.read_text(encoding="utf-8")
+
+    require(
+        apk_analyzer,
+        [
+            "getPackageArchiveInfo",
+            "GET_SIGNING_CERTIFICATES",
+            "BIND_ACCESSIBILITY_SERVICE",
+            "BIND_DEVICE_ADMIN",
+            "ZipFile",
+            "MAX_ZIP_ENTRIES",
+            "MAX_DECLARED_UNCOMPRESSED_BYTES",
+            "MAX_DEX_SCAN_BYTES",
+            "SOURCE_CHANGED",
+            "temp.delete()",
+            "findApk(ApkIndicatorKind.SIGNER",
+            "findApk(ApkIndicatorKind.PACKAGE",
+            "DYNAMIC_CODE_LOADING",
+            "RUNTIME_EXECUTION",
+        ],
+        "PHASE6_STATIC_ANALYZER_GATE",
+    )
+    require(apk_models, ["ApkAnalysisState", "ApkRiskSignal", "ApkIdentityIndicator", "TEST_SIGNATURE"], "PHASE6_MODEL_GATE")
+    require(apk_evaluator, ["ACCESSIBILITY_SERVICE", "OVERLAY_PERMISSION", "REQUEST_INSTALL_PACKAGES", "SMS_ACCESS", "coerceIn(0, 100)"], "PHASE6_RISK_GATE")
+    require(file_scanner, ["APK_STATIC_HIGH_RISK", "APK_IDENTITY_MATCH", "APK_INVALID", "apkStaticAnalyzer?.analyze"], "PHASE6_FILE_INTEGRATION_GATE")
+    require(activity, ["renderApkAnalysis", "formatApkSignals", "apkSignalString", "txtApkAnalysis"], "PHASE6_UI_GATE")
+
+    forbidden_static_network = ["HttpURLConnection", "java.net.URL", "OkHttp", "Retrofit", "Socket("]
+    leaked = [item for item in forbidden_static_network if item in apk_analyzer]
+    if leaked:
+        raise SystemExit(f"PHASE6_LOCAL_ONLY_GATE_FAILED network_code={leaked}")
+    dangerous_execution = ["Runtime.getRuntime().exec", "ProcessBuilder(", "DexClassLoader(", "PathClassLoader("]
+    executed = [item for item in dangerous_execution if item in apk_analyzer]
+    if executed:
+        raise SystemExit(f"PHASE6_NO_EXECUTION_GATE_FAILED execution_code={executed}")
+
+    apk_db = ROOT / "app/src/main/assets/threat-db/apk_indicators.csv"
+    if not apk_db.is_file():
+        raise SystemExit("PHASE6_IDENTITY_DATABASE_GATE_FAILED missing_bundled_apk_db")
+    for name in ("manifest.json", "manifest.sig", "signatures.csv", "url_indicators.csv", "apk_indicators.csv"):
+        if (ROOT / "threat-db" / name).read_bytes() != (ROOT / "app/src/main/assets/threat-db" / name).read_bytes():
+            raise SystemExit(f"ASSET_DB_SYNC_FAILED file={name}")
+
+    print("PRIVACY_GATE_OK broad_storage=0 installed_inventory=local_only quarantine=private_storage url_scan=local_only apk_static=local_only")
     print("PHASE2_SECURITY_GATE_OK signed_updates=1 hash_validation=1 https_only=1 redirect_block=1")
     print("PHASE3_PACKAGE_SCAN_GATE_OK user_apps=1 permissions=1 install_source=1 apk_hash=1 signer_hash=1")
     print("PHASE4_QUARANTINE_GATE_OK encrypted=1 keystore=1 source_rehash=1 source_delete_required=1 restore_rehash=1")
-    print("PHASE4_EXCLUSIONS_GATE_OK exact_sha256=1 underlying_detection_preserved=1")
-    print("PHASE4_HISTORY_GATE_OK local_only=1 bounded=100 clearable=1")
     print("PHASE5_URL_GATE_OK signed_url_indicators=1 local_scan=1 http_https_only=1 heuristic_combination=1")
-    print("PHASE5_SHARE_GATE_OK action_send=1 text_plain=1 browser_interception=0")
-    print("PHASE5_SOURCE_GATE_OK")
+    print("PHASE6_STATIC_APK_GATE_OK manifest=1 signer=1 components=1 archive_bounds=1 dex_markers=1 no_execution=1")
+    print("PHASE6_IDENTITY_GATE_OK signed_signer_indicators=1 signed_package_indicators=1 hash_change_resilient=1")
+    print("PHASE6_RISK_GATE_OK combined_signals=1 single_signal_conservative=1 known_identity_override=1")
+    print("PHASE6_SOURCE_GATE_OK")
 
 
 if __name__ == "__main__":

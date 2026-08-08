@@ -1,13 +1,16 @@
 {
-  "schema": 2,
-  "serial": 3,
-  "version": "2026.08.08.2",
-  "generatedAt": "2026-08-08T13:23:45Z",
-  "minAppVersionCode": 5,
+  "schema": 3,
+  "serial": 4,
+  "version": "2026.08.08.3",
+  "generatedAt": "2026-08-08T13:42:18Z",
+  "minAppVersionCode": 6,
   "entries": 5,
   "dbPath": "signatures.csv",
   "dbSha256": "5474ae29f423cda99dc34e7f18d844b4355dcae7681c5918feb0aedf5123c44f",
   "urlEntries": 2,
   "urlDbPath": "url_indicators.csv",
-  "urlDbSha256": "7eac97ea04b1bfa5229012db535df952e3c8906f45dcae4a46d46319df576701"
+  "urlDbSha256": "7eac97ea04b1bfa5229012db535df952e3c8906f45dcae4a46d46319df576701",
+  "apkIdentityEntries": 2,
+  "apkIdentityDbPath": "apk_indicators.csv",
+  "apkIdentityDbSha256": "fd4688d40bfcb5658fd028372fc61c0723d0e0287378e7c32191d4da650080e1"
 }

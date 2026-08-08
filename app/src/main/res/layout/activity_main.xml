@@ -389,6 +389,18 @@
                     android:textIsSelectable="true"
                     android:textSize="12sp" />
 
+                <TextView
+                    android:id="@+id/txtApkAnalysis"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@android:color/white"
+                    android:padding="12dp"
+                    android:textColor="@color/text_secondary"
+                    android:textIsSelectable="true"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/resultActions"
                     android:layout_width="match_parent"

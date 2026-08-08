@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--private-key", required=True, help="Path to the OFFLINE RSA private key. Never commit it.")
     parser.add_argument("--serial", type=int, required=True)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--min-app-version-code", type=int, default=5)
+    parser.add_argument("--min-app-version-code", type=int, default=6)
     args = parser.parse_args()
 
     key = Path(args.private_key).expanduser().resolve()
@@ -33,10 +33,12 @@ def main():
 
     file_db = DB_DIR / "signatures.csv"
     url_db = DB_DIR / "url_indicators.csv"
+    apk_db = DB_DIR / "apk_indicators.csv"
     file_data = file_db.read_bytes()
     url_data = url_db.read_bytes()
+    apk_data = apk_db.read_bytes()
     manifest = {
-        "schema": 2,
+        "schema": 3,
         "serial": args.serial,
         "version": args.version,
         "generatedAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
@@ -47,6 +49,9 @@ def main():
         "urlEntries": count_entries(url_data),
         "urlDbPath": "url_indicators.csv",
         "urlDbSha256": hashlib.sha256(url_data).hexdigest(),
+        "apkIdentityEntries": count_entries(apk_data),
+        "apkIdentityDbPath": "apk_indicators.csv",
+        "apkIdentityDbSha256": hashlib.sha256(apk_data).hexdigest(),
     }
     manifest_path = DB_DIR / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -56,7 +61,8 @@ def main():
     ], check=True)
     print(
         f"SIGNED_THREAT_DB serial={args.serial} version={args.version} "
-        f"file_entries={manifest['entries']} url_entries={manifest['urlEntries']}"
+        f"file_entries={manifest['entries']} url_entries={manifest['urlEntries']} "
+        f"apk_identity_entries={manifest['apkIdentityEntries']}"
     )
 
 if __name__ == "__main__":
