@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "serial": 2,
+  "version": "2026.08.08.1",
+  "generatedAt": "2026-08-08T11:27:00Z",
+  "minAppVersionCode": 2,
+  "entries": 5,
+  "dbPath": "signatures.csv",
+  "dbSha256": "5474ae29f423cda99dc34e7f18d844b4355dcae7681c5918feb0aedf5123c44f"
+}

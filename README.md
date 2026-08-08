@@ -1,47 +1,47 @@
-# Aman Security — Android Phase 1
+# Aman Security — Phase 2
 
-A privacy-first Android malware scanning foundation with strict Arabic/English localization separation.
+Android malware scanner foundation with Arabic/English UI separation and cryptographically signed threat-database updates.
 
-## Implemented in Phase 1
+## Phase 2 features
 
-- Android 16 / API 36 target.
-- Arabic and English UI with runtime language switching.
-- RTL for Arabic and LTR for English.
-- Strict resource-key parity and language-leakage quality gate.
-- File selection through Android Storage Access Framework.
-- Streaming SHA-256 hashing (does not load the whole file into memory).
-- Local signature database lookup.
-- APK unknown-state handling (unknown is not called safe).
-- Misleading double-extension heuristic.
-- Harmless EICAR test signature hash only; **no malware sample is bundled**.
-- No INTERNET permission and no broad storage permission in Phase 1.
+- Local SHA-256 file/APK scanning.
+- Bundled signed threat database with harmless EICAR test signature plus seed Android threat hashes.
+- User-triggered threat database updates from the repository `threat-db/` folder.
+- HTTPS-only update transport.
+- RSA/SHA-256 signature verification before an update can be activated.
+- SHA-256 content validation, entry-count validation, duplicate rejection, size limits, and rollback protection using a monotonic `serial`.
+- Invalid downloaded databases automatically fall back to the bundled verified database.
+- No broad storage permission; files are selected through Android's document picker.
+- Strict Arabic and English string catalogs with an automated localization gate.
 
-## Open in Android Studio
+## Update URL
 
-Use a recent Android Studio with Android SDK 36 installed and JDK 17+.
-The project is configured for Android Gradle Plugin 8.13.2 / Gradle 8.13.
+The Android app is configured for:
 
-## Quality gate
+`https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/`
 
-Run:
+Upload the project contents to the repository root so that `threat-db/manifest.json`, `threat-db/manifest.sig`, and `threat-db/signatures.csv` are available at that location.
+
+## Important signing-key rule
+
+The private RSA update-signing key is intentionally NOT inside this project. Keep it offline. Only the public key in `app/src/main/assets/keys/` is bundled in the app.
+
+To publish a future database update:
 
 ```bash
-python tools/quality_gate.py
+python3 tools/sign_threat_db.py \
+  --private-key /safe/offline/path/AmanSecurity_Phase2_UpdateSigning_PrivateKey.pem \
+  --serial 3 \
+  --version 2026.08.08.2
+python3 tools/verify_threat_db.py
 ```
 
-Expected result includes:
+Then commit only the three files under `threat-db/`. Never commit the private key.
 
-```text
-LOCALIZATION_GATE_OK
-PRIVACY_GATE_OK
-SIGNATURE_GATE_OK
-PHASE1_SOURCE_GATE_OK
+## Quality checks
+
+```bash
+python3 tools/verify_localization.py
+python3 tools/verify_threat_db.py
+python3 tools/quality_gate.py
 ```
-
-## Important limitation
-
-A hash that is absent from the Phase 1 local database is **not proof that the file is safe**. This is why unknown APK files are reported as unknown. Real threat-feed ingestion and signed GitHub database updates belong to Phase 2.
-
-## GitHub Actions build
-This package includes `.github/workflows/main.yml` for automated Android APK builds on GitHub Actions.
-The Kotlin JVM target uses the modern `compilerOptions` DSL required by the current Kotlin Gradle plugin.

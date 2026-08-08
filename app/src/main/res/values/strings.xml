@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Aman Security</string>
-    <string name="app_subtitle">Phase 1 malware scanner</string>
-    <string name="security_status_title">Protection foundation</string>
-    <string name="security_status_body">Local file scanning is ready. No file is uploaded anywhere.</string>
+    <string name="app_subtitle">Phase 2 malware scanner</string>
+    <string name="security_status_title">Threat intelligence</string>
+    <string name="security_status_body">File scanning uses a signed threat database. Updates are accepted only after cryptographic verification.</string>
     <string name="choose_file">Choose file</string>
     <string name="scan_file">Scan file</string>
     <string name="change_language">Language</string>
@@ -20,22 +20,27 @@
     <string name="result_suspicious">Suspicious file</string>
     <string name="result_threat">Known threat detected</string>
     <string name="result_test_signature">Harmless test signature detected</string>
-    <string name="reason_no_signature">The SHA-256 fingerprint is not in the local threat database.</string>
-    <string name="reason_unknown_apk">This APK is not in the local database. This does not prove that it is safe.</string>
+    <string name="reason_no_signature">The SHA-256 fingerprint is not in the active threat database.</string>
+    <string name="reason_unknown_apk">This APK is not in the active database. This does not prove that it is safe.</string>
     <string name="reason_double_extension">The file name uses a misleading double extension.</string>
-    <string name="reason_signature_match">The SHA-256 fingerprint matches a known local signature.</string>
+    <string name="reason_signature_match">The SHA-256 fingerprint matches a known signature in the active database.</string>
     <string name="reason_eicar_test">This is the standard harmless anti-malware test signature.</string>
     <string name="sha256_label">SHA-256</string>
+    <string name="signature_id_label">Threat reference</string>
     <string name="file_size_label">File size</string>
     <string name="bytes_value">%1$s bytes</string>
     <string name="scan_failed">The file could not be scanned.</string>
-    <string name="scan_failed_with_reason">Scan failed: %1$s</string>
     <string name="file_access_error">File access error</string>
-    <string name="unknown_error">Unknown error</string>
-    <string name="privacy_note">Phase 1 uses on-device scanning only.</string>
-    <string name="database_version">Signature database: %1$s</string>
-    <string name="classification_label">Classification</string>
-    <string name="reason_label">Reason</string>
-    <string name="technical_details">Technical details</string>
-    <string name="safe_wording_note">A clean result only means no known local signature was found.</string>
+    <string name="privacy_note">Files stay on the device. Internet access is used only for signed threat-database updates.</string>
+    <string name="database_version">Threat database: %1$s</string>
+    <string name="database_entries">Known indicators: %1$s</string>
+    <string name="update_database">Update database</string>
+    <string name="update_idle">Updates are verified before activation.</string>
+    <string name="update_checking">Checking for a signed update…</string>
+    <string name="update_up_to_date">Threat database is up to date.</string>
+    <string name="update_success">Updated to %1$s with %2$s indicators.</string>
+    <string name="update_invalid_signature">Update rejected: digital signature verification failed.</string>
+    <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
+    <string name="update_network_error">Could not reach the update server.</string>
+    <string name="safe_wording_note">A clean result only means no known signature was found. It is not a guarantee that a file is safe.</string>
 </resources>

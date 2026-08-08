@@ -3,33 +3,42 @@ package com.aman.security.scanner
 import android.content.Context
 
 class SignatureDatabase(private val context: Context) {
-    val version: String by lazy { loadVersion() }
-    private val signatures: Map<String, ThreatSignature> by lazy { loadSignatures() }
+    data class Info(val version: String, val serial: Long, val entries: Int, val downloaded: Boolean)
 
-    fun find(sha256: String): ThreatSignature? = signatures[sha256.lowercase()]
+    private val storage = ThreatDbStorage(context)
+    private val bundled: ThreatDbValidator.ValidatedPackage = loadBundled()
+    @Volatile private var active: ThreatDbValidator.ValidatedPackage
+    @Volatile private var downloaded = false
 
-    private fun loadVersion(): String = context.assets.open("signature_db_version.txt")
-        .bufferedReader()
-        .use { it.readText().trim() }
-
-    private fun loadSignatures(): Map<String, ThreatSignature> {
-        return context.assets.open("signatures_v1.csv")
-            .bufferedReader()
-            .useLines { lines ->
-                lines
-                    .filter { it.isNotBlank() && !it.startsWith("#") }
-                    .mapNotNull(::parseLine)
-                    .associateBy { it.sha256 }
-            }
+    init {
+        val installed = storage.loadInstalled()
+        if (installed != null && installed.manifest.serial >= bundled.manifest.serial) {
+            active = installed
+            downloaded = true
+        } else {
+            storage.clearInvalidInstalled()
+            active = bundled
+        }
     }
 
-    private fun parseLine(line: String): ThreatSignature? {
-        val parts = line.split('|')
-        if (parts.size != 3) return null
-        val hash = parts[0].trim().lowercase()
-        if (!hash.matches(Regex("^[a-f0-9]{64}$"))) return null
-        val classification = runCatching { ScanClassification.valueOf(parts[2].trim()) }.getOrNull()
-            ?: return null
-        return ThreatSignature(hash, parts[1].trim(), classification)
+    val info: Info
+        get() = Info(active.manifest.version, active.manifest.serial, active.signatures.size, downloaded)
+
+    fun find(sha256: String): ThreatSignature? = active.signatures[sha256.lowercase()]
+
+    @Synchronized
+    fun reloadAfterUpdate() {
+        val installed = storage.loadInstalled() ?: return
+        if (installed.manifest.serial >= active.manifest.serial && installed.manifest.serial >= bundled.manifest.serial) {
+            active = installed
+            downloaded = true
+        }
+    }
+
+    private fun loadBundled(): ThreatDbValidator.ValidatedPackage {
+        val manifest = context.assets.open("threat-db/manifest.json").use { it.readBytes() }
+        val signature = context.assets.open("threat-db/manifest.sig").use { it.readBytes() }
+        val database = context.assets.open("threat-db/signatures.csv").use { it.readBytes() }
+        return ThreatDbValidator.validate(context, manifest, signature, database)
     }
 }
