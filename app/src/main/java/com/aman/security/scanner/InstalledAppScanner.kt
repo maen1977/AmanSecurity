@@ -39,6 +39,31 @@ class InstalledAppScanner(
         )
     }
 
+    fun scanPackageByName(packageName: String): InstalledAppScanResult? {
+        if (packageName == context.packageName) return null
+        val packageInfo = packageInfo(packageName) ?: return null
+        if (isSystemPackage(packageInfo)) return null
+        return scanPackage(packageInfo)
+    }
+
+    private fun packageInfo(packageName: String): PackageInfo? {
+        val signingFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        }
+        val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or signingFlag
+        return runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, flags)
+            }
+        }.getOrNull()
+    }
+
     private fun installedPackages(): List<PackageInfo> {
         val signingFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             PackageManager.GET_SIGNING_CERTIFICATES
@@ -68,13 +93,22 @@ class InstalledAppScanner(
 
         val apkSha256 = applicationInfo?.sourceDir
             ?.let { runCatching { hashFile(File(it)) }.getOrNull() }
-        val threat = apkSha256?.let(database::find)
+        val signerHash = signingCertificateSha256(packageInfo)
+        val fileThreat = apkSha256?.let(database::find)
+        val signerThreat = signerHash
+            ?.let { database.findApk(ApkIndicatorKind.SIGNER, it) }
+            ?.takeIf { it.classification == ApkIdentityClassification.KNOWN_THREAT }
+        val packageThreat = database.findApk(
+            ApkIndicatorKind.PACKAGE,
+            sha256Text(packageInfo.packageName)
+        )?.takeIf { it.classification == ApkIdentityClassification.KNOWN_THREAT }
+        val threatReference = fileThreat?.id ?: signerThreat?.id ?: packageThreat?.id
         val evaluation = AppRiskEvaluator.evaluate(
             AppRiskInput(
                 requestedPermissions = requestedPermissions,
                 hasAccessibilityService = hasAccessibilityService,
                 installSource = source,
-                knownThreatReference = threat?.id
+                knownThreatReference = threatReference
             )
         )
 
@@ -87,8 +121,8 @@ class InstalledAppScanner(
             riskLevel = evaluation.level,
             signals = evaluation.signals,
             apkSha256 = apkSha256,
-            signingCertificateSha256 = signingCertificateSha256(packageInfo),
-            threatReference = threat?.id
+            signingCertificateSha256 = signerHash,
+            threatReference = threatReference
         )
     }
 
@@ -130,6 +164,10 @@ class InstalledAppScanner(
     }
 
     private fun hashFile(file: File): String = FileInputStream(file).use(Sha256::fromStream)
+
+    private fun sha256Text(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
 
     private fun signingCertificateSha256(packageInfo: PackageInfo): String? {
         val signerBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

@@ -13,8 +13,8 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0-phase6"
+        versionCode = 7
+        versionName = "0.7.0-phase7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "THREAT_DB_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/\"")
@@ -53,5 +53,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.11.0")
     implementation("com.google.android.material:material:1.13.0")
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
     testImplementation("junit:junit:4.13.2")
 }

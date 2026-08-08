@@ -7,6 +7,9 @@
     <!-- Core antivirus functionality: inspect the user-installed app inventory locally on-device. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- Required on Android 13+ only so enabled background protection can show security alerts. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -25,6 +28,17 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+
+
+        <receiver
+            android:name=".protection.PackageAddedReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

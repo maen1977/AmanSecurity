@@ -1,13 +1,17 @@
 package com.aman.security
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import com.aman.security.databinding.ActivityMainBinding
@@ -15,6 +19,14 @@ import com.aman.security.databinding.ItemInstalledAppBinding
 import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
 import com.aman.security.databinding.ItemQuarantineBinding
+import com.aman.security.protection.ProtectedFolderScanner
+import com.aman.security.protection.ProtectionEvent
+import com.aman.security.protection.ProtectionEventStore
+import com.aman.security.protection.ProtectionEventType
+import com.aman.security.protection.ProtectionNotifier
+import com.aman.security.protection.ProtectionPreferences
+import com.aman.security.protection.ProtectionScheduler
+import com.aman.security.protection.ProtectionSeverity
 import com.aman.security.scanner.AppInstallSource
 import com.aman.security.scanner.ApkAnalysisState
 import com.aman.security.scanner.ApkIdentityClassification
@@ -61,6 +73,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var urlScanner: UrlScanner
     private lateinit var recordStore: SecurityRecordStore
     private lateinit var quarantineManager: QuarantineManager
+    private lateinit var protectionPreferences: ProtectionPreferences
+    private lateinit var protectionEventStore: ProtectionEventStore
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var pendingRestoreId: String? = null
@@ -92,6 +106,14 @@ class MainActivity : AppCompatActivity() {
         if (uri != null && id != null) restoreQuarantinedFile(id, uri)
     }
 
+    private val protectedFolderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) setProtectedFolder(uri)
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        renderProtectionStatus()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -105,8 +127,12 @@ class MainActivity : AppCompatActivity() {
         urlScanner = UrlScanner(database::findUrl)
         recordStore = SecurityRecordStore(this)
         quarantineManager = QuarantineManager(this, recordStore)
+        protectionPreferences = ProtectionPreferences(this)
+        protectionEventStore = ProtectionEventStore(this)
+        ProtectionNotifier.ensureChannel(this)
         renderDatabaseInfo()
         renderSecurityManagement()
+        renderProtectionStatus()
 
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
@@ -117,7 +143,19 @@ class MainActivity : AppCompatActivity() {
         binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
         binding.btnExclusion.setOnClickListener { toggleExclusion() }
         binding.btnClearHistory.setOnClickListener { confirmClearHistory() }
+        binding.btnToggleProtection.setOnClickListener { toggleBackgroundProtection() }
+        binding.btnChooseProtectedFolder.setOnClickListener { protectedFolderPicker.launch(protectionPreferences.protectedTreeUri) }
+        binding.btnCheckProtectionNow.setOnClickListener { scanProtectedFolderNow() }
+        binding.btnClearProtectionEvents.setOnClickListener {
+            protectionEventStore.clear()
+            renderProtectionStatus()
+        }
         handleIncomingIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::protectionPreferences.isInitialized) renderProtectionStatus()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -239,6 +277,184 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.MANY_SUBDOMAINS -> R.string.url_signal_subdomains
         UrlRiskSignal.LONG_URL -> R.string.url_signal_long
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
+    }
+
+    private fun toggleBackgroundProtection() {
+        if (protectionPreferences.enabled) {
+            protectionPreferences.enabled = false
+            ProtectionScheduler.disable(this)
+            renderProtectionStatus()
+            return
+        }
+
+        val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
+        if (preferences.getInt(PROTECTION_DISCLOSURE_KEY, 0) >= PROTECTION_DISCLOSURE_VERSION) {
+            enableBackgroundProtection()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.protection_disclosure_title)
+            .setMessage(R.string.protection_disclosure_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.protection_continue_action) { _, _ ->
+                preferences.edit()
+                    .putInt(PROTECTION_DISCLOSURE_KEY, PROTECTION_DISCLOSURE_VERSION)
+                    .apply()
+                enableBackgroundProtection()
+            }
+            .show()
+    }
+
+    private fun enableBackgroundProtection() {
+        protectionPreferences.enabled = true
+        ProtectionNotifier.ensureChannel(this)
+        ProtectionScheduler.enable(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        renderProtectionStatus()
+    }
+
+    private fun setProtectedFolder(uri: Uri) {
+        val old = protectionPreferences.protectedTreeUri
+        if (old != null && old != uri) {
+            runCatching {
+                contentResolver.releasePersistableUriPermission(old, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+        val granted = runCatching {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            true
+        }.getOrDefault(false)
+        if (!granted) {
+            showInfo(R.string.protection_check_failed)
+            return
+        }
+        protectionPreferences.protectedTreeUri = uri
+        protectionPreferences.folderPermissionLost = false
+        protectionPreferences.clearLedger()
+        if (protectionPreferences.enabled) ProtectionScheduler.enable(this)
+        renderProtectionStatus()
+    }
+
+    private fun scanProtectedFolderNow() {
+        val treeUri = protectionPreferences.protectedTreeUri
+        if (treeUri == null) {
+            showInfo(R.string.protection_choose_folder_first)
+            return
+        }
+        binding.btnCheckProtectionNow.isEnabled = false
+        binding.txtProtectionLastCheck.setText(R.string.protection_checking)
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    ProtectedFolderScanner(
+                        resolver = contentResolver,
+                        fileScanner = scanner,
+                        preferences = protectionPreferences,
+                        eventStore = protectionEventStore,
+                        recordStore = recordStore,
+                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                    ).scan(treeUri)
+                }
+            }
+            binding.btnCheckProtectionNow.isEnabled = true
+            outcome.onSuccess { summary ->
+                renderProtectionStatus()
+                if (summary.permissionLost) {
+                    showInfo(R.string.protection_folder_permission_lost)
+                } else {
+                    binding.txtProtectionLastCheck.text = getString(
+                        R.string.protection_check_result,
+                        NumberFormat.getIntegerInstance().format(summary.scannedFiles),
+                        NumberFormat.getIntegerInstance().format(summary.alerts)
+                    )
+                }
+            }.onFailure {
+                renderProtectionStatus()
+                showInfo(R.string.protection_check_failed)
+            }
+        }
+    }
+
+    private fun renderProtectionStatus() {
+        val enabled = protectionPreferences.enabled
+        val notificationAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+        binding.txtProtectionState.setText(
+            when {
+                !enabled -> R.string.protection_state_disabled
+                !notificationAllowed -> R.string.protection_state_notifications_off
+                else -> R.string.protection_state_enabled
+            }
+        )
+        binding.btnToggleProtection.setText(
+            if (enabled) R.string.disable_protection_action else R.string.enable_protection_action
+        )
+
+        val treeUri = protectionPreferences.protectedTreeUri
+        binding.txtProtectedFolder.text = if (treeUri == null) {
+            getString(R.string.protected_folder_none)
+        } else if (protectionPreferences.folderPermissionLost) {
+            getString(R.string.protection_folder_permission_lost)
+        } else {
+            getString(R.string.protected_folder_line, treeUri.lastPathSegment ?: treeUri.toString())
+        }
+
+        binding.txtProtectionLastCheck.text = if (protectionPreferences.lastCheckAt <= 0L) {
+            getString(R.string.protection_last_check_never)
+        } else {
+            getString(
+                R.string.protection_last_check_line,
+                formatDate(protectionPreferences.lastCheckAt),
+                NumberFormat.getIntegerInstance().format(protectionPreferences.lastScannedCount),
+                NumberFormat.getIntegerInstance().format(protectionPreferences.lastAlertCount)
+            )
+        }
+
+        val events = protectionEventStore.events()
+        binding.txtProtectionAlertCount.text = if (events.isEmpty()) {
+            getString(R.string.protection_alert_count_zero)
+        } else {
+            getString(R.string.protection_alert_count, NumberFormat.getIntegerInstance().format(events.size))
+        }
+        binding.btnClearProtectionEvents.isEnabled = events.isNotEmpty()
+        binding.protectionEventsContainer.removeAllViews()
+        if (events.isEmpty()) {
+            binding.protectionEventsContainer.addView(protectionEventText(getString(R.string.protection_no_recent_alerts)))
+        } else {
+            events.take(MAX_VISIBLE_PROTECTION_EVENTS).forEach { event ->
+                binding.protectionEventsContainer.addView(protectionEventText(formatProtectionEvent(event)))
+            }
+        }
+    }
+
+    private fun formatProtectionEvent(event: ProtectionEvent): String {
+        val type = getString(
+            when (event.type) {
+                ProtectionEventType.FILE -> R.string.protection_event_file
+                ProtectionEventType.APP -> R.string.protection_event_app
+            }
+        )
+        val severity = getString(
+            when (event.severity) {
+                ProtectionSeverity.HIGH_RISK -> R.string.protection_severity_high
+                ProtectionSeverity.KNOWN_THREAT -> R.string.protection_severity_known
+            }
+        )
+        return getString(R.string.protection_event_line, type, severity, event.displayName)
+    }
+
+    private fun protectionEventText(textValue: String): android.widget.TextView = android.widget.TextView(this).apply {
+        text = textValue
+        setTextColor(getColor(R.color.text_secondary))
+        textSize = 12f
+        val padding = (6 * resources.displayMetrics.density).toInt()
+        setPadding(0, padding, 0, padding)
     }
 
     private fun requestInstalledAppsScan() {
@@ -817,6 +1033,9 @@ class MainActivity : AppCompatActivity() {
         private const val PRIVACY_PREFERENCES = "privacy_preferences"
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"
         private const val INSTALLED_SCAN_DISCLOSURE_VERSION = 1
+        private const val PROTECTION_DISCLOSURE_KEY = "background_protection_disclosure_version"
+        private const val PROTECTION_DISCLOSURE_VERSION = 1
+        private const val MAX_VISIBLE_PROTECTION_EVENTS = 8
         private const val MAX_VISIBLE_APP_RESULTS = 20
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20

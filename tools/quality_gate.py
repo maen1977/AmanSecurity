@@ -34,10 +34,20 @@ def main():
     )
     if "android.intent.action.VIEW" in manifest or "android.intent.category.BROWSABLE" in manifest:
         raise SystemExit("PHASE5_SHARE_GATE_FAILED browser_interception_not_allowed")
+    require(
+        manifest,
+        [
+            "android.permission.POST_NOTIFICATIONS",
+            ".protection.PackageAddedReceiver",
+            "android.intent.action.PACKAGE_ADDED",
+            'android:scheme="package"',
+        ],
+        "PHASE7_MANIFEST_GATE",
+    )
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "0.6.0-phase6"', "versionCode = 6"], "PHASE6_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "0.7.0-phase7"', "versionCode = 7", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
@@ -52,7 +62,7 @@ def main():
 
     installed_scanner = (ROOT / "app/src/main/java/com/aman/security/scanner/InstalledAppScanner.kt").read_text(encoding="utf-8")
     evaluator = (ROOT / "app/src/main/java/com/aman/security/scanner/AppRiskEvaluator.kt").read_text(encoding="utf-8")
-    require(installed_scanner, ["getInstalledPackages", "GET_PERMISSIONS", "GET_SIGNING_CERTIFICATES", "database::find"], "PHASE3_SCANNER_GATE")
+    require(installed_scanner, ["getInstalledPackages", "GET_PERMISSIONS", "GET_SIGNING_CERTIFICATES", "database::find", "scanPackageByName", "findApk(ApkIndicatorKind.SIGNER", "findApk(\n            ApkIndicatorKind.PACKAGE"], "PHASE7_INSTALLED_SCANNER_GATE")
     forbidden_network = ["java.net", "HttpURLConnection", "OkHttp", "Retrofit", "Socket("]
     leaked = [item for item in forbidden_network if item in installed_scanner]
     if leaked:
@@ -128,6 +138,36 @@ def main():
     if executed:
         raise SystemExit(f"PHASE6_NO_EXECUTION_GATE_FAILED execution_code={executed}")
 
+    protection_dir = ROOT / "app/src/main/java/com/aman/security/protection"
+    policy7 = (protection_dir / "ProtectionPolicy.kt").read_text(encoding="utf-8")
+    preferences7 = (protection_dir / "ProtectionPreferences.kt").read_text(encoding="utf-8")
+    folder7 = (protection_dir / "ProtectedFolderScanner.kt").read_text(encoding="utf-8")
+    scheduler7 = (protection_dir / "ProtectionScheduler.kt").read_text(encoding="utf-8")
+    receiver7 = (protection_dir / "PackageAddedReceiver.kt").read_text(encoding="utf-8")
+    package_worker7 = (protection_dir / "NewPackageScanWorker.kt").read_text(encoding="utf-8")
+    notifier7 = (protection_dir / "ProtectionNotifier.kt").read_text(encoding="utf-8")
+    events7 = (protection_dir / "ProtectionEventStore.kt").read_text(encoding="utf-8")
+
+    require(policy7, ["MAX_DOCUMENTS_PER_RUN", "MAX_SCAN_FILES_PER_RUN", "MAX_TREE_DEPTH", "KNOWN_THREAT", "SUSPICIOUS", "excluded"], "PHASE7_POLICY_GATE")
+    require(preferences7, ["protectedTreeUri", "ledger", "MAX_LEDGER_ENTRIES", "folderPermissionLost"], "PHASE7_PREFERENCES_GATE")
+    require(folder7, ["DocumentsContract", "persistedUriPermissions", "MAX_DOCUMENTS_PER_RUN", "MAX_SCAN_FILES_PER_RUN", "recordStore.isExcluded", "ProtectionPolicy.shouldNotifyFile"], "PHASE7_FOLDER_GATE")
+    require(scheduler7, ["PeriodicWorkRequestBuilder<ProtectedFolderWorker>(15, TimeUnit.MINUTES)", "setExpedited", "scanNewPackage", "cancelAllWorkByTag"], "PHASE7_SCHEDULER_GATE")
+    require(receiver7, ["Intent.ACTION_PACKAGE_ADDED", "ProtectionPreferences(context).enabled", "scanNewPackage"], "PHASE7_PACKAGE_RECEIVER_GATE")
+    require(package_worker7, ["scanPackageByName", "shouldNotifyApp", "ProtectionNotifier.notifyEvent"], "PHASE7_PACKAGE_WORKER_GATE")
+    require(notifier7, ["POST_NOTIFICATIONS", "NotificationChannel", "IMPORTANCE_HIGH", "ProtectionEventType.FILE", "ProtectionEventType.APP"], "PHASE7_NOTIFICATION_GATE")
+    require(events7, ["MAX_EVENTS", "SharedPreferences", "ProtectionSeverity"], "PHASE7_EVENT_STORE_GATE")
+    require(activity, ["OpenDocumentTree", "toggleBackgroundProtection", "protection_disclosure_body", "scanProtectedFolderNow", "renderProtectionStatus"], "PHASE7_UI_GATE")
+
+    protection_sources = "\n".join(p.read_text(encoding="utf-8") for p in protection_dir.glob("*.kt"))
+    forbidden_protection_network = ["HttpURLConnection", "java.net.URL", "OkHttp", "Retrofit", "Socket("]
+    leaked = [item for item in forbidden_protection_network if item in protection_sources]
+    if leaked:
+        raise SystemExit(f"PHASE7_LOCAL_ONLY_GATE_FAILED network_code={leaked}")
+    forbidden_auto_remediation = ["QuarantineManager", "DocumentsContract.deleteDocument", "contentResolver.delete(", "File.delete("]
+    found = [item for item in forbidden_auto_remediation if item in protection_sources]
+    if found:
+        raise SystemExit(f"PHASE7_NO_AUTO_REMEDIATION_GATE_FAILED code={found}")
+
     apk_db = ROOT / "app/src/main/assets/threat-db/apk_indicators.csv"
     if not apk_db.is_file():
         raise SystemExit("PHASE6_IDENTITY_DATABASE_GATE_FAILED missing_bundled_apk_db")
@@ -135,7 +175,7 @@ def main():
         if (ROOT / "threat-db" / name).read_bytes() != (ROOT / "app/src/main/assets/threat-db" / name).read_bytes():
             raise SystemExit(f"ASSET_DB_SYNC_FAILED file={name}")
 
-    print("PRIVACY_GATE_OK broad_storage=0 installed_inventory=local_only quarantine=private_storage url_scan=local_only apk_static=local_only")
+    print("PRIVACY_GATE_OK broad_storage=0 installed_inventory=local_only quarantine=private_storage url_scan=local_only apk_static=local_only protected_folder=saf_only")
     print("PHASE2_SECURITY_GATE_OK signed_updates=1 hash_validation=1 https_only=1 redirect_block=1")
     print("PHASE3_PACKAGE_SCAN_GATE_OK user_apps=1 permissions=1 install_source=1 apk_hash=1 signer_hash=1")
     print("PHASE4_QUARANTINE_GATE_OK encrypted=1 keystore=1 source_rehash=1 source_delete_required=1 restore_rehash=1")
@@ -143,7 +183,10 @@ def main():
     print("PHASE6_STATIC_APK_GATE_OK manifest=1 signer=1 components=1 archive_bounds=1 dex_markers=1 no_execution=1")
     print("PHASE6_IDENTITY_GATE_OK signed_signer_indicators=1 signed_package_indicators=1 hash_change_resilient=1")
     print("PHASE6_RISK_GATE_OK combined_signals=1 single_signal_conservative=1 known_identity_override=1")
-    print("PHASE6_SOURCE_GATE_OK")
+    print("PHASE7_BACKGROUND_GATE_OK package_added=event_driven folder_scan=workmanager_15m saf_tree=1")
+    print("PHASE7_ALERT_GATE_OK known_threat=1 high_risk=1 medium_suppressed=1 exclusions_respected=1")
+    print("PHASE7_PRIVACY_GATE_OK uploads=0 broad_storage=0 auto_delete=0 auto_quarantine=0")
+    print("PHASE7_SOURCE_GATE_OK")
 
 
 if __name__ == "__main__":

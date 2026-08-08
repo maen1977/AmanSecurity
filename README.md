@@ -1,23 +1,27 @@
-# Aman Security — Phase 6
+# Aman Security — Phase 7
 
-Android security scanner with strict Arabic/English UI separation, signed threat-database updates, file/APK scanning, installed-app risk review, encrypted quarantine, exact-hash exclusions, local scan history, on-device link scanning, and bounded advanced APK static analysis.
+Android security scanner with strict Arabic/English UI separation, signed threat-database updates, file/APK scanning, installed-app risk review, encrypted quarantine, exact-hash exclusions, local scan history, on-device link scanning, bounded APK static analysis, and conservative semi-real-time protection.
 
-## Phase 6 features
+## Phase 7 features
 
-- Everything from Phases 1–5 remains in place.
-- Selected APK files receive a second local static-analysis pass without installation or execution.
-- Android package metadata, requested permissions, declared high-impact components, certificate identity, archive structure, code-file count, native-library count, and selected code markers are reviewed.
-- A bounded risk model combines several indicators; isolated ordinary permissions do not become malware verdicts.
-- Threat database **schema 3** adds signed package-name and signer-certificate identity indicators.
-- Exact signed identity matches can survive a changed APK file hash when the reviewed signing/package identity remains the same.
-- Bundled Phase 6 identity rows are harmless test signatures only.
-- Temporary analysis copies stay in app cache, are re-hashed against the selected source, and are deleted after analysis.
-- Static APK analysis is local-only and performs no cloud upload or reputation lookup.
+- Everything from Phases 1–6 remains in place.
+- Optional background protection is disabled until the user explicitly enables it after a disclosure.
+- Newly installed or updated user apps trigger an expedited local scan through WorkManager.
+- Background app alerts are limited to `HIGH` or exact `KNOWN_THREAT` results; medium-risk permission combinations do not create noisy notifications.
+- Installed-app scanning now also checks signed package-name and signer-certificate identity indicators from threat-database schema 3.
+- The user may choose one protected folder through Android's Storage Access Framework.
+- The selected folder receives bounded checks for new or changed files at WorkManager's 15-minute minimum periodic interval; Android may defer runs.
+- The protected-folder scanner reuses the signed signature database and Phase 6 APK static analyzer.
+- Exact SHA-256 exclusions suppress a background file alert without changing the underlying detection.
+- Android 13+ notification permission is requested only when background protection is enabled.
+- Recent background alerts are stored locally and can be cleared by the user.
+- Background protection never deletes, quarantines, opens, executes, uploads, or uninstalls anything automatically.
+- No broad storage permission is requested.
 - Arabic and English remain separated through resource-only user-facing text plus the localization gate.
 
-See the security design in:
+See:
 
-`docs/PHASE6_ADVANCED_APK_ANALYSIS.md`
+`docs/PHASE7_BACKGROUND_PROTECTION.md`
 
 ## Signed threat database
 
@@ -29,11 +33,7 @@ The app expects these files at the configured HTTPS update location:
 - `threat-db/url_indicators.csv`
 - `threat-db/apk_indicators.csv`
 
-Schema 3 signs the SHA-256 and metadata for all three indicator databases. Phase 6 refuses an older schema update so link and APK-identity protection cannot be silently downgraded.
-
-## Update-signing key rule
-
-The private RSA signing key is intentionally **not** included in this project. Keep it offline. Only the public verification key is bundled in the Android app.
+Threat database schema 3 remains active in Phase 7. The private RSA signing key is intentionally **not** included in this project. Only the public verification key is bundled in the Android app.
 
 To publish a future signed update:
 
@@ -42,7 +42,7 @@ python3 tools/sign_threat_db.py \
   --private-key /safe/offline/path/AmanSecurity_Phase2_UpdateSigning_PrivateKey.pem \
   --serial 5 \
   --version 2026.08.08.4 \
-  --min-app-version-code 6
+  --min-app-version-code 7
 python3 tools/verify_threat_db.py
 ```
 
@@ -58,4 +58,4 @@ gradle :app:testDebugUnitTest
 gradle :app:assembleDebug
 ```
 
-GitHub Actions runs the checks, unit tests, and Android build and uploads `AmanSecurity-Phase6-APK` as the build artifact.
+GitHub Actions runs the checks, unit tests, and Android build and uploads `AmanSecurity-Phase7-APK` as the build artifact.

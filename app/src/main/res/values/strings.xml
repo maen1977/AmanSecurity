@@ -212,4 +212,43 @@
 
     <string name="reason_apk_identity_test">A safe signed package-identity test indicator matched. It is not a malware verdict.</string>
 
+    <string name="background_protection_title">Background protection</string>
+    <string name="background_protection_body">When enabled, Aman checks newly installed or updated user apps immediately and periodically scans new or changed files inside one folder you choose.</string>
+    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines a file automatically. Android may delay periodic folder checks; app-install checks are event driven.</string>
+    <string name="protection_state_enabled">Protection is enabled</string>
+    <string name="protection_state_disabled">Protection is disabled</string>
+    <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
+    <string name="enable_protection_action">Enable background protection</string>
+    <string name="disable_protection_action">Disable background protection</string>
+    <string name="choose_protected_folder_action">Choose protected folder</string>
+    <string name="check_protected_folder_action">Check protected folder now</string>
+    <string name="protected_folder_none">Protected folder: none selected</string>
+    <string name="protected_folder_line">Protected folder: %1$s</string>
+    <string name="protection_last_check_never">Folder check: not run yet</string>
+    <string name="protection_last_check_line">Last folder check: %1$s • New or changed files scanned: %2$s • Alerts: %3$s</string>
+    <string name="protection_alert_count_zero">Recent protection alerts: 0</string>
+    <string name="protection_alert_count">Recent protection alerts: %1$s</string>
+    <string name="protection_recent_alerts_title">Recent protection activity</string>
+    <string name="protection_no_recent_alerts">No high-risk or known-threat alerts.</string>
+    <string name="protection_event_line">%1$s • %2$s • %3$s</string>
+    <string name="protection_event_file">File</string>
+    <string name="protection_event_app">App</string>
+    <string name="protection_severity_high">High-risk indicators</string>
+    <string name="protection_severity_known">Known threat</string>
+    <string name="clear_protection_alerts_action">Clear protection activity</string>
+    <string name="protection_disclosure_title">Enable background protection?</string>
+    <string name="protection_disclosure_body">Aman will locally inspect newly installed or updated user apps and, if you choose a folder, periodically inspect new or changed files in that folder. File and app inventories are not uploaded. Nothing is deleted or quarantined automatically. Android notification permission is used only for high-risk or known-threat alerts.</string>
+    <string name="protection_continue_action">Enable protection</string>
+    <string name="protection_folder_permission_lost">Access to the protected folder is no longer available. Choose the folder again to resume folder checks.</string>
+    <string name="protection_checking">Checking new or changed files…</string>
+    <string name="protection_check_result">Folder check complete: %1$s file(s) scanned, %2$s alert(s).</string>
+    <string name="protection_check_failed">The protected-folder check could not be completed.</string>
+    <string name="protection_choose_folder_first">Choose a protected folder first.</string>
+    <string name="protection_channel_name">Aman protection alerts</string>
+    <string name="protection_channel_description">High-risk and known-threat alerts from enabled background protection.</string>
+    <string name="protection_notification_known_title">Known threat detected</string>
+    <string name="protection_notification_high_title">High-risk security alert</string>
+    <string name="protection_notification_file_body">Aman detected a security alert in file: %1$s</string>
+    <string name="protection_notification_app_body">Aman detected a security alert after installing or updating: %1$s</string>
+
 </resources>
