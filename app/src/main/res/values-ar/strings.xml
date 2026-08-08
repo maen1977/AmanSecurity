@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">أمان</string>
-    <string name="app_subtitle">المرحلة الثانية لفحص البرمجيات الضارة</string>
+    <string name="app_subtitle">المرحلة الثالثة لفحص الملفات والتطبيقات المثبتة</string>
     <string name="security_status_title">معلومات التهديدات</string>
     <string name="security_status_body">يعتمد فحص الملفات على قاعدة تهديدات موقعة، ولا يتم قبول أي تحديث قبل التحقق منه تشفيريًا.</string>
     <string name="choose_file">اختيار ملف</string>
@@ -31,7 +31,7 @@
     <string name="bytes_value">%1$s بايت</string>
     <string name="scan_failed">تعذر فحص الملف.</string>
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
-    <string name="privacy_note">تبقى الملفات على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
+    <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
     <string name="database_entries">المؤشرات المعروفة: %1$s</string>
     <string name="update_database">تحديث القاعدة</string>
@@ -43,4 +43,48 @@
     <string name="update_invalid_database">تم رفض التحديث لأن حزمة قاعدة البيانات غير صالحة.</string>
     <string name="update_network_error">تعذر الوصول إلى خادم التحديث.</string>
     <string name="safe_wording_note">النتيجة النظيفة تعني فقط عدم العثور على توقيع معروف، ولا تضمن أن الملف آمن.</string>
+
+    <string name="installed_apps_title">التطبيقات المثبتة</string>
+    <string name="installed_apps_body">مراجعة التطبيقات التي ثبتها المستخدم بالاعتماد على توقيعات التهديدات المحلية والصلاحيات المطلوبة ومصدر التثبيت وخدمات إمكانية الوصول وبصمات الحزم.</string>
+    <string name="scan_installed_apps">فحص التطبيقات المثبتة</string>
+    <string name="installed_apps_disclosure_title">فحص التطبيقات المثبتة</string>
+    <string name="installed_apps_disclosure_body">لإجراء هذا الفحص الأمني، يقرأ أمان قائمة التطبيقات المثبتة والصلاحيات المطلوبة ومصدر التثبيت وتعريفات خدمات إمكانية الوصول وبصمات الحزم المحلية. تبقى هذه المعلومات على هذا الجهاز ولا يتم رفعها.</string>
+    <string name="continue_scan">متابعة</string>
+    <string name="cancel">إلغاء</string>
+    <string name="scanning_installed_apps">جارٍ فحص التطبيقات المثبتة…</string>
+    <string name="installed_scan_idle">شغّل الفحص لمراجعة التطبيقات التي ثبتها المستخدم.</string>
+    <string name="installed_scan_summary">تم فحص: %1$s • تحتاج للمراجعة: %2$s • مؤشرات مرتفعة الخطورة: %3$s • تهديدات معروفة: %4$s</string>
+    <string name="installed_scan_failed">تعذر إكمال فحص التطبيقات المثبتة.</string>
+    <string name="installed_scan_no_review">لم يتم العثور على مؤشرات مرتفعة في التطبيقات التي ثبتها المستخدم وتم فحصها.</string>
+    <string name="installed_scan_more">هناك %1$s تطبيقات إضافية تحتاج للمراجعة.</string>
+    <string name="installed_scan_note">مؤشرات الصلاحيات والسلوك توفر سياقًا أمنيًا، لكنها لا تثبت وحدها أن التطبيق ضار.</string>
+    <string name="app_risk_low">لا توجد مؤشرات مرتفعة</string>
+    <string name="app_risk_medium">يحتاج للمراجعة</string>
+    <string name="app_risk_high">مؤشرات مرتفعة الخطورة</string>
+    <string name="app_risk_known">توقيع تهديد معروف</string>
+    <string name="risk_score_line">درجة المؤشرات: %1$s من 100</string>
+    <string name="package_name_line">اسم الحزمة: %1$s</string>
+    <string name="version_name_line">الإصدار: %1$s</string>
+    <string name="install_source_line">مصدر التثبيت: %1$s</string>
+    <string name="source_store">متجر تطبيقات</string>
+    <string name="source_local_file">ملف محلي</string>
+    <string name="source_downloaded_file">ملف تم تنزيله</string>
+    <string name="source_other">مصدر آخر</string>
+    <string name="source_unknown">مصدر غير معروف</string>
+    <string name="indicators_title">المؤشرات</string>
+    <string name="indicator_accessibility">يعرّف خدمة لإمكانية الوصول</string>
+    <string name="indicator_overlay">يمكنه الظهور فوق التطبيقات الأخرى</string>
+    <string name="indicator_install_packages">يمكنه طلب تثبيت تطبيقات</string>
+    <string name="indicator_sms">يطلب الوصول إلى الرسائل النصية</string>
+    <string name="indicator_contacts">يطلب الوصول إلى جهات الاتصال</string>
+    <string name="indicator_call_log">يطلب الوصول إلى سجل المكالمات</string>
+    <string name="indicator_microphone">يطلب الوصول إلى الميكروفون</string>
+    <string name="indicator_camera">يطلب الوصول إلى الكاميرا</string>
+    <string name="indicator_location">يطلب الموقع الدقيق</string>
+    <string name="indicator_boot">يمكنه البدء بعد تشغيل الجهاز</string>
+    <string name="indicator_non_store">تم تثبيته خارج متجر تطبيقات معروف أو تعذر التحقق من مصدره</string>
+    <string name="apk_hash_line">بصمة الحزمة المثبتة SHA-256: %1$s</string>
+    <string name="certificate_hash_line">بصمة شهادة التوقيع SHA-256: %1$s</string>
+    <string name="threat_reference_line">الرقم المرجعي للتهديد: %1$s</string>
+    <string name="no_indicators_detail">لا توجد مؤشرات مرتفعة في الصلاحيات أو مصدر التثبيت.</string>
 </resources>

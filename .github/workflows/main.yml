@@ -43,12 +43,15 @@ jobs:
       - name: Run Aman Security quality gate
         run: python3 tools/quality_gate.py
 
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace
 
       - name: Upload Aman Security APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-Phase2-APK
+          name: AmanSecurity-Phase3-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

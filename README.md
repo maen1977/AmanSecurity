@@ -1,20 +1,29 @@
-# Aman Security — Phase 2
+# Aman Security — Phase 3
 
-Android malware scanner foundation with Arabic/English UI separation and cryptographically signed threat-database updates.
+Android security scanner with strict Arabic/English UI separation, signed threat-database updates, file/APK scanning, and local installed-app risk review.
 
-## Phase 2 features
+## Phase 3 features
 
-- Local SHA-256 file/APK scanning.
-- Bundled signed threat database with harmless EICAR test signature plus seed Android threat hashes.
-- User-triggered threat database updates from the repository `threat-db/` folder.
-- HTTPS-only update transport.
-- RSA/SHA-256 signature verification before an update can be activated.
-- SHA-256 content validation, entry-count validation, duplicate rejection, size limits, and rollback protection using a monotonic `serial`.
-- Invalid downloaded databases automatically fall back to the bundled verified database.
-- No broad storage permission; files are selected through Android's document picker.
-- Strict Arabic and English string catalogs with an automated localization gate.
+- Everything from Phase 2 remains in place.
+- User-triggered scan of user-installed Android apps.
+- Installed app inventory is processed locally on the device and is not uploaded.
+- System packages and Aman Security itself are excluded from the user-app review list.
+- Checks requested permissions, declared accessibility services, and install-source category.
+- Calculates the installed base package SHA-256 fingerprint and compares it with the active signed threat database.
+- Calculates the signing-certificate SHA-256 fingerprint for technical review and later reputation features.
+- Risk scoring emphasizes suspicious combinations instead of labeling a normal permission as malware.
+- A known local threat-database hash overrides heuristic scoring and is classified as a known threat.
+- Prominent first-use disclosure before the installed-app inventory is scanned.
+- The UI shows only apps that need review; low-indicator apps are counted in the summary without creating noise.
+- Strict Arabic and English resources with an automated localization gate.
 
-## Update URL
+## Package visibility
+
+Phase 3 declares `android.permission.QUERY_ALL_PACKAGES` because broad installed-app visibility is part of the core antivirus/security function. Installed-app data stays on-device. Before Google Play publication, complete the package-visibility permission declaration and keep the store disclosure/privacy policy aligned with the in-app disclosure. See:
+
+`docs/PLAY_QUERY_ALL_PACKAGES_DECLARATION.md`
+
+## Threat database update URL
 
 The Android app is configured for:
 
@@ -36,7 +45,7 @@ python3 tools/sign_threat_db.py \
 python3 tools/verify_threat_db.py
 ```
 
-Then commit only the three files under `threat-db/`. Never commit the private key.
+Commit only the three files under `threat-db/`. Never commit the private key.
 
 ## Quality checks
 
@@ -44,4 +53,8 @@ Then commit only the three files under `threat-db/`. Never commit the private ke
 python3 tools/verify_localization.py
 python3 tools/verify_threat_db.py
 python3 tools/quality_gate.py
+gradle :app:testDebugUnitTest
+gradle :app:assembleDebug
 ```
+
+GitHub Actions runs the checks, unit tests, and Android build automatically and uploads `AmanSecurity-Phase3-APK` as the build artifact.

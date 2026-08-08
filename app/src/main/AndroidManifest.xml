@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Phase 2 uses INTERNET only to retrieve cryptographically signed threat-database updates. -->
+    <!-- Internet is used only for cryptographically signed threat-database updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Core antivirus functionality: inspect the user-installed app inventory locally on-device. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
         android:allowBackup="false"
