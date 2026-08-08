@@ -36,7 +36,7 @@ class UrlScannerTest {
         assertTrue(result.signals.contains(UrlRiskSignal.USER_INFO))
         assertTrue(result.signals.contains(UrlRiskSignal.IP_ADDRESS_HOST))
         assertTrue(result.signals.contains(UrlRiskSignal.NON_STANDARD_PORT))
-        assertTrue(result.riskScore >= 45)
+        assertTrue(result.riskScore >= 55)
     }
 
     @Test

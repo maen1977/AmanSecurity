@@ -2,6 +2,8 @@ package com.aman.security.protection
 
 import com.aman.security.scanner.AppRiskLevel
 import com.aman.security.scanner.ScanClassification
+import com.aman.security.scanner.ScanDetectionReason
+import com.aman.security.scanner.ScanResult
 
 object ProtectionPolicy {
     const val MAX_GENERAL_FILE_BYTES = 64L * 1024L * 1024L
@@ -25,18 +27,20 @@ object ProtectionPolicy {
         return sizeBytes < 0L || sizeBytes <= limit
     }
 
-    fun shouldNotifyFile(classification: ScanClassification, excluded: Boolean): Boolean {
+    fun shouldNotifyFile(result: ScanResult, excluded: Boolean): Boolean {
         if (excluded) return false
-        return classification == ScanClassification.KNOWN_THREAT ||
-            classification == ScanClassification.SUSPICIOUS
+        if (result.classification == ScanClassification.KNOWN_THREAT) return true
+        return result.classification == ScanClassification.SUSPICIOUS &&
+            result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK
     }
 
     fun shouldNotifyApp(level: AppRiskLevel): Boolean =
         level == AppRiskLevel.HIGH || level == AppRiskLevel.KNOWN_THREAT
 
-    fun severityForFile(classification: ScanClassification): ProtectionSeverity? = when (classification) {
-        ScanClassification.KNOWN_THREAT -> ProtectionSeverity.KNOWN_THREAT
-        ScanClassification.SUSPICIOUS -> ProtectionSeverity.HIGH_RISK
+    fun severityForFile(result: ScanResult): ProtectionSeverity? = when {
+        result.classification == ScanClassification.KNOWN_THREAT -> ProtectionSeverity.KNOWN_THREAT
+        result.classification == ScanClassification.SUSPICIOUS &&
+            result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK -> ProtectionSeverity.HIGH_RISK
         else -> null
     }
 

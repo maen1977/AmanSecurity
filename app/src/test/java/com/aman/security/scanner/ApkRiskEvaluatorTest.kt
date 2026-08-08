@@ -18,7 +18,7 @@ class ApkRiskEvaluatorTest {
             setOf(ApkRiskSignal.ACCESSIBILITY_SERVICE, ApkRiskSignal.OVERLAY_PERMISSION)
         )
         assertEquals(ApkRiskLevel.HIGH, result.level)
-        assertTrue(result.score >= 45)
+        assertTrue(result.score >= 55)
     }
 
     @Test
@@ -33,7 +33,7 @@ class ApkRiskEvaluatorTest {
             )
         )
         assertEquals(ApkRiskLevel.HIGH, result.level)
-        assertTrue(result.score >= 45)
+        assertTrue(result.score >= 55)
     }
 
     @Test
@@ -49,6 +49,6 @@ class ApkRiskEvaluatorTest {
             setOf(ApkRiskSignal.DYNAMIC_CODE_LOADING, ApkRiskSignal.RUNTIME_EXECUTION)
         )
         assertEquals(ApkRiskLevel.REVIEW, result.level)
-        assertTrue(result.score in 20..44)
+        assertTrue(result.score in 20..54)
     }
 }

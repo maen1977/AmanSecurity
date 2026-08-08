@@ -1,8 +1,8 @@
-# Google Play package-visibility declaration notes
+# Google Play package-visibility declaration notes — Aman Security 1.0.0
 
-Aman Security Phase 3 uses `android.permission.QUERY_ALL_PACKAGES` only for its core antivirus/security function: the user explicitly starts an installed-app scan and the app inspects user-installed packages on-device.
+Aman Security uses `android.permission.QUERY_ALL_PACKAGES` only for its core antivirus/security function: reviewing user-installed applications locally on the device, both during an explicit installed-app scan and, when background protection is enabled by the user, after a package is installed or updated.
 
-## Data accessed during the scan
+## Data accessed
 
 - Installed package identity and app label.
 - Requested permissions.
@@ -13,12 +13,13 @@ Aman Security Phase 3 uses `android.permission.QUERY_ALL_PACKAGES` only for its 
 
 ## Data handling
 
-- Installed-app inventory and scan details are processed locally on the device.
-- They are not uploaded to the threat database server.
-- Internet access is used only by the separate signed threat-database updater.
+- Installed-app inventory and scan details are processed locally.
+- They are not uploaded to the threat-database host or an analytics service in this project version.
+- Internet access is used by the separate signed threat-database updater.
 - System packages and Aman Security itself are excluded from the user-app risk list.
-- Permission signals are presented as indicators, not proof of malware.
+- Permission and behavior signals are presented as risk indicators, not proof of malware.
+- Background alerts are limited to known threat matches or high-risk combinations.
 
 ## Play Console preparation
 
-Before publishing on Google Play, submit the required declaration for broad package visibility and describe installed-app scanning as a core user-facing antivirus function. Keep the in-app disclosure aligned with the store listing and privacy policy.
+Before publishing, submit the broad package-visibility permission declaration and describe installed-app antivirus scanning prominently as a core user-facing function in the store listing. Keep the Play declaration, in-app disclosure, Data safety answers, and hosted privacy policy consistent with the distributed build.

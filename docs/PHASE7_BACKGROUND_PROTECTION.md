@@ -20,7 +20,7 @@ Only `HIGH` and `KNOWN_THREAT` results create a background security alert. Mediu
 
 The user can choose one folder through Android's Storage Access Framework. Aman persists read access only to that chosen tree URI. It does not request `MANAGE_EXTERNAL_STORAGE`, legacy storage permissions, or access to every file on the device.
 
-A WorkManager job checks the chosen folder at Android's minimum periodic interval of 15 minutes. Android may defer that work for battery and scheduling reasons, so this feature is intentionally described as semi-real-time rather than real-time.
+Phase 7 originally used Android's 15-minute minimum periodic interval. In the Phase 8 release candidate this was deliberately relaxed to a 60-minute cadence with battery-not-low and storage-not-low constraints to reduce background cost. Android may still defer that work, so the feature remains intentionally described as semi-real-time rather than real-time.
 
 The folder scanner:
 

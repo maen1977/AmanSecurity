@@ -42,7 +42,7 @@ class AppRiskEvaluatorTest {
             )
         )
         assertEquals(AppRiskLevel.HIGH, result.level)
-        assertTrue(result.score >= 45)
+        assertTrue(result.score >= 55)
     }
 
     @Test
@@ -59,7 +59,7 @@ class AppRiskEvaluatorTest {
             )
         )
         assertEquals(AppRiskLevel.HIGH, result.level)
-        assertTrue(result.score >= 45)
+        assertTrue(result.score >= 55)
     }
 
     @Test

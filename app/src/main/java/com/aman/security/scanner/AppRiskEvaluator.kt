@@ -42,13 +42,13 @@ object AppRiskEvaluator {
         // never proof that an application is malicious.
         if (AppRiskSignal.ACCESSIBILITY_SERVICE in signals && AppRiskSignal.OVERLAY in signals) score += 18
         if (AppRiskSignal.ACCESSIBILITY_SERVICE in signals && AppRiskSignal.INSTALL_PACKAGES in signals) score += 18
-        if (AppRiskSignal.SMS_ACCESS in signals && AppRiskSignal.CONTACTS_ACCESS in signals) score += 12
+        if (AppRiskSignal.SMS_ACCESS in signals && AppRiskSignal.CONTACTS_ACCESS in signals) score += 14
         if (AppRiskSignal.SMS_ACCESS in signals && AppRiskSignal.BOOT_START in signals) score += 8
         if (AppRiskSignal.MICROPHONE in signals && AppRiskSignal.PRECISE_LOCATION in signals && AppRiskSignal.BOOT_START in signals) score += 10
 
         val boundedScore = score.coerceIn(0, 99)
         val level = when {
-            boundedScore >= 45 -> AppRiskLevel.HIGH
+            boundedScore >= 55 -> AppRiskLevel.HIGH
             boundedScore >= 20 -> AppRiskLevel.MEDIUM
             else -> AppRiskLevel.LOW
         }

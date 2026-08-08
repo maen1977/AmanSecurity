@@ -47,7 +47,7 @@ def main():
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "0.7.0-phase7"', "versionCode = 7", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "1.0.0"', "versionCode = 8", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
@@ -148,10 +148,10 @@ def main():
     notifier7 = (protection_dir / "ProtectionNotifier.kt").read_text(encoding="utf-8")
     events7 = (protection_dir / "ProtectionEventStore.kt").read_text(encoding="utf-8")
 
-    require(policy7, ["MAX_DOCUMENTS_PER_RUN", "MAX_SCAN_FILES_PER_RUN", "MAX_TREE_DEPTH", "KNOWN_THREAT", "SUSPICIOUS", "excluded"], "PHASE7_POLICY_GATE")
+    require(policy7, ["MAX_DOCUMENTS_PER_RUN", "MAX_SCAN_FILES_PER_RUN", "MAX_TREE_DEPTH", "KNOWN_THREAT", "SUSPICIOUS", "APK_STATIC_HIGH_RISK", "excluded"], "PHASE7_POLICY_GATE")
     require(preferences7, ["protectedTreeUri", "ledger", "MAX_LEDGER_ENTRIES", "folderPermissionLost"], "PHASE7_PREFERENCES_GATE")
     require(folder7, ["DocumentsContract", "persistedUriPermissions", "MAX_DOCUMENTS_PER_RUN", "MAX_SCAN_FILES_PER_RUN", "recordStore.isExcluded", "ProtectionPolicy.shouldNotifyFile"], "PHASE7_FOLDER_GATE")
-    require(scheduler7, ["PeriodicWorkRequestBuilder<ProtectedFolderWorker>(15, TimeUnit.MINUTES)", "setExpedited", "scanNewPackage", "cancelAllWorkByTag"], "PHASE7_SCHEDULER_GATE")
+    require(scheduler7, ["PeriodicWorkRequestBuilder<ProtectedFolderWorker>(60, TimeUnit.MINUTES)", "Constraints.Builder()", "setRequiresBatteryNotLow(true)", "setRequiresStorageNotLow(true)", "setBackoffCriteria", "setExpedited", "scanNewPackage", "cancelAllWorkByTag"], "PHASE7_SCHEDULER_GATE")
     require(receiver7, ["Intent.ACTION_PACKAGE_ADDED", "ProtectionPreferences(context).enabled", "scanNewPackage"], "PHASE7_PACKAGE_RECEIVER_GATE")
     require(package_worker7, ["scanPackageByName", "shouldNotifyApp", "ProtectionNotifier.notifyEvent"], "PHASE7_PACKAGE_WORKER_GATE")
     require(notifier7, ["POST_NOTIFICATIONS", "NotificationChannel", "IMPORTANCE_HIGH", "ProtectionEventType.FILE", "ProtectionEventType.APP"], "PHASE7_NOTIFICATION_GATE")
@@ -168,6 +168,15 @@ def main():
     if found:
         raise SystemExit(f"PHASE7_NO_AUTO_REMEDIATION_GATE_FAILED code={found}")
 
+    network_security = (ROOT / "app/src/main/res/xml/network_security_config.xml").read_text(encoding="utf-8")
+    freshness = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseHealth.kt").read_text(encoding="utf-8")
+    workflow8 = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
+    require(manifest, ['android:usesCleartextTraffic="false"', 'android:networkSecurityConfig="@xml/network_security_config"', '@mipmap/ic_launcher'], "PHASE8_MANIFEST_GATE")
+    require(network_security, ['cleartextTrafficPermitted="false"', '<certificates src="system"'], "PHASE8_NETWORK_GATE")
+    require(gradle, ['versionName = "1.0.0"', 'versionCode = 8', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
+    require(freshness, ["ThreatDatabaseFreshness", "CURRENT_DAYS", "AGING_DAYS", "Instant.parse"], "PHASE8_FRESHNESS_GATE")
+    require(workflow8, ["tools/release_gate.py", ":app:lintRelease", ":app:bundleRelease", "ANDROID_KEYSTORE_BASE64", "jarsigner -verify"], "PHASE8_CI_GATE")
+
     apk_db = ROOT / "app/src/main/assets/threat-db/apk_indicators.csv"
     if not apk_db.is_file():
         raise SystemExit("PHASE6_IDENTITY_DATABASE_GATE_FAILED missing_bundled_apk_db")
@@ -183,10 +192,14 @@ def main():
     print("PHASE6_STATIC_APK_GATE_OK manifest=1 signer=1 components=1 archive_bounds=1 dex_markers=1 no_execution=1")
     print("PHASE6_IDENTITY_GATE_OK signed_signer_indicators=1 signed_package_indicators=1 hash_change_resilient=1")
     print("PHASE6_RISK_GATE_OK combined_signals=1 single_signal_conservative=1 known_identity_override=1")
-    print("PHASE7_BACKGROUND_GATE_OK package_added=event_driven folder_scan=workmanager_15m saf_tree=1")
+    print("PHASE7_BACKGROUND_GATE_OK package_added=event_driven folder_scan=workmanager_60m_battery_aware saf_tree=1")
     print("PHASE7_ALERT_GATE_OK known_threat=1 high_risk=1 medium_suppressed=1 exclusions_respected=1")
     print("PHASE7_PRIVACY_GATE_OK uploads=0 broad_storage=0 auto_delete=0 auto_quarantine=0")
     print("PHASE7_SOURCE_GATE_OK")
+    print("PHASE8_HARDENING_GATE_OK cleartext=0 r8=1 resource_shrink=1 adaptive_icon=1 dark_theme=1")
+    print("PHASE8_FALSE_POSITIVE_GATE_OK high_threshold=55 background_low_confidence_suppressed=1")
+    print("PHASE8_PERFORMANCE_GATE_OK folder_period_minutes=60 battery_not_low=1 storage_not_low=1 backoff=exponential")
+    print("PHASE8_SOURCE_GATE_OK")
 
 
 if __name__ == "__main__":

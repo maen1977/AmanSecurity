@@ -114,8 +114,8 @@ class ProtectedFolderScanner(
                     }
 
                     val excluded = recordStore.isExcluded(result.sha256)
-                    if (ProtectionPolicy.shouldNotifyFile(result.classification, excluded)) {
-                        val severity = ProtectionPolicy.severityForFile(result.classification) ?: continue
+                    if (ProtectionPolicy.shouldNotifyFile(result, excluded)) {
+                        val severity = ProtectionPolicy.severityForFile(result) ?: continue
                         val event = eventStore.add(
                             type = ProtectionEventType.FILE,
                             displayName = result.fileName,

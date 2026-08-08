@@ -1,6 +1,8 @@
 package com.aman.security.protection
 
 import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -15,7 +17,13 @@ object ProtectionScheduler {
     private const val IMMEDIATE_WORK_NAME = "aman_protected_folder_immediate"
 
     fun enable(context: Context) {
-        val request = PeriodicWorkRequestBuilder<ProtectedFolderWorker>(15, TimeUnit.MINUTES)
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .setRequiresStorageNotLow(true)
+            .build()
+        val request = PeriodicWorkRequestBuilder<ProtectedFolderWorker>(60, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_WORK_NAME,
@@ -33,7 +41,9 @@ object ProtectionScheduler {
     }
 
     fun checkNow(context: Context) {
-        val request = OneTimeWorkRequestBuilder<ProtectedFolderWorker>().build()
+        val request = OneTimeWorkRequestBuilder<ProtectedFolderWorker>()
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             IMMEDIATE_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
@@ -45,6 +55,7 @@ object ProtectionScheduler {
         val request = OneTimeWorkRequestBuilder<NewPackageScanWorker>()
             .setInputData(workDataOf(NewPackageScanWorker.KEY_PACKAGE_NAME to packageName))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
             .addTag(PACKAGE_SCAN_TAG)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(

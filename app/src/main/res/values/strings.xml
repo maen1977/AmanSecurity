@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Aman Security</string>
-    <string name="app_subtitle">Phase 5 file, app, quarantine, and link protection</string>
+    <string name="app_subtitle">On-device malware, app, link, and background protection</string>
     <string name="security_status_title">Threat intelligence</string>
     <string name="security_status_body">File and link scanning use a signed threat database. Updates are accepted only after cryptographic verification.</string>
     <string name="choose_file">Choose file</string>
@@ -43,7 +43,6 @@
     <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
     <string name="update_network_error">Could not reach the update server.</string>
     <string name="safe_wording_note">A clean result only means no known signature was found. It is not a guarantee that a file is safe.</string>
-
     <string name="installed_apps_title">Installed apps</string>
     <string name="installed_apps_body">Review user-installed apps using local threat signatures, requested permissions, install source, accessibility services, and package fingerprints.</string>
     <string name="scan_installed_apps">Scan installed apps</string>
@@ -87,7 +86,6 @@
     <string name="certificate_hash_line">Signing certificate SHA-256: %1$s</string>
     <string name="threat_reference_line">Threat reference: %1$s</string>
     <string name="no_indicators_detail">No elevated permission or install-source indicators.</string>
-
     <string name="quarantine_action">Quarantine</string>
     <string name="add_exclusion_action">Add exclusion</string>
     <string name="remove_exclusion_action">Remove exclusion</string>
@@ -135,7 +133,6 @@
     <string name="clear_history_action">Clear scan history</string>
     <string name="clear_history_confirm_title">Clear scan history?</string>
     <string name="clear_history_confirm_body">This removes saved scan-history records. It does not delete quarantined files or exclusions.</string>
-
     <string name="url_protection_title">Link protection</string>
     <string name="url_protection_body">Scan a web link locally before opening it. Aman checks signed link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
     <string name="url_input_hint">Paste or type a web link</string>
@@ -168,7 +165,6 @@
     <string name="url_threat_reference_line">Link threat reference: %1$s</string>
     <string name="url_privacy_note">Link scanning is on-device. The link is not sent to Aman or to a third-party lookup service.</string>
     <string name="url_share_note">You can also use the Android Share menu on a text link and choose Aman Security.</string>
-
     <string name="apk_analysis_title">Advanced APK analysis</string>
     <string name="apk_analysis_low">No elevated static indicators</string>
     <string name="apk_analysis_review">Static indicators need review</string>
@@ -209,12 +205,10 @@
     <string name="reason_apk_invalid">The file uses an APK extension, but Android package metadata could not be parsed. Treat the archive as untrusted until its source is verified.</string>
     <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a signed threat indicator, even though the file SHA-256 may differ.</string>
     <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
-
     <string name="reason_apk_identity_test">A safe signed package-identity test indicator matched. It is not a malware verdict.</string>
-
     <string name="background_protection_title">Background protection</string>
-    <string name="background_protection_body">When enabled, Aman checks newly installed or updated user apps immediately and periodically scans new or changed files inside one folder you choose.</string>
-    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines a file automatically. Android may delay periodic folder checks; app-install checks are event driven.</string>
+    <string name="background_protection_body">When enabled, Aman scans user-installed or updated apps promptly and periodically checks new or changed files inside one folder you choose.</string>
+    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Android may defer the battery-aware folder check; app-install scans are event driven.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -250,5 +244,10 @@
     <string name="protection_notification_high_title">High-risk security alert</string>
     <string name="protection_notification_file_body">Aman detected a security alert in file: %1$s</string>
     <string name="protection_notification_app_body">Aman detected a security alert after installing or updating: %1$s</string>
-
+    <string name="app_version">Version %1$s</string>
+    <string name="database_freshness_current">Threat data is current • Generated %1$s</string>
+    <string name="database_freshness_aging">Threat data is aging • Generated %1$s</string>
+    <string name="database_freshness_stale">Threat data is stale; update it before relying on scans • Generated %1$s</string>
+    <string name="database_freshness_unknown">Threat-data age could not be verified • Generated %1$s</string>
+    <string name="database_date_unknown">unknown date</string>
 </resources>

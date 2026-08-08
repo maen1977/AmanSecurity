@@ -8,3 +8,11 @@ app/build/
 # Never commit offline update-signing private keys.
 *private*.pem
 *private*.key
+
+# Release signing material must stay outside source control.
+*.jks
+*.keystore
+keystore.properties
+release-signing.properties
+*.p12
+*.pfx

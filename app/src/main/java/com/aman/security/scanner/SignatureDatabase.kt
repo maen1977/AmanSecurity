@@ -9,6 +9,7 @@ class SignatureDatabase(private val context: Context) {
         val fileEntries: Int,
         val urlEntries: Int,
         val apkIdentityEntries: Int,
+        val generatedAt: String,
         val downloaded: Boolean
     ) {
         val entries: Int get() = fileEntries + urlEntries + apkIdentityEntries
@@ -41,6 +42,7 @@ class SignatureDatabase(private val context: Context) {
             fileEntries = active.signatures.size,
             urlEntries = active.urlIndicators.size,
             apkIdentityEntries = active.apkIdentityIndicators.size,
+            generatedAt = active.manifest.generatedAt,
             downloaded = downloaded
         )
 

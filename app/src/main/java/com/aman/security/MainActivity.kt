@@ -45,6 +45,8 @@ import com.aman.security.scanner.ScanDetectionReason
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.ThreatDatabaseUpdater
+import com.aman.security.scanner.ThreatDatabaseFreshness
+import com.aman.security.scanner.ThreatDatabaseHealth
 import com.aman.security.scanner.SharedUrlExtractor
 import com.aman.security.scanner.UrlRiskLevel
 import com.aman.security.scanner.UrlRiskSignal
@@ -62,6 +64,7 @@ import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
+import java.time.Instant
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -166,12 +169,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderDatabaseInfo() {
         val info = database.info
+        binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
         binding.txtDatabaseVersion.text = getString(R.string.database_version, info.version)
         binding.txtDatabaseEntries.text = getString(
             R.string.database_entries,
             NumberFormat.getIntegerInstance().format(info.fileEntries),
             NumberFormat.getIntegerInstance().format(info.urlEntries),
             NumberFormat.getIntegerInstance().format(info.apkIdentityEntries)
+        )
+        val generated = runCatching { Date.from(Instant.parse(info.generatedAt)) }.getOrNull()
+        val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
+        binding.txtDatabaseFreshness.text = getString(
+            when (ThreatDatabaseHealth.classify(info.generatedAt)) {
+                ThreatDatabaseFreshness.CURRENT -> R.string.database_freshness_current
+                ThreatDatabaseFreshness.AGING -> R.string.database_freshness_aging
+                ThreatDatabaseFreshness.STALE -> R.string.database_freshness_stale
+                ThreatDatabaseFreshness.UNKNOWN -> R.string.database_freshness_unknown
+            },
+            formattedDate
         )
     }
 

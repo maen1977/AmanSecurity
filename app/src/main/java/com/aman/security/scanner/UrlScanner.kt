@@ -68,7 +68,7 @@ class UrlScanner(
 
         score = score.coerceAtMost(100)
         val level = when {
-            score >= 45 -> UrlRiskLevel.HIGH
+            score >= 55 -> UrlRiskLevel.HIGH
             score >= 20 -> UrlRiskLevel.REVIEW
             else -> UrlRiskLevel.LOW
         }

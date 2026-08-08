@@ -44,7 +44,7 @@ object ApkRiskEvaluator {
 
         val bounded = score.coerceIn(0, 100)
         val level = when {
-            bounded >= 45 -> ApkRiskLevel.HIGH
+            bounded >= 55 -> ApkRiskLevel.HIGH
             bounded >= 20 -> ApkRiskLevel.REVIEW
             else -> ApkRiskLevel.LOW
         }

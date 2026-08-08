@@ -7,6 +7,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,24 +37,79 @@ jobs:
         with:
           gradle-version: "8.13"
 
+      - name: Configure optional release upload key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/aman-upload.jks"
+            chmod 600 "$RUNNER_TEMP/aman-upload.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/aman-upload.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "RELEASE_SIGNING_CONFIGURED=true" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_SIGNING_CONFIGURED=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Check Arabic and English localization
         run: python3 tools/verify_localization.py
 
       - name: Verify signed threat database
         run: python3 tools/verify_threat_db.py
 
-      - name: Run Aman Security quality gate
+      - name: Run source quality gate
         run: python3 tools/quality_gate.py
+
+      - name: Run release-readiness gate
+        run: python3 tools/release_gate.py
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
 
-      - name: Build Debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Run release lint
+        run: gradle :app:lintRelease --stacktrace
 
-      - name: Upload Aman Security APK
+      - name: Build debug APK and release App Bundle
+        run: gradle :app:assembleDebug :app:bundleRelease --stacktrace
+
+      - name: Verify signed release bundle when upload key is configured
+        if: env.RELEASE_SIGNING_CONFIGURED == 'true'
+        run: jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+
+      - name: Write build summary
+        shell: bash
+        run: |
+          if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
+            echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
+            echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
+            echo "Release AAB is unsigned because upload-key secrets were not configured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-Phase7-APK
+          name: AmanSecurity-1.0.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Upload release App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanSecurity-1.0.0-Release-AAB
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanSecurity-1.0.0-R8-Mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
