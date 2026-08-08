@@ -5,14 +5,16 @@ import android.content.Context
 object ThreatDbValidator {
     data class ValidatedPackage(
         val manifest: ThreatDbManifest,
-        val signatures: Map<String, ThreatSignature>
+        val signatures: Map<String, ThreatSignature>,
+        val urlIndicators: Map<String, UrlThreatIndicator>
     )
 
     fun validate(
         context: Context,
         manifestBytes: ByteArray,
         signatureBytes: ByteArray,
-        databaseBytes: ByteArray
+        databaseBytes: ByteArray,
+        urlDatabaseBytes: ByteArray? = null
     ): ValidatedPackage {
         require(manifestBytes.size <= 64 * 1024)
         require(signatureBytes.size <= 16 * 1024)
@@ -26,15 +28,35 @@ object ThreatDbValidator {
         val parsed = databaseBytes.toString(Charsets.UTF_8)
             .lineSequence()
             .filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
-            .mapNotNull(::parseLine)
+            .mapNotNull(::parseFileLine)
             .toList()
         require(parsed.size == manifest.entries)
         require(parsed.map { it.sha256 }.distinct().size == parsed.size)
 
-        return ValidatedPackage(manifest, parsed.associateBy { it.sha256 })
+        val urls = if (manifest.schema >= 2) {
+            val urlBytes = requireNotNull(urlDatabaseBytes)
+            require(urlBytes.size <= 32 * 1024 * 1024)
+            require(ThreatDbCrypto.sha256(urlBytes) == manifest.urlDbSha256)
+            val parsedUrls = urlBytes.toString(Charsets.UTF_8)
+                .lineSequence()
+                .filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
+                .mapNotNull(::parseUrlLine)
+                .toList()
+            require(parsedUrls.size == manifest.urlEntries)
+            require(parsedUrls.map { "${it.kind}:${it.sha256}" }.distinct().size == parsedUrls.size)
+            parsedUrls
+        } else {
+            emptyList()
+        }
+
+        return ValidatedPackage(
+            manifest = manifest,
+            signatures = parsed.associateBy { it.sha256 },
+            urlIndicators = urls.associateBy { "${it.kind}:${it.sha256}" }
+        )
     }
 
-    private fun parseLine(line: String): ThreatSignature? {
+    private fun parseFileLine(line: String): ThreatSignature? {
         val parts = line.split('|')
         if (parts.size != 3) return null
         val hash = parts[0].trim().lowercase()
@@ -47,5 +69,17 @@ object ThreatDbValidator {
             return null
         }
         return ThreatSignature(hash, id, classification)
+    }
+
+    private fun parseUrlLine(line: String): UrlThreatIndicator? {
+        val parts = line.split('|')
+        if (parts.size != 4) return null
+        val kind = runCatching { UrlIndicatorKind.valueOf(parts[0].trim()) }.getOrNull() ?: return null
+        val hash = parts[1].trim().lowercase()
+        if (!hash.matches(Regex("^[a-f0-9]{64}$"))) return null
+        val id = parts[2].trim()
+        if (!id.matches(Regex("^[A-Z0-9_]{3,96}$"))) return null
+        val classification = runCatching { UrlThreatClassification.valueOf(parts[3].trim()) }.getOrNull() ?: return null
+        return UrlThreatIndicator(kind, hash, id, classification)
     }
 }

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Aman Security</string>
-    <string name="app_subtitle">Phase 3 file and installed-app scanner</string>
+    <string name="app_subtitle">Phase 5 file, app, quarantine, and link protection</string>
     <string name="security_status_title">Threat intelligence</string>
-    <string name="security_status_body">File scanning uses a signed threat database. Updates are accepted only after cryptographic verification.</string>
+    <string name="security_status_body">File and link scanning use a signed threat database. Updates are accepted only after cryptographic verification.</string>
     <string name="choose_file">Choose file</string>
     <string name="scan_file">Scan file</string>
     <string name="change_language">Language</string>
@@ -31,14 +31,14 @@
     <string name="bytes_value">%1$s bytes</string>
     <string name="scan_failed">The file could not be scanned.</string>
     <string name="file_access_error">File access error</string>
-    <string name="privacy_note">Files and installed-app scan data stay on the device. Internet access is used only for signed threat-database updates.</string>
+    <string name="privacy_note">Files, installed-app scan data, and scanned links stay on the device. Internet access is used only for signed threat-database updates.</string>
     <string name="database_version">Threat database: %1$s</string>
-    <string name="database_entries">Known indicators: %1$s</string>
+    <string name="database_entries">File indicators: %1$s • Link indicators: %2$s</string>
     <string name="update_database">Update database</string>
     <string name="update_idle">Updates are verified before activation.</string>
     <string name="update_checking">Checking for a signed update…</string>
     <string name="update_up_to_date">Threat database is up to date.</string>
-    <string name="update_success">Updated to %1$s with %2$s indicators.</string>
+    <string name="update_success">Updated to %1$s with %2$s file indicators and %3$s link indicators.</string>
     <string name="update_invalid_signature">Update rejected: digital signature verification failed.</string>
     <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
     <string name="update_network_error">Could not reach the update server.</string>
@@ -135,4 +135,37 @@
     <string name="clear_history_action">Clear scan history</string>
     <string name="clear_history_confirm_title">Clear scan history?</string>
     <string name="clear_history_confirm_body">This removes saved scan-history records. It does not delete quarantined files or exclusions.</string>
+
+    <string name="url_protection_title">Link protection</string>
+    <string name="url_protection_body">Scan a web link locally before opening it. Aman checks signed link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
+    <string name="url_input_hint">Paste or type a web link</string>
+    <string name="scan_link_action">Scan link</string>
+    <string name="url_result_not_scanned">Enter a link or share one to Aman Security.</string>
+    <string name="url_result_invalid">Invalid or unsupported link</string>
+    <string name="url_result_low">No known link threat found</string>
+    <string name="url_result_review">Link needs review</string>
+    <string name="url_result_high">High-risk link indicators</string>
+    <string name="url_result_phishing">Known phishing link detected</string>
+    <string name="url_result_malware">Known malicious link detected</string>
+    <string name="url_result_test">Harmless link-test signature detected</string>
+    <string name="url_reason_invalid">Only valid web links using the standard web protocols can be scanned.</string>
+    <string name="url_reason_low">The normalized link is not in the active link-indicator database and no elevated combination of local indicators was found. This does not guarantee that the site is safe.</string>
+    <string name="url_reason_known">A cryptographic link or host fingerprint matches the active signed threat database.</string>
+    <string name="url_reason_test">This reserved test link verifies the link-detection path without directing you to a malicious site.</string>
+    <string name="url_indicators_title">Link indicators</string>
+    <string name="url_no_elevated_indicators">No elevated heuristic indicators.</string>
+    <string name="url_signal_http">Uses an unencrypted web connection</string>
+    <string name="url_signal_ip_host">Uses a numeric network address instead of a domain name</string>
+    <string name="url_signal_punycode">Uses an internationalized encoded domain label</string>
+    <string name="url_signal_user_info">Contains user-information syntax before the host, which can disguise the real destination</string>
+    <string name="url_signal_port">Uses a non-standard network port</string>
+    <string name="url_signal_subdomains">Uses an unusually deep subdomain chain</string>
+    <string name="url_signal_long">The link is unusually long</string>
+    <string name="url_signal_keywords">Contains account, verification, payment, or login-related wording</string>
+    <string name="url_host_line">Host: %1$s</string>
+    <string name="url_score_line">Indicator score: %1$s/100</string>
+    <string name="url_normalized_line">Normalized link: %1$s</string>
+    <string name="url_threat_reference_line">Link threat reference: %1$s</string>
+    <string name="url_privacy_note">Link scanning is on-device. The link is not sent to Aman or to a third-party lookup service.</string>
+    <string name="url_share_note">You can also use the Android Share menu on a text link and choose Aman Security.</string>
 </resources>

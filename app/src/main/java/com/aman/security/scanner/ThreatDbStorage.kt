@@ -24,8 +24,13 @@ class ThreatDbStorage(private val context: Context) {
         return fallback
     }
 
-    fun install(manifestBytes: ByteArray, signatureBytes: ByteArray, databaseBytes: ByteArray) {
-        val validated = ThreatDbValidator.validate(context, manifestBytes, signatureBytes, databaseBytes)
+    fun install(
+        manifestBytes: ByteArray,
+        signatureBytes: ByteArray,
+        databaseBytes: ByteArray,
+        urlDatabaseBytes: ByteArray?
+    ) {
+        val validated = ThreatDbValidator.validate(context, manifestBytes, signatureBytes, databaseBytes, urlDatabaseBytes)
         val serial = validated.manifest.serial
         val finalDir = File(packages, serial.toString())
         val staging = File(packages, ".staging-$serial")
@@ -37,6 +42,9 @@ class ThreatDbStorage(private val context: Context) {
         File(staging, "manifest.json").writeBytes(manifestBytes)
         File(staging, "manifest.sig").writeBytes(signatureBytes)
         File(staging, "signatures.csv").writeBytes(databaseBytes)
+        if (validated.manifest.schema >= 2) {
+            File(staging, "url_indicators.csv").writeBytes(requireNotNull(urlDatabaseBytes))
+        }
 
         val staged = loadFromDirectory(staging) ?: run {
             staging.deleteRecursively()
@@ -67,12 +75,19 @@ class ThreatDbStorage(private val context: Context) {
         loadFromDirectory(File(packages, serial.toString()))
 
     private fun loadFromDirectory(dir: File): ThreatDbValidator.ValidatedPackage? {
-        val manifest = File(dir, "manifest.json")
+        val manifestFile = File(dir, "manifest.json")
         val signature = File(dir, "manifest.sig")
         val database = File(dir, "signatures.csv")
-        if (!manifest.isFile || !signature.isFile || !database.isFile) return null
+        if (!manifestFile.isFile || !signature.isFile || !database.isFile) return null
         return runCatching {
-            ThreatDbValidator.validate(context, manifest.readBytes(), signature.readBytes(), database.readBytes())
+            val manifestBytes = manifestFile.readBytes()
+            val manifest = ThreatDbManifest.parse(manifestBytes)
+            val urlBytes = if (manifest.schema >= 2) {
+                val urlFile = File(dir, "url_indicators.csv")
+                if (!urlFile.isFile) return null
+                urlFile.readBytes()
+            } else null
+            ThreatDbValidator.validate(context, manifestBytes, signature.readBytes(), database.readBytes(), urlBytes)
         }.getOrNull()
     }
 

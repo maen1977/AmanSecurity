@@ -1,5 +1,6 @@
 package com.aman.security
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -25,6 +26,11 @@ import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.ThreatDatabaseUpdater
+import com.aman.security.scanner.SharedUrlExtractor
+import com.aman.security.scanner.UrlRiskLevel
+import com.aman.security.scanner.UrlRiskSignal
+import com.aman.security.scanner.UrlScanResult
+import com.aman.security.scanner.UrlScanner
 import com.aman.security.security.ExclusionEntry
 import com.aman.security.security.QuarantineEntry
 import com.aman.security.security.QuarantineManager
@@ -44,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanner: FileScanner
     private lateinit var installedAppScanner: InstalledAppScanner
     private lateinit var updater: ThreatDatabaseUpdater
+    private lateinit var urlScanner: UrlScanner
     private lateinit var recordStore: SecurityRecordStore
     private lateinit var quarantineManager: QuarantineManager
     private var selectedUri: Uri? = null
@@ -86,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         scanner = FileScanner(contentResolver, database)
         installedAppScanner = InstalledAppScanner(this, database)
         updater = ThreatDatabaseUpdater(this, database)
+        urlScanner = UrlScanner(database::findUrl)
         recordStore = SecurityRecordStore(this)
         quarantineManager = QuarantineManager(this, recordStore)
         renderDatabaseInfo()
@@ -94,17 +102,29 @@ class MainActivity : AppCompatActivity() {
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
+        binding.btnScanUrl.setOnClickListener { scanUrlInput() }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
         binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
         binding.btnExclusion.setOnClickListener { toggleExclusion() }
         binding.btnClearHistory.setOnClickListener { confirmClearHistory() }
+        handleIncomingIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
     }
 
     private fun renderDatabaseInfo() {
         val info = database.info
         binding.txtDatabaseVersion.text = getString(R.string.database_version, info.version)
-        binding.txtDatabaseEntries.text = getString(R.string.database_entries, NumberFormat.getIntegerInstance().format(info.entries))
+        binding.txtDatabaseEntries.text = getString(
+            R.string.database_entries,
+            NumberFormat.getIntegerInstance().format(info.fileEntries),
+            NumberFormat.getIntegerInstance().format(info.urlEntries)
+        )
     }
 
     private fun updateThreatDatabase() {
@@ -120,7 +140,8 @@ class MainActivity : AppCompatActivity() {
                     binding.txtUpdateStatus.text = getString(
                         R.string.update_success,
                         result.version,
-                        NumberFormat.getIntegerInstance().format(result.entries)
+                        NumberFormat.getIntegerInstance().format(result.fileEntries),
+                        NumberFormat.getIntegerInstance().format(result.urlEntries)
                     )
                 }
                 ThreatDatabaseUpdater.Result.InvalidSignature -> binding.txtUpdateStatus.setText(R.string.update_invalid_signature)
@@ -128,6 +149,85 @@ class MainActivity : AppCompatActivity() {
                 ThreatDatabaseUpdater.Result.NetworkError -> binding.txtUpdateStatus.setText(R.string.update_network_error)
             }
         }
+    }
+
+    private fun handleIncomingIntent(incoming: Intent?) {
+        if (incoming?.action != Intent.ACTION_SEND || incoming.type != "text/plain") return
+        val candidate = SharedUrlExtractor.firstCandidate(incoming.getStringExtra(Intent.EXTRA_TEXT)) ?: return
+        binding.edtUrl.setText(candidate)
+        scanUrl(candidate)
+    }
+
+    private fun scanUrlInput() {
+        scanUrl(binding.edtUrl.text?.toString().orEmpty())
+    }
+
+    private fun scanUrl(value: String) {
+        val result = urlScanner.scan(value)
+        renderUrlResult(result)
+    }
+
+    private fun renderUrlResult(result: UrlScanResult) {
+        binding.txtUrlClassification.setText(
+            when (result.riskLevel) {
+                UrlRiskLevel.INVALID -> R.string.url_result_invalid
+                UrlRiskLevel.LOW -> R.string.url_result_low
+                UrlRiskLevel.REVIEW -> R.string.url_result_review
+                UrlRiskLevel.HIGH -> R.string.url_result_high
+                UrlRiskLevel.KNOWN_PHISHING -> R.string.url_result_phishing
+                UrlRiskLevel.KNOWN_MALICIOUS -> R.string.url_result_malware
+                UrlRiskLevel.TEST_SIGNATURE -> R.string.url_result_test
+            }
+        )
+
+        binding.txtUrlReason.text = when (result.riskLevel) {
+            UrlRiskLevel.INVALID -> getString(R.string.url_reason_invalid)
+            UrlRiskLevel.LOW -> getString(R.string.url_reason_low)
+            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS -> getString(R.string.url_reason_known)
+            UrlRiskLevel.TEST_SIGNATURE -> getString(R.string.url_reason_test)
+            UrlRiskLevel.REVIEW, UrlRiskLevel.HIGH -> formatUrlSignals(result.signals)
+        }
+
+        if (result.normalizedUrl == null || result.host == null) {
+            binding.txtUrlTechnical.text = ""
+            return
+        }
+
+        binding.txtUrlTechnical.text = buildString {
+            append(getString(R.string.url_host_line, result.host))
+            append('\n')
+            append(getString(R.string.url_score_line, NumberFormat.getIntegerInstance().format(result.riskScore)))
+            append('\n')
+            append(getString(R.string.url_normalized_line, result.normalizedUrl))
+            if (result.threatReference != null) {
+                append('\n')
+                append(getString(R.string.url_threat_reference_line, result.threatReference))
+            }
+        }
+    }
+
+    private fun formatUrlSignals(signals: Set<UrlRiskSignal>): String {
+        if (signals.isEmpty()) return getString(R.string.url_no_elevated_indicators)
+        return buildString {
+            append(getString(R.string.url_indicators_title))
+            signals.forEach { signal ->
+                append('\n')
+                append('•')
+                append(' ')
+                append(getString(urlSignalString(signal)))
+            }
+        }
+    }
+
+    private fun urlSignalString(signal: UrlRiskSignal): Int = when (signal) {
+        UrlRiskSignal.PLAIN_HTTP -> R.string.url_signal_http
+        UrlRiskSignal.IP_ADDRESS_HOST -> R.string.url_signal_ip_host
+        UrlRiskSignal.PUNYCODE_HOST -> R.string.url_signal_punycode
+        UrlRiskSignal.USER_INFO -> R.string.url_signal_user_info
+        UrlRiskSignal.NON_STANDARD_PORT -> R.string.url_signal_port
+        UrlRiskSignal.MANY_SUBDOMAINS -> R.string.url_signal_subdomains
+        UrlRiskSignal.LONG_URL -> R.string.url_signal_long
+        UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
     }
 
     private fun requestInstalledAppsScan() {

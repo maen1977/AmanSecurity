@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">أمان</string>
-    <string name="app_subtitle">المرحلة الثالثة لفحص الملفات والتطبيقات المثبتة</string>
+    <string name="app_subtitle">المرحلة الخامسة لحماية الملفات والتطبيقات والحجر والروابط</string>
     <string name="security_status_title">معلومات التهديدات</string>
-    <string name="security_status_body">يعتمد فحص الملفات على قاعدة تهديدات موقعة، ولا يتم قبول أي تحديث قبل التحقق منه تشفيريًا.</string>
+    <string name="security_status_body">يعتمد فحص الملفات والروابط على قاعدة تهديدات موقعة، ولا يتم قبول أي تحديث قبل التحقق منه تشفيريًا.</string>
     <string name="choose_file">اختيار ملف</string>
     <string name="scan_file">فحص الملف</string>
     <string name="change_language">اللغة</string>
@@ -31,14 +31,14 @@
     <string name="bytes_value">%1$s بايت</string>
     <string name="scan_failed">تعذر فحص الملف.</string>
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
-    <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
+    <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة والروابط المفحوصة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
-    <string name="database_entries">المؤشرات المعروفة: %1$s</string>
+    <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s</string>
     <string name="update_database">تحديث القاعدة</string>
     <string name="update_idle">يتم التحقق من التحديثات قبل تفعيلها.</string>
     <string name="update_checking">جارٍ التحقق من وجود تحديث موقع…</string>
     <string name="update_up_to_date">قاعدة التهديدات محدثة.</string>
-    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشرًا.</string>
+    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط.</string>
     <string name="update_invalid_signature">تم رفض التحديث لأن التحقق من التوقيع الرقمي فشل.</string>
     <string name="update_invalid_database">تم رفض التحديث لأن حزمة قاعدة البيانات غير صالحة.</string>
     <string name="update_network_error">تعذر الوصول إلى خادم التحديث.</string>
@@ -135,4 +135,37 @@
     <string name="clear_history_action">مسح سجل الفحص</string>
     <string name="clear_history_confirm_title">مسح سجل الفحص؟</string>
     <string name="clear_history_confirm_body">سيؤدي هذا إلى إزالة سجلات الفحص المحفوظة، ولن يحذف الملفات المحجورة أو الاستثناءات.</string>
+
+    <string name="url_protection_title">حماية الروابط</string>
+    <string name="url_protection_body">افحص رابط ويب محليًا قبل فتحه. يتحقق أمان من مؤشرات الروابط الموقعة ويجمع عدة مؤشرات لاحتمال التصيد دون اعتبار أي مؤشر واحد دليلًا قاطعًا.</string>
+    <string name="url_input_hint">الصق رابط ويب أو اكتبه</string>
+    <string name="scan_link_action">فحص الرابط</string>
+    <string name="url_result_not_scanned">أدخل رابطًا أو شاركه إلى أمان.</string>
+    <string name="url_result_invalid">الرابط غير صالح أو غير مدعوم</string>
+    <string name="url_result_low">لم يتم العثور على تهديد رابط معروف</string>
+    <string name="url_result_review">الرابط يحتاج إلى مراجعة</string>
+    <string name="url_result_high">مؤشرات مرتفعة الخطورة في الرابط</string>
+    <string name="url_result_phishing">تم اكتشاف رابط تصيد معروف</string>
+    <string name="url_result_malware">تم اكتشاف رابط ضار معروف</string>
+    <string name="url_result_test">تم اكتشاف توقيع اختبار آمن للروابط</string>
+    <string name="url_reason_invalid">يمكن فحص روابط الويب الصالحة التي تستخدم بروتوكولات الويب القياسية فقط.</string>
+    <string name="url_reason_low">الرابط بعد توحيده غير موجود في قاعدة مؤشرات الروابط النشطة، ولم يتم العثور على مجموعة مؤشرات محلية مرتفعة. هذا لا يضمن أن الموقع آمن.</string>
+    <string name="url_reason_known">تطابقت بصمة تشفيرية للرابط أو المضيف مع قاعدة التهديدات الموقعة النشطة.</string>
+    <string name="url_reason_test">هذا رابط اختبار محجوز للتحقق من مسار كشف الروابط دون توجيهك إلى موقع ضار.</string>
+    <string name="url_indicators_title">مؤشرات الرابط</string>
+    <string name="url_no_elevated_indicators">لا توجد مؤشرات تحليلية مرتفعة.</string>
+    <string name="url_signal_http">يستخدم اتصال ويب غير مشفر</string>
+    <string name="url_signal_ip_host">يستخدم عنوان شبكة رقميًا بدل اسم نطاق</string>
+    <string name="url_signal_punycode">يستخدم اسم نطاق دوليًا بترميز خاص</string>
+    <string name="url_signal_user_info">يحتوي صيغة معلومات مستخدم قبل المضيف وقد تخفي الوجهة الحقيقية</string>
+    <string name="url_signal_port">يستخدم منفذ شبكة غير قياسي</string>
+    <string name="url_signal_subdomains">يستخدم سلسلة عميقة بشكل غير معتاد من النطاقات الفرعية</string>
+    <string name="url_signal_long">الرابط طويل بشكل غير معتاد</string>
+    <string name="url_signal_keywords">يحتوي كلمات مرتبطة بالحساب أو التحقق أو الدفع أو تسجيل الدخول</string>
+    <string name="url_host_line">المضيف: %1$s</string>
+    <string name="url_score_line">درجة المؤشرات: %1$s من 100</string>
+    <string name="url_normalized_line">الرابط بعد التوحيد: %1$s</string>
+    <string name="url_threat_reference_line">الرقم المرجعي لتهديد الرابط: %1$s</string>
+    <string name="url_privacy_note">يتم فحص الرابط على الجهاز، ولا يتم إرساله إلى أمان أو إلى خدمة فحص خارجية.</string>
+    <string name="url_share_note">يمكنك أيضًا استخدام قائمة المشاركة في أندرويد على رابط نصي واختيار أمان.</string>
 </resources>

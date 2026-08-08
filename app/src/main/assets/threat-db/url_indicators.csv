@@ -1,0 +1,5 @@
+# kind|sha256|id|classification
+# URL/host values are stored only as SHA-256 hashes. No live malicious URL is bundled.
+# Reserved .test indicators are included only to verify the detection path safely.
+HOST|8c0da6076b802d89d0b34ae7c15dde3d6e410e5a91aa00e9ebb535dc61dca1d0|URLTEST0001|TEST_SIGNATURE
+URL|0d51ee2fcbc128a194d7b2db53c668fde104df6766a5dac008a4588958ccac35|URLTEST0002|TEST_SIGNATURE

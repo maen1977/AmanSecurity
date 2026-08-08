@@ -35,6 +35,13 @@ def main():
         if missing_en:
             fail(f"English missing keys: {missing_en}", errors)
 
+    PLACEHOLDER_RE = re.compile(r"%(?:\d+\$)?[sdif]")
+    for key in sorted(set(en) & set(ar)):
+        en_placeholders = sorted(PLACEHOLDER_RE.findall(en[key]))
+        ar_placeholders = sorted(PLACEHOLDER_RE.findall(ar[key]))
+        if en_placeholders != ar_placeholders:
+            fail(f"Placeholder mismatch for '{key}': en={en_placeholders} ar={ar_placeholders}", errors)
+
     for key, text in en.items():
         if ARABIC_RE.search(text):
             fail(f"Arabic script leaked into English key '{key}': {text}", errors)

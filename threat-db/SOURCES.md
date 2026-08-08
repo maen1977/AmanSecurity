@@ -11,3 +11,7 @@ This folder contains cryptographic hashes only. It never contains malware sample
 | 2026052401 | ad9f39e6166a47ae16359777b607055198cda23f004d9d7b066e22c0d0cf1e6d | MalwareBazaar Android dropper sample |
 
 Before publishing future updates, review source confidence and false-positive risk, increase the manifest serial, and sign the manifest with the offline private update key.
+
+## Phase 5 link indicators
+
+Phase 5 adds `url_indicators.csv`. The bundled URL rows are hashes of reserved `.test` values only, used as harmless test signatures. No live malicious URL is bundled. Future production URL/hash additions should come from reviewed high-confidence feeds, use exact URL hashes where broad host blocking could create false positives, and be signed with a higher manifest serial before publication.

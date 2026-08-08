@@ -1,10 +1,13 @@
 {
-  "schema": 1,
-  "serial": 2,
-  "version": "2026.08.08.1",
-  "generatedAt": "2026-08-08T11:27:00Z",
-  "minAppVersionCode": 2,
+  "schema": 2,
+  "serial": 3,
+  "version": "2026.08.08.2",
+  "generatedAt": "2026-08-08T13:23:45Z",
+  "minAppVersionCode": 5,
   "entries": 5,
   "dbPath": "signatures.csv",
-  "dbSha256": "5474ae29f423cda99dc34e7f18d844b4355dcae7681c5918feb0aedf5123c44f"
+  "dbSha256": "5474ae29f423cda99dc34e7f18d844b4355dcae7681c5918feb0aedf5123c44f",
+  "urlEntries": 2,
+  "urlDbPath": "url_indicators.csv",
+  "urlDbSha256": "7eac97ea04b1bfa5229012db535df952e3c8906f45dcae4a46d46319df576701"
 }

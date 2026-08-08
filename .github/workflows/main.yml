@@ -52,6 +52,6 @@ jobs:
       - name: Upload Aman Security APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-Phase4-APK
+          name: AmanSecurity-Phase5-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

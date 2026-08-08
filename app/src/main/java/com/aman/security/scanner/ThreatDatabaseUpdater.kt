@@ -12,7 +12,7 @@ class ThreatDatabaseUpdater(
 ) {
     sealed class Result {
         data object UpToDate : Result()
-        data class Updated(val version: String, val entries: Int) : Result()
+        data class Updated(val version: String, val fileEntries: Int, val urlEntries: Int) : Result()
         data object InvalidSignature : Result()
         data object InvalidDatabase : Result()
         data object NetworkError : Result()
@@ -31,16 +31,24 @@ class ThreatDatabaseUpdater(
             val manifest = runCatching { ThreatDbManifest.parse(manifestBytes) }
                 .getOrElse { return Result.InvalidDatabase }
             if (manifest.minAppVersionCode > BuildConfig.VERSION_CODE) return Result.InvalidDatabase
+            if (manifest.schema < 2) return Result.InvalidDatabase
             if (manifest.serial <= database.info.serial) return Result.UpToDate
 
             val dbBytes = download(base + manifest.dbPath, 16 * 1024 * 1024)
+            val urlBytes = if (manifest.schema >= 2) {
+                download(base + requireNotNull(manifest.urlDbPath), 32 * 1024 * 1024)
+            } else null
             val validated = runCatching {
-                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes)
+                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes, urlBytes)
             }.getOrElse { return Result.InvalidDatabase }
 
-            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes)
+            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes, urlBytes)
             database.reloadAfterUpdate()
-            Result.Updated(validated.manifest.version, validated.signatures.size)
+            Result.Updated(
+                validated.manifest.version,
+                validated.signatures.size,
+                validated.urlIndicators.size
+            )
         } catch (_: java.io.IOException) {
             Result.NetworkError
         } catch (_: Exception) {
