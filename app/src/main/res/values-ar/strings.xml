@@ -33,12 +33,12 @@
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
     <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة والروابط المفحوصة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
-    <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s • مؤشرات هوية APK: %3$s</string>
+    <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s • مؤشرات هوية APK: %3$s • سجلات الكشف: %4$s</string>
     <string name="update_database">تحديث القاعدة</string>
     <string name="update_idle">يتم التحقق من التحديثات قبل تفعيلها.</string>
     <string name="update_checking">جارٍ التحقق من وجود تحديث موقع…</string>
     <string name="update_up_to_date">قاعدة التهديدات محدثة.</string>
-    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط و%4$s مؤشر هوية APK.</string>
+    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط و%4$s مؤشر هوية APK و%5$s سجل كشف.</string>
     <string name="update_invalid_signature">تم رفض التحديث لأن التحقق من التوقيع الرقمي فشل.</string>
     <string name="update_invalid_database">تم رفض التحديث لأن حزمة قاعدة البيانات غير صالحة.</string>
     <string name="update_network_error">تعذر الوصول إلى خادم التحديث.</string>
@@ -250,4 +250,23 @@
     <string name="database_freshness_stale">بيانات التهديد قديمة؛ حدّثها قبل الاعتماد على الفحص • أُنشئت %1$s</string>
     <string name="database_freshness_unknown">تعذر التحقق من عمر بيانات التهديد • أُنشئت %1$s</string>
     <string name="database_date_unknown">تاريخ غير معروف</string>
+
+    <string name="reason_apk_multi_engine_known">تطابق مؤشر تهديد مؤكد عبر التحليل متعدد المحركات لملف APK.</string>
+    <string name="detection_engine_summary">درجة المحركات المتعددة: %1$s من 100 • المحركات المستقلة: %2$s • العائلة المحتملة: %3$s</string>
+    <string name="detection_engine_evidence">أدلة متقدمة: %1$s تطابق قواعد • %2$s مؤشر شبكة • %3$s مؤشر شفرة • النموذج المحلي: %4$s</string>
+    <string name="family_unknown">غير معروف</string>
+    <string name="family_malware">برمجية ضارة</string>
+    <string name="family_trojan">حصان طروادة</string>
+    <string name="family_spyware">برمجية تجسس</string>
+    <string name="family_stalkerware">برمجية مراقبة خفية</string>
+    <string name="family_banker">برمجية مصرفية ضارة</string>
+    <string name="family_rat">برمجية تحكم عن بعد</string>
+    <string name="family_dropper">برمجية تنزيل وإسقاط</string>
+    <string name="family_ransomware">برمجية فدية</string>
+    <string name="family_phishing">تصيد احتيالي</string>
+    <string name="family_riskware">برمجية عالية المخاطر</string>
+    <string name="family_adware">برمجية إعلانية مزعجة</string>
+    <string name="family_test">مؤشر اختبار آمن</string>
+    <string name="cloud_reputation_title">سمعة سحابية اختيارية لبصمة الملف</string>
+    <string name="cloud_reputation_note">عند التفعيل، يرسل أمان بصمة SHA-256 للملف المحدد فقط إلى خدمة السمعة المهيأة، ولا يرفع الملف نفسه.</string>
 </resources>

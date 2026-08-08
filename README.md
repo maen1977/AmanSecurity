@@ -1,43 +1,86 @@
-# Aman Security 1.0.0 — Release Candidate
+# Aman Security 1.1.0 — Detection Engine Upgrade
 
-A bilingual Android security scanner with strict Arabic/English UI separation, cryptographically signed threat-database updates, file/APK scanning, installed-app risk review, encrypted quarantine, exact-hash exclusions, local scan history, on-device link analysis, bounded APK static analysis, and conservative background protection.
+Aman Security is a bilingual Android mobile-security scanner with strict Arabic/English UI separation. Version `1.1.0` upgrades the project from a signature/risk scanner into a layered anti-malware architecture while keeping Android privacy and sandbox limits explicit.
 
-## Phase 8 / release hardening
+## What 1.1.0 adds
 
-- Production version `1.0.0` (`versionCode 8`) targeting Android 16 / API 36.
-- Release R8 minification and resource shrinking.
-- Cleartext networking disabled through Android network-security configuration.
-- Adaptive launcher icon plus explicit light/dark resources.
-- Threat-database freshness shown in the UI without claiming that a clean result guarantees safety.
-- More conservative heuristic thresholds: isolated indicators remain review context, while known signed indicators continue to override heuristics.
-- Background file notifications suppress low-confidence reasons such as a double extension or unparsable APK; confirmed signatures and high static-risk APK combinations still alert.
-- Protected-folder periodic scanning is battery/storage aware and runs on a one-hour WorkManager cadence; package-install scans remain event driven.
-- Release signing is injected only from environment/GitHub secrets; no Android private signing key is included.
-- CI runs localization/database/source/release gates, unit tests, release lint, debug APK build, and release AAB build.
-- Dependabot configuration tracks Gradle and GitHub Actions updates.
-- Release checklist, signing guide, and privacy-policy draft are included under `docs/`.
+1. **Refreshable threat intelligence** — signed file, URL/host/IP, APK identity, reputation, source/family/confidence/first-seen metadata, protected-brand, rule, and local-model records.
+2. **YARA-style local signature rules** — rules combine required and optional static markers without executing the APK.
+3. **Deeper bounded DEX inspection** — dynamic loading, command execution, SMS APIs, device identifiers, screen capture, clipboard, installer/downloader, reflection, networking, encryption, and native loading markers.
+4. **Behavior-combination analysis** — stronger conclusions require meaningful combinations such as Accessibility + overlay or SMS + contacts + boot persistence.
+5. **Packing/obfuscation indicators** — known packer entry names, secondary DEX payloads, reflection-heavy dynamic-code patterns.
+6. **Network IOC extraction** — bounded extraction of URLs/domains from scanned DEX bytes and local matching against the signed URL database.
+7. **Reputation engine** — file, signer, package, and host reputation records can be carried by the signed rules database.
+8. **Impersonation detection** — protected-brand package profiles identify look-alikes as low-confidence context, not an automatic malware verdict.
+9. **Spyware/stalkerware specialization** — dedicated families and behavior chains for spyware, stalkerware, banker, RAT, dropper, ransomware, phishing, adware, and riskware.
+10. **Static behavioral detection** — code/manifest evidence is combined into behavior findings without running untrusted APK code.
+11. **Optional cloud hash reputation** — disabled by default; only available when an HTTPS reputation endpoint is configured and the user opts in. The client sends the SHA-256 identifier for a user-selected APK scan only, never the APK file; background installed-app scans stay local.
+12. **Local ML inference** — lightweight logistic inference uses signed model weights. A training utility is included, but production weights must be trained and benchmarked on a reviewed labeled dataset before making strong detection claims.
+13. **Multi-engine verdict system** — independent engines contribute weighted evidence; confirmed malicious indicators override heuristics.
+14. **False-positive controls** — one low-confidence heuristic cannot produce a high verdict; exact allowlisting caps heuristic escalation while preserving the underlying findings.
+15. **Threat-family classification** — malware, trojan, spyware, stalkerware, banker, RAT, dropper, ransomware, phishing, riskware, adware, and safe test signatures.
+16. **Scheduled signed database updates** — WorkManager checks for signed threat updates every 12 hours when network is available and battery is not low.
+17. **Separated scanner engines** — signature, behavior, network, impersonation, local-model, reputation, and verdict logic are separate modules.
+18. **Regression/benchmark tooling** — unit tests cover the new pure detection engines; `tools/benchmark_detection.py` calculates detection rate, false-positive rate, and precision from labeled exported scores.
+19. **Post-install deep protection** — newly installed/updated user apps receive the deeper static analysis path; broad inventory scans retain the faster layer to control battery/CPU use.
+20. **Release upgrade** — version `1.1.0` (`versionCode 9`), API 36, R8/resource shrinking, release AAB support, and one automatic GitHub Actions workflow.
+
+## Existing protection retained
+
+- File/APK SHA-256 scan and signed threat database.
+- Installed-app permission/source/signing-certificate review.
+- Encrypted AES-GCM quarantine backed by Android Keystore; no automatic deletion/quarantine.
+- Exact-hash exclusions and bounded local scan history.
+- Local URL/phishing scanner and Android share-to-scan flow.
+- SAF protected-folder scanning without broad storage permission.
+- Event-driven scan after package installation/update.
+- Cleartext networking disabled in release.
+- Strict English/Arabic localization gate.
+
+## Detection-safety model
+
+Aman Security does **not** claim that any antivirus can identify every harmful program or every zero-day. Detection quality depends on the breadth, freshness, and review quality of threat intelligence plus real-world false-positive testing. The project therefore separates confirmed indicators from heuristic/ML findings and exposes confidence instead of treating a single permission or obfuscation marker as proof of malware.
+
+No malware binary is bundled or downloaded by the threat-intelligence tooling. `tools/update_threat_intel.py` imports indicators only. After reviewing database changes, the maintainer must increment/sign the manifest using the offline update-signing key; the private key must never be committed or packaged with the app.
+
+## Threat intelligence maintenance
+
+Example indicator-only imports:
+
+```bash
+export ABUSECH_AUTH_KEY='...'
+python3 tools/update_threat_intel.py --malwarebazaar --urlhaus --limit 1000
+python3 tools/update_threat_intel.py --phishing-file reviewed_phishing_urls.txt --limit 5000
+python3 tools/update_threat_intel.py --reputation-file reviewed_reputation.csv --limit 5000
+```
+
+Then review the diff, update/sign the manifest with the offline key, and run the full gates before publishing the database. See `threat-db/SOURCES.md` and `docs/DETECTION_ENGINE_1_1.md`.
+
+## Local model training and benchmarking
+
+```bash
+python3 tools/train_local_model.py labeled_features.csv > model_rows.txt
+python3 tools/benchmark_detection.py labeled_scores.csv --threshold 55
+```
+
+The included on-device model is a small inference layer, not a substitute for confirmed signatures, reputation, or behavior analysis.
 
 ## Build checks
 
 ```bash
 python3 tools/verify_localization.py
 python3 tools/verify_threat_db.py
+python3 tools/detection_gate.py
 python3 tools/quality_gate.py
 python3 tools/release_gate.py
+python3 tools/verify_single_workflow.py
 gradle :app:testDebugUnitTest :app:lintRelease :app:assembleDebug :app:bundleRelease
 ```
 
-When GitHub release-signing secrets are configured, the AAB is signed with the upload key and verified by `jarsigner`. Without those secrets the source remains fully buildable, but the release AAB is unsigned and is not Play-upload ready.
+## GitHub Actions — exactly one automatic workflow
 
-See `docs/RELEASE_CHECKLIST.md`, `docs/RELEASE_SIGNING.md`, and `docs/PRIVACY_POLICY_DRAFT.md`.
+The repository contains exactly one workflow file: `.github/workflows/main.yml`. It runs automatically on pushes to `main`, retains manual `workflow_dispatch` as a fallback, and uses `concurrency` with `cancel-in-progress: true` so a newer push replaces an older in-progress build instead of creating a pile of simultaneous builds.
 
-## GitHub Actions: single workflow policy
+If this project is copied over an older repository, remove old YAML files already committed under `.github/workflows/` once; copying new files does not delete old repository files.
 
-This release contains exactly one workflow file: `.github/workflows/main.yml`.
-It runs automatically on every push to `main`, while keeping exactly one workflow file. `concurrency` cancels an older in-progress build when a newer push arrives. A manual `workflow_dispatch` fallback is also available from GitHub Actions.
-The workflow also has a concurrency guard and cancels an older in-progress build if a newer manual build is started.
-
-Important: uploading these files over an existing repository does not delete old workflow YAML files already committed on GitHub. Before running this release, remove every old `.yml`/`.yaml` under `.github/workflows/` except `main.yml` once.
-
-## Lint compatibility fix
-This package keeps minSdk 26 while removing API 27/29-only theme attributes from base resources. Android 12/13+ manifest attributes are explicitly acknowledged for lint using `tools:targetApi="33"`. The repository still contains exactly one manually triggered workflow: `.github/workflows/main.yml`.
+See also `docs/RELEASE_CHECKLIST.md`, `docs/RELEASE_SIGNING.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `docs/CLOUD_REPUTATION.md`.

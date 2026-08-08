@@ -58,6 +58,9 @@ import com.aman.security.security.QuarantineManager
 import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
+import com.aman.security.update.ThreatUpdateScheduler
+import com.aman.security.detection.ThreatFamily
+import com.aman.security.detection.CloudReputationPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,6 +81,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var quarantineManager: QuarantineManager
     private lateinit var protectionPreferences: ProtectionPreferences
     private lateinit var protectionEventStore: ProtectionEventStore
+    private lateinit var cloudReputationPreferences: CloudReputationPreferences
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var pendingRestoreId: String? = null
@@ -132,7 +136,9 @@ class MainActivity : AppCompatActivity() {
         quarantineManager = QuarantineManager(this, recordStore)
         protectionPreferences = ProtectionPreferences(this)
         protectionEventStore = ProtectionEventStore(this)
+        cloudReputationPreferences = CloudReputationPreferences(this)
         ProtectionNotifier.ensureChannel(this)
+        ThreatUpdateScheduler.schedule(this)
         renderDatabaseInfo()
         renderSecurityManagement()
         renderProtectionStatus()
@@ -153,6 +159,7 @@ class MainActivity : AppCompatActivity() {
             protectionEventStore.clear()
             renderProtectionStatus()
         }
+        configureCloudReputation()
         handleIncomingIntent(intent)
     }
 
@@ -167,6 +174,20 @@ class MainActivity : AppCompatActivity() {
         handleIncomingIntent(intent)
     }
 
+    private fun configureCloudReputation() {
+        val available = BuildConfig.REPUTATION_API_BASE_URL.isNotBlank()
+        binding.switchCloudReputation.visibility = if (available) View.VISIBLE else View.GONE
+        binding.txtCloudReputationNote.visibility = if (available) View.VISIBLE else View.GONE
+        if (!available) {
+            cloudReputationPreferences.enabled = false
+            return
+        }
+        binding.switchCloudReputation.isChecked = cloudReputationPreferences.enabled
+        binding.switchCloudReputation.setOnCheckedChangeListener { _, checked ->
+            cloudReputationPreferences.enabled = checked
+        }
+    }
+
     private fun renderDatabaseInfo() {
         val info = database.info
         binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
@@ -175,7 +196,8 @@ class MainActivity : AppCompatActivity() {
             R.string.database_entries,
             NumberFormat.getIntegerInstance().format(info.fileEntries),
             NumberFormat.getIntegerInstance().format(info.urlEntries),
-            NumberFormat.getIntegerInstance().format(info.apkIdentityEntries)
+            NumberFormat.getIntegerInstance().format(info.apkIdentityEntries),
+            NumberFormat.getIntegerInstance().format(info.detectionEntries)
         )
         val generated = runCatching { Date.from(Instant.parse(info.generatedAt)) }.getOrNull()
         val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
@@ -205,7 +227,8 @@ class MainActivity : AppCompatActivity() {
                         result.version,
                         NumberFormat.getIntegerInstance().format(result.fileEntries),
                         NumberFormat.getIntegerInstance().format(result.urlEntries),
-                        NumberFormat.getIntegerInstance().format(result.apkIdentityEntries)
+                        NumberFormat.getIntegerInstance().format(result.apkIdentityEntries),
+                        NumberFormat.getIntegerInstance().format(result.detectionEntries)
                     )
                 }
                 ThreatDatabaseUpdater.Result.InvalidSignature -> binding.txtUpdateStatus.setText(R.string.update_invalid_signature)
@@ -660,6 +683,7 @@ class MainActivity : AppCompatActivity() {
             ScanDetectionReason.UNKNOWN_APK -> R.string.reason_unknown_apk
             ScanDetectionReason.DOUBLE_EXTENSION -> R.string.reason_double_extension
             ScanDetectionReason.APK_STATIC_HIGH_RISK -> R.string.reason_apk_static_high_risk
+            ScanDetectionReason.APK_MULTI_ENGINE_KNOWN -> R.string.reason_apk_multi_engine_known
             ScanDetectionReason.APK_INVALID -> R.string.reason_apk_invalid
             ScanDetectionReason.APK_IDENTITY_MATCH -> R.string.reason_apk_identity_match
             ScanDetectionReason.APK_IDENTITY_TEST -> R.string.reason_apk_identity_test
@@ -755,6 +779,19 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 }
+                analysis.advancedVerdict?.let { verdict ->
+                    append('\n')
+                    append(getString(R.string.detection_engine_summary,
+                        NumberFormat.getIntegerInstance().format(verdict.score),
+                        NumberFormat.getIntegerInstance().format(verdict.engineCount),
+                        getString(threatFamilyString(verdict.family))))
+                    append('\n')
+                    append(getString(R.string.detection_engine_evidence,
+                        NumberFormat.getIntegerInstance().format(analysis.matchedRuleCount),
+                        NumberFormat.getIntegerInstance().format(analysis.networkIndicatorCount),
+                        NumberFormat.getIntegerInstance().format(analysis.markerCount),
+                        NumberFormat.getPercentInstance().format(analysis.localModelProbability)))
+                }
                 append('\n')
                 append(formatApkSignals(analysis.signals))
                 if (analysis.codeScanTruncated) {
@@ -802,6 +839,22 @@ class MainActivity : AppCompatActivity() {
         ApkRiskSignal.RUNTIME_EXECUTION -> R.string.apk_signal_runtime_execution
         ApkRiskSignal.SMS_API -> R.string.apk_signal_sms_api
         ApkRiskSignal.DEVICE_IDENTIFIER_API -> R.string.apk_signal_device_identifier
+    }
+
+    private fun threatFamilyString(family: ThreatFamily): Int = when (family) {
+        ThreatFamily.UNKNOWN -> R.string.family_unknown
+        ThreatFamily.MALWARE -> R.string.family_malware
+        ThreatFamily.TROJAN -> R.string.family_trojan
+        ThreatFamily.SPYWARE -> R.string.family_spyware
+        ThreatFamily.STALKERWARE -> R.string.family_stalkerware
+        ThreatFamily.BANKER -> R.string.family_banker
+        ThreatFamily.RAT -> R.string.family_rat
+        ThreatFamily.DROPPER -> R.string.family_dropper
+        ThreatFamily.RANSOMWARE -> R.string.family_ransomware
+        ThreatFamily.PHISHING -> R.string.family_phishing
+        ThreatFamily.RISKWARE -> R.string.family_riskware
+        ThreatFamily.ADWARE -> R.string.family_adware
+        ThreatFamily.TEST -> R.string.family_test
     }
 
     private fun toggleExclusion() {

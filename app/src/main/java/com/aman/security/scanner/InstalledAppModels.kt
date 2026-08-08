@@ -1,5 +1,7 @@
 package com.aman.security.scanner
 
+import com.aman.security.detection.MultiEngineVerdict
+
 enum class AppRiskLevel {
     LOW,
     MEDIUM,
@@ -52,7 +54,9 @@ data class InstalledAppScanResult(
     val signals: Set<AppRiskSignal>,
     val apkSha256: String?,
     val signingCertificateSha256: String?,
-    val threatReference: String? = null
+    val threatReference: String? = null,
+    val advancedVerdict: MultiEngineVerdict? = null,
+    val deepAnalysisPerformed: Boolean = false
 )
 
 data class InstalledAppsScanSummary(

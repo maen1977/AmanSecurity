@@ -68,6 +68,9 @@ jobs:
       - name: Verify signed threat database
         run: python3 tools/verify_threat_db.py
 
+      - name: Verify detection engine 1.1 architecture
+        run: python3 tools/detection_gate.py
+
       - name: Run source quality gate
         run: python3 tools/quality_gate.py
 
@@ -90,7 +93,7 @@ jobs:
       - name: Write build summary
         shell: bash
         run: |
-          echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Aman Security 1.1.0" >> "$GITHUB_STEP_SUMMARY"
           if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
             echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -100,20 +103,20 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.0.0-Debug-APK
+          name: AmanSecurity-1.1.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.0.0-Release-AAB
+          name: AmanSecurity-1.1.0-Release-AAB
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.0.0-R8-Mapping
+          name: AmanSecurity-1.1.0-R8-Mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn

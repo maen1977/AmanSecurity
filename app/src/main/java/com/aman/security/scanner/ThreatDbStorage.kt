@@ -10,10 +10,7 @@ class ThreatDbStorage(private val context: Context) {
 
     fun loadInstalled(): ThreatDbValidator.ValidatedPackage? {
         val preferred = activePointer.takeIf { it.isFile }
-            ?.readText()
-            ?.trim()
-            ?.toLongOrNull()
-            ?.let(::loadPackage)
+            ?.readText()?.trim()?.toLongOrNull()?.let(::loadPackage)
         if (preferred != null) return preferred
 
         val fallback = packages.listFiles()
@@ -29,44 +26,32 @@ class ThreatDbStorage(private val context: Context) {
         signatureBytes: ByteArray,
         databaseBytes: ByteArray,
         urlDatabaseBytes: ByteArray?,
-        apkIdentityDatabaseBytes: ByteArray?
+        apkIdentityDatabaseBytes: ByteArray?,
+        detectionDatabaseBytes: ByteArray?
     ) {
         val validated = ThreatDbValidator.validate(
-            context,
-            manifestBytes,
-            signatureBytes,
-            databaseBytes,
-            urlDatabaseBytes,
-            apkIdentityDatabaseBytes
+            context, manifestBytes, signatureBytes, databaseBytes,
+            urlDatabaseBytes, apkIdentityDatabaseBytes, detectionDatabaseBytes
         )
         val serial = validated.manifest.serial
         val finalDir = File(packages, serial.toString())
         val staging = File(packages, ".staging-$serial")
 
-        root.mkdirs()
-        packages.mkdirs()
-        staging.deleteRecursively()
-        staging.mkdirs()
+        root.mkdirs(); packages.mkdirs(); staging.deleteRecursively(); staging.mkdirs()
         File(staging, "manifest.json").writeBytes(manifestBytes)
         File(staging, "manifest.sig").writeBytes(signatureBytes)
         File(staging, "signatures.csv").writeBytes(databaseBytes)
-        if (validated.manifest.schema >= 2) {
-            File(staging, "url_indicators.csv").writeBytes(requireNotNull(urlDatabaseBytes))
-        }
-        if (validated.manifest.schema >= 3) {
-            File(staging, "apk_indicators.csv").writeBytes(requireNotNull(apkIdentityDatabaseBytes))
-        }
+        if (validated.manifest.schema >= 2) File(staging, "url_indicators.csv").writeBytes(requireNotNull(urlDatabaseBytes))
+        if (validated.manifest.schema >= 3) File(staging, "apk_indicators.csv").writeBytes(requireNotNull(apkIdentityDatabaseBytes))
+        if (validated.manifest.schema >= 4) File(staging, "detection_rules.csv").writeBytes(requireNotNull(detectionDatabaseBytes))
 
         val staged = loadFromDirectory(staging) ?: run {
-            staging.deleteRecursively()
-            throw IllegalStateException()
+            staging.deleteRecursively(); throw IllegalStateException()
         }
         require(staged.manifest.serial == serial)
-
         finalDir.deleteRecursively()
         if (!staging.renameTo(finalDir)) {
-            staging.deleteRecursively()
-            throw IllegalStateException()
+            staging.deleteRecursively(); throw IllegalStateException()
         }
         require(loadPackage(serial) != null)
         writePointer(serial)
@@ -75,15 +60,12 @@ class ThreatDbStorage(private val context: Context) {
 
     fun clearInvalidInstalled() {
         packages.listFiles()?.forEach { dir ->
-            if (dir.isDirectory && !dir.name.startsWith(".staging-") && loadFromDirectory(dir) == null) {
-                dir.deleteRecursively()
-            }
+            if (dir.isDirectory && !dir.name.startsWith(".staging-") && loadFromDirectory(dir) == null) dir.deleteRecursively()
             if (dir.isDirectory && dir.name.startsWith(".staging-")) dir.deleteRecursively()
         }
     }
 
-    private fun loadPackage(serial: Long): ThreatDbValidator.ValidatedPackage? =
-        loadFromDirectory(File(packages, serial.toString()))
+    private fun loadPackage(serial: Long): ThreatDbValidator.ValidatedPackage? = loadFromDirectory(File(packages, serial.toString()))
 
     private fun loadFromDirectory(dir: File): ThreatDbValidator.ValidatedPackage? {
         val manifestFile = File(dir, "manifest.json")
@@ -93,24 +75,10 @@ class ThreatDbStorage(private val context: Context) {
         return runCatching {
             val manifestBytes = manifestFile.readBytes()
             val manifest = ThreatDbManifest.parse(manifestBytes)
-            val urlBytes = if (manifest.schema >= 2) {
-                val urlFile = File(dir, "url_indicators.csv")
-                if (!urlFile.isFile) return null
-                urlFile.readBytes()
-            } else null
-            val apkBytes = if (manifest.schema >= 3) {
-                val apkFile = File(dir, "apk_indicators.csv")
-                if (!apkFile.isFile) return null
-                apkFile.readBytes()
-            } else null
-            ThreatDbValidator.validate(
-                context,
-                manifestBytes,
-                signature.readBytes(),
-                database.readBytes(),
-                urlBytes,
-                apkBytes
-            )
+            val urlBytes = if (manifest.schema >= 2) File(dir, "url_indicators.csv").takeIf { it.isFile }?.readBytes() ?: return null else null
+            val apkBytes = if (manifest.schema >= 3) File(dir, "apk_indicators.csv").takeIf { it.isFile }?.readBytes() ?: return null else null
+            val detectionBytes = if (manifest.schema >= 4) File(dir, "detection_rules.csv").takeIf { it.isFile }?.readBytes() ?: return null else null
+            ThreatDbValidator.validate(context, manifestBytes, signature.readBytes(), database.readBytes(), urlBytes, apkBytes, detectionBytes)
         }.getOrNull()
     }
 
@@ -119,20 +87,15 @@ class ThreatDbStorage(private val context: Context) {
         val temp = File(root, "active_serial.new")
         temp.writeText(serial.toString())
         if (activePointer.exists() && !activePointer.delete()) {
-            temp.delete()
-            throw IllegalStateException()
+            temp.delete(); throw IllegalStateException()
         }
         if (!temp.renameTo(activePointer)) {
-            temp.delete()
-            throw IllegalStateException()
+            temp.delete(); throw IllegalStateException()
         }
     }
 
     private fun pruneOldPackages(keep: Int) {
-        packages.listFiles()
-            ?.filter { it.isDirectory && it.name.toLongOrNull() != null }
-            ?.sortedByDescending { it.name.toLong() }
-            ?.drop(keep)
-            ?.forEach { it.deleteRecursively() }
+        packages.listFiles()?.filter { it.isDirectory && it.name.toLongOrNull() != null }
+            ?.sortedByDescending { it.name.toLong() }?.drop(keep)?.forEach { it.deleteRecursively() }
     }
 }

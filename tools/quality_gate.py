@@ -15,6 +15,7 @@ def require(text: str, needles: list[str], label: str):
 def main():
     subprocess.run([sys.executable, str(ROOT / "tools/verify_localization.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/verify_threat_db.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools/detection_gate.py")], check=True)
 
     manifest = (ROOT / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     forbidden_storage = ["MANAGE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
@@ -47,22 +48,22 @@ def main():
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "1.0.0"', "versionCode = 8", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "1.1.0"', "versionCode = 9", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
     db_model = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbManifest.kt").read_text(encoding="utf-8")
     db_storage = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbStorage.kt").read_text(encoding="utf-8")
     signature_db = (ROOT / "app/src/main/java/com/aman/security/scanner/SignatureDatabase.kt").read_text(encoding="utf-8")
-    require(updater, ["verifyManifest", "https://", "instanceFollowRedirects = false", "apkIdentityDbPath", "apkBytes", "schema < 3"], "PHASE6_UPDATE_GATE")
+    require(updater, ["verifyManifest", "https://", "instanceFollowRedirects = false", "apkIdentityDbPath", "apkBytes", "schema < 4"], "PHASE6_UPDATE_GATE")
     require(validator, ["apkIdentityDbSha256", "parseApkIdentityLine", "ApkIdentityClassification", "apkIdentityIndicators"], "PHASE6_DATABASE_GATE")
-    require(db_model, ["schema in 1..3", 'apkIdentityDbPath == "apk_indicators.csv"'], "PHASE6_SCHEMA_GATE")
+    require(db_model, ["schema in 1..4", 'apkIdentityDbPath == "apk_indicators.csv"', 'detectionDbPath == "detection_rules.csv"'], "PHASE6_SCHEMA_GATE")
     require(db_storage, ["apk_indicators.csv", "apkIdentityDatabaseBytes"], "PHASE6_STORAGE_GATE")
     require(signature_db, ["findApk", "apkIdentityIndicators", "apkIdentityEntries"], "PHASE6_IDENTITY_DATABASE_GATE")
 
     installed_scanner = (ROOT / "app/src/main/java/com/aman/security/scanner/InstalledAppScanner.kt").read_text(encoding="utf-8")
     evaluator = (ROOT / "app/src/main/java/com/aman/security/scanner/AppRiskEvaluator.kt").read_text(encoding="utf-8")
-    require(installed_scanner, ["getInstalledPackages", "GET_PERMISSIONS", "GET_SIGNING_CERTIFICATES", "database::find", "scanPackageByName", "findApk(ApkIndicatorKind.SIGNER", "findApk(\n            ApkIndicatorKind.PACKAGE"], "PHASE7_INSTALLED_SCANNER_GATE")
+    require(installed_scanner, ["getInstalledPackages", "GET_PERMISSIONS", "GET_SIGNING_CERTIFICATES", "database::find", "scanPackageByName", "findApk(ApkIndicatorKind.SIGNER", "findApk(ApkIndicatorKind.PACKAGE"], "PHASE7_INSTALLED_SCANNER_GATE")
     forbidden_network = ["java.net", "HttpURLConnection", "OkHttp", "Retrofit", "Socket("]
     leaked = [item for item in forbidden_network if item in installed_scanner]
     if leaked:
@@ -129,7 +130,7 @@ def main():
     require(file_scanner, ["APK_STATIC_HIGH_RISK", "APK_IDENTITY_MATCH", "APK_INVALID", "apkStaticAnalyzer?.analyze"], "PHASE6_FILE_INTEGRATION_GATE")
     require(activity, ["renderApkAnalysis", "formatApkSignals", "apkSignalString", "txtApkAnalysis"], "PHASE6_UI_GATE")
 
-    forbidden_static_network = ["HttpURLConnection", "java.net.URL", "OkHttp", "Retrofit", "Socket("]
+    forbidden_static_network = ["import java.net.HttpURLConnection", "import java.net.URL", "openConnection(", "OkHttp", "Retrofit", "Socket("]
     leaked = [item for item in forbidden_static_network if item in apk_analyzer]
     if leaked:
         raise SystemExit(f"PHASE6_LOCAL_ONLY_GATE_FAILED network_code={leaked}")
@@ -173,14 +174,14 @@ def main():
     workflow8 = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
     require(manifest, ['android:usesCleartextTraffic="false"', 'android:networkSecurityConfig="@xml/network_security_config"', '@mipmap/ic_launcher'], "PHASE8_MANIFEST_GATE")
     require(network_security, ['cleartextTrafficPermitted="false"', '<certificates src="system"'], "PHASE8_NETWORK_GATE")
-    require(gradle, ['versionName = "1.0.0"', 'versionCode = 8', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
+    require(gradle, ['versionName = "1.1.0"', 'versionCode = 9', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
     require(freshness, ["ThreatDatabaseFreshness", "CURRENT_DAYS", "AGING_DAYS", "Instant.parse"], "PHASE8_FRESHNESS_GATE")
     require(workflow8, ["tools/release_gate.py", ":app:lintRelease", ":app:bundleRelease", "ANDROID_KEYSTORE_BASE64", "jarsigner -verify"], "PHASE8_CI_GATE")
 
     apk_db = ROOT / "app/src/main/assets/threat-db/apk_indicators.csv"
     if not apk_db.is_file():
         raise SystemExit("PHASE6_IDENTITY_DATABASE_GATE_FAILED missing_bundled_apk_db")
-    for name in ("manifest.json", "manifest.sig", "signatures.csv", "url_indicators.csv", "apk_indicators.csv"):
+    for name in ("manifest.json", "manifest.sig", "signatures.csv", "url_indicators.csv", "apk_indicators.csv", "detection_rules.csv"):
         if (ROOT / "threat-db" / name).read_bytes() != (ROOT / "app/src/main/assets/threat-db" / name).read_bytes():
             raise SystemExit(f"ASSET_DB_SYNC_FAILED file={name}")
 

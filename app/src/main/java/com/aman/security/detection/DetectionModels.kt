@@ -1,0 +1,130 @@
+package com.aman.security.detection
+
+enum class ThreatFamily {
+    UNKNOWN,
+    MALWARE,
+    TROJAN,
+    SPYWARE,
+    STALKERWARE,
+    BANKER,
+    RAT,
+    DROPPER,
+    RANSOMWARE,
+    PHISHING,
+    RISKWARE,
+    ADWARE,
+    TEST
+}
+
+enum class DetectionSource {
+    FILE_HASH,
+    SIGNER_IDENTITY,
+    PACKAGE_IDENTITY,
+    SIGNATURE_RULE,
+    MANIFEST,
+    DEX,
+    NETWORK,
+    PACKER,
+    REPUTATION,
+    IMPERSONATION,
+    STATIC_BEHAVIOR,
+    LOCAL_MODEL,
+    CLOUD_REPUTATION,
+    USER_ALLOWLIST
+}
+
+enum class FindingConfidence(val rank: Int) {
+    LOW(1),
+    MEDIUM(2),
+    HIGH(3),
+    CONFIRMED(4)
+}
+
+enum class DetectionVerdictLevel {
+    LOW,
+    REVIEW,
+    HIGH,
+    VERY_HIGH,
+    KNOWN_THREAT,
+    TEST
+}
+
+data class DetectionFinding(
+    val id: String,
+    val source: DetectionSource,
+    val score: Int,
+    val confidence: FindingConfidence,
+    val family: ThreatFamily = ThreatFamily.UNKNOWN,
+    val reference: String? = null
+)
+
+data class MultiEngineVerdict(
+    val score: Int,
+    val level: DetectionVerdictLevel,
+    val family: ThreatFamily,
+    val confidence: FindingConfidence,
+    val findings: List<DetectionFinding>,
+    val engineCount: Int,
+    val confirmedReference: String? = null,
+    val allowlisted: Boolean = false
+)
+
+data class DetectionRule(
+    val id: String,
+    val family: ThreatFamily,
+    val confidence: FindingConfidence,
+    val weight: Int,
+    val allMarkers: Set<String>,
+    val anyMarkers: Set<String>
+)
+
+data class ProtectedBrandProfile(
+    val id: String,
+    val officialPackage: String,
+    val tokens: Set<String>
+)
+
+enum class ReputationKind {
+    FILE,
+    SIGNER,
+    PACKAGE,
+    HOST
+}
+
+enum class ReputationDisposition {
+    MALICIOUS,
+    SAFE,
+    TEST
+}
+
+data class ReputationIndicator(
+    val kind: ReputationKind,
+    val sha256: String,
+    val id: String,
+    val family: ThreatFamily,
+    val confidence: FindingConfidence,
+    val disposition: ReputationDisposition
+)
+
+
+data class ThreatIntelMetadata(
+    val id: String,
+    val source: String,
+    val family: ThreatFamily,
+    val confidence: FindingConfidence,
+    val firstSeen: String? = null,
+    val lastSeen: String? = null
+)
+
+data class DetectionRuleset(
+    val rules: List<DetectionRule> = emptyList(),
+    val brands: List<ProtectedBrandProfile> = emptyList(),
+    val modelWeights: Map<String, Double> = emptyMap(),
+    val reputation: Map<String, ReputationIndicator> = emptyMap(),
+    val metadata: Map<String, ThreatIntelMetadata> = emptyMap()
+) {
+    fun findReputation(kind: ReputationKind, sha256: String): ReputationIndicator? =
+        reputation["$kind:${sha256.lowercase()}"]
+
+    fun findMetadata(id: String): ThreatIntelMetadata? = metadata[id]
+}

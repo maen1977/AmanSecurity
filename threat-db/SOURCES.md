@@ -19,3 +19,20 @@ Phase 5 adds `url_indicators.csv`. The bundled URL rows are hashes of reserved `
 ## Phase 6 APK identity indicators
 
 Phase 6 adds `apk_indicators.csv` under signed database schema 3. The bundled rows are harmless `TEST_SIGNATURE` values only: one package-name hash and one synthetic signer hash used to exercise the identity-detection path without labeling a real application or certificate as malicious. Future `KNOWN_THREAT` signer/package additions require reviewed high-confidence evidence, false-positive review, a higher manifest serial, and a new offline signature.
+
+## Version 1.1 detection-intelligence pipeline
+
+Schema 4 adds `detection_rules.csv` for signed behavioral rules, protected-brand package profiles, local-model weights, and reputation indicators. The bundled rows are conservative bootstrap/test data; they are not a claim of exhaustive global threat coverage.
+
+Maintainer imports are handled by `tools/update_threat_intel.py`. The tool is intentionally **indicator-only** and never downloads malware binaries.
+
+- **MalwareBazaar (abuse.ch)**: importer uses the official Community API to retrieve recent metadata and retains SHA-256 indicators only. An abuse.ch Auth-Key is required by the maintainer environment.
+- **URLhaus (abuse.ch)**: importer uses the official recent CSV export with an Auth-Key. Aman hashes normalized URL and host values before storing them in `url_indicators.csv`; live malicious URLs are not retained in the app database.
+- **Phishing**: a generic `--phishing-file` path is provided so maintainers can import a separately reviewed/licensed URL feed. The repository does not silently embed or redistribute a third-party commercial phishing feed.
+- **Reviewed reputation CSV**: `--reputation-file` imports hash-only `FILE`, `SIGNER`, `PACKAGE`, or `HOST` reputation rows. SAFE reputation is intended for carefully reviewed exact-file or signer identities; package name alone must not suppress malicious evidence.
+
+Always check the source's current terms/licensing before redistribution or commercial use. Imported indicators must be reviewed, the manifest serial/version must be advanced, and the database must be signed offline before publication.
+
+### Threat metadata rows
+
+`detection_rules.csv` also supports `META|id|source|family|confidence|first_seen|last_seen`. These rows attach source/family/confidence and optional dates to indicator IDs without changing the cryptographic indicator itself. Unknown dates are stored as `-`; the project does not invent first/last-seen timestamps when the source did not provide them. The importer records MalwareBazaar first/last-seen dates when available and emits source metadata for imported URL/reputation indicators.

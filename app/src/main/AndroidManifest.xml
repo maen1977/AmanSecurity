@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Internet is used only for cryptographically signed threat-database updates. -->
+    <!-- Internet is used for signed threat-database updates and, only when configured and opted in, SHA-256 cloud reputation. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Core antivirus functionality: inspect the user-installed app inventory locally on-device. -->

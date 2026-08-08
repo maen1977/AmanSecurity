@@ -16,7 +16,8 @@ class ThreatDatabaseUpdater(
             val version: String,
             val fileEntries: Int,
             val urlEntries: Int,
-            val apkIdentityEntries: Int
+            val apkIdentityEntries: Int,
+            val detectionEntries: Int
         ) : Result()
         data object InvalidSignature : Result()
         data object InvalidDatabase : Result()
@@ -29,30 +30,28 @@ class ThreatDatabaseUpdater(
             require(base.startsWith("https://"))
             val manifestBytes = download(base + "manifest.json", 64 * 1024)
             val signatureBytes = download(base + "manifest.sig", 16 * 1024)
-
-            if (!ThreatDbCrypto.verifyManifest(context, manifestBytes, signatureBytes)) {
-                return Result.InvalidSignature
-            }
-            val manifest = runCatching { ThreatDbManifest.parse(manifestBytes) }
-                .getOrElse { return Result.InvalidDatabase }
+            if (!ThreatDbCrypto.verifyManifest(context, manifestBytes, signatureBytes)) return Result.InvalidSignature
+            val manifest = runCatching { ThreatDbManifest.parse(manifestBytes) }.getOrElse { return Result.InvalidDatabase }
             if (manifest.minAppVersionCode > BuildConfig.VERSION_CODE) return Result.InvalidDatabase
-            if (manifest.schema < 3) return Result.InvalidDatabase
+            if (manifest.schema < 4) return Result.InvalidDatabase
             if (manifest.serial <= database.info.serial) return Result.UpToDate
 
-            val dbBytes = download(base + manifest.dbPath, 16 * 1024 * 1024)
-            val urlBytes = download(base + requireNotNull(manifest.urlDbPath), 32 * 1024 * 1024)
-            val apkBytes = download(base + requireNotNull(manifest.apkIdentityDbPath), 16 * 1024 * 1024)
+            val dbBytes = download(base + manifest.dbPath, 64 * 1024 * 1024)
+            val urlBytes = download(base + requireNotNull(manifest.urlDbPath), 96 * 1024 * 1024)
+            val apkBytes = download(base + requireNotNull(manifest.apkIdentityDbPath), 64 * 1024 * 1024)
+            val detectionBytes = download(base + requireNotNull(manifest.detectionDbPath), 16 * 1024 * 1024)
             val validated = runCatching {
-                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes)
+                ThreatDbValidator.validate(context, manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes, detectionBytes)
             }.getOrElse { return Result.InvalidDatabase }
 
-            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes)
+            ThreatDbStorage(context).install(manifestBytes, signatureBytes, dbBytes, urlBytes, apkBytes, detectionBytes)
             database.reloadAfterUpdate()
             Result.Updated(
                 validated.manifest.version,
                 validated.signatures.size,
                 validated.urlIndicators.size,
-                validated.apkIdentityIndicators.size
+                validated.apkIdentityIndicators.size,
+                validated.manifest.detectionEntries
             )
         } catch (_: java.io.IOException) {
             Result.NetworkError

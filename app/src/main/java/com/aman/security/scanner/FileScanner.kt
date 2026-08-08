@@ -1,5 +1,7 @@
 package com.aman.security.scanner
 
+import com.aman.security.detection.DetectionVerdictLevel
+
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -43,6 +45,11 @@ class FileScanner(
                 classification = ScanClassification.TEST_SIGNATURE
                 reason = ScanDetectionReason.APK_IDENTITY_TEST
                 signatureId = identityIndicator.id
+            }
+            apkAnalysis?.advancedVerdict?.level == DetectionVerdictLevel.KNOWN_THREAT -> {
+                classification = ScanClassification.KNOWN_THREAT
+                reason = ScanDetectionReason.APK_MULTI_ENGINE_KNOWN
+                signatureId = apkAnalysis.advancedVerdict.confirmedReference
             }
             doubleExtension -> {
                 classification = ScanClassification.SUSPICIOUS

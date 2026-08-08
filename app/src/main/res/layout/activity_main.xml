@@ -137,6 +137,24 @@
                     android:text="@string/update_idle"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchCloudReputation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/cloud_reputation_title"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtCloudReputationNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/cloud_reputation_note"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

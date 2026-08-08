@@ -33,12 +33,12 @@
     <string name="file_access_error">File access error</string>
     <string name="privacy_note">Files, installed-app scan data, and scanned links stay on the device. Internet access is used only for signed threat-database updates.</string>
     <string name="database_version">Threat database: %1$s</string>
-    <string name="database_entries">File indicators: %1$s • Link indicators: %2$s • APK identity indicators: %3$s</string>
+    <string name="database_entries">File indicators: %1$s • Link indicators: %2$s • APK identity indicators: %3$s • Detection intelligence: %4$s</string>
     <string name="update_database">Update database</string>
     <string name="update_idle">Updates are verified before activation.</string>
     <string name="update_checking">Checking for a signed update…</string>
     <string name="update_up_to_date">Threat database is up to date.</string>
-    <string name="update_success">Updated to %1$s with %2$s file indicators, %3$s link indicators, and %4$s APK identity indicators.</string>
+    <string name="update_success">Updated to %1$s with %2$s file indicators, %3$s link indicators, %4$s APK identity indicators, and %5$s detection-intelligence records.</string>
     <string name="update_invalid_signature">Update rejected: digital signature verification failed.</string>
     <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
     <string name="update_network_error">Could not reach the update server.</string>
@@ -250,4 +250,23 @@
     <string name="database_freshness_stale">Threat data is stale; update it before relying on scans • Generated %1$s</string>
     <string name="database_freshness_unknown">Threat-data age could not be verified • Generated %1$s</string>
     <string name="database_date_unknown">unknown date</string>
+
+    <string name="reason_apk_multi_engine_known">A confirmed threat indicator matched through the multi-engine APK analysis.</string>
+    <string name="detection_engine_summary">Multi-engine score: %1$s/100 • Independent engines: %2$s • Likely family: %3$s</string>
+    <string name="detection_engine_evidence">Advanced evidence: %1$s rule match(es) • %2$s network indicator(s) • %3$s code marker(s) • Local model: %4$s</string>
+    <string name="family_unknown">Unknown</string>
+    <string name="family_malware">Malware</string>
+    <string name="family_trojan">Trojan</string>
+    <string name="family_spyware">Spyware</string>
+    <string name="family_stalkerware">Stalkerware</string>
+    <string name="family_banker">Banking malware</string>
+    <string name="family_rat">Remote-access malware</string>
+    <string name="family_dropper">Dropper</string>
+    <string name="family_ransomware">Ransomware</string>
+    <string name="family_phishing">Phishing</string>
+    <string name="family_riskware">Riskware</string>
+    <string name="family_adware">Adware</string>
+    <string name="family_test">Safe test indicator</string>
+    <string name="cloud_reputation_title">Optional cloud hash reputation</string>
+    <string name="cloud_reputation_note">When enabled, Aman sends only the selected file SHA-256 to the configured reputation service. The file itself is never uploaded.</string>
 </resources>

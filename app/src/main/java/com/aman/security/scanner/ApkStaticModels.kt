@@ -1,5 +1,7 @@
 package com.aman.security.scanner
 
+import com.aman.security.detection.MultiEngineVerdict
+
 enum class ApkAnalysisState {
     VALID,
     INVALID_APK,
@@ -72,5 +74,10 @@ data class ApkStaticAnalysis(
     val nativeLibraryCount: Int = 0,
     val signingCertificateSha256: String? = null,
     val identityIndicator: ApkIdentityIndicator? = null,
-    val codeScanTruncated: Boolean = false
+    val codeScanTruncated: Boolean = false,
+    val advancedVerdict: MultiEngineVerdict? = null,
+    val networkIndicatorCount: Int = 0,
+    val matchedRuleCount: Int = 0,
+    val markerCount: Int = 0,
+    val localModelProbability: Double = 0.0
 )
