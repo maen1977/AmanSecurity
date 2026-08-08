@@ -389,7 +389,7 @@ class ApkStaticAnalyzer(
             carry.copyInto(combined, 0)
             buffer.copyInto(combined, carry.size, 0, read)
 
-            targets.forEach { (text, effect) ->
+            CODE_MARKERS.forEach { (text, effect) ->
                 if (containsBytes(combined, targets.getValue(text))) {
                     effect.signal?.let(signals::add)
                     markers += effect.marker

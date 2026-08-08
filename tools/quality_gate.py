@@ -129,6 +129,9 @@ def main():
     require(apk_evaluator, ["ACCESSIBILITY_SERVICE", "OVERLAY_PERMISSION", "REQUEST_INSTALL_PACKAGES", "SMS_ACCESS", "coerceIn(0, 100)"], "PHASE6_RISK_GATE")
     require(file_scanner, ["APK_STATIC_HIGH_RISK", "APK_IDENTITY_MATCH", "APK_INVALID", "apkStaticAnalyzer?.analyze"], "PHASE6_FILE_INTEGRATION_GATE")
     require(activity, ["renderApkAnalysis", "formatApkSignals", "apkSignalString", "txtApkAnalysis"], "PHASE6_UI_GATE")
+    require(apk_analyzer, ["CODE_MARKERS.forEach { (text, effect) ->", "effect.signal?.let(signals::add)", "markers += effect.marker"], "PHASE6_MARKER_MAPPING_GATE")
+    if "targets.forEach { (text, effect) ->" in apk_analyzer:
+        raise SystemExit("PHASE6_MARKER_MAPPING_GATE_FAILED byte_array_treated_as_marker_effect")
 
     forbidden_static_network = ["import java.net.HttpURLConnection", "import java.net.URL", "openConnection(", "OkHttp", "Retrofit", "Socket("]
     leaked = [item for item in forbidden_static_network if item in apk_analyzer]
