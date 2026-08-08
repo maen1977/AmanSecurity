@@ -38,3 +38,6 @@ It is manual-only (`workflow_dispatch`) so pushes/uploads do not create a large 
 The workflow also has a concurrency guard and cancels an older in-progress build if a newer manual build is started.
 
 Important: uploading these files over an existing repository does not delete old workflow YAML files already committed on GitHub. Before running this release, remove every old `.yml`/`.yaml` under `.github/workflows/` except `main.yml` once.
+
+## Lint compatibility fix
+This package keeps minSdk 26 while removing API 27/29-only theme attributes from base resources. Android 12/13+ manifest attributes are explicitly acknowledged for lint using `tools:targetApi="33"`. The repository still contains exactly one manually triggered workflow: `.github/workflows/main.yml`.

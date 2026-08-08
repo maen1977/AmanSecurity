@@ -29,6 +29,15 @@ need('android:networkSecurityConfig="@xml/network_security_config"' in manifest_
 need('@mipmap/ic_launcher' in manifest_text and 'android:roundIcon' in manifest_text, "adaptive launcher icons must be configured")
 need('MANAGE_EXTERNAL_STORAGE' not in manifest_text and 'READ_EXTERNAL_STORAGE' not in manifest_text, "broad storage permissions are forbidden")
 need('android:allowBackup="false"' in manifest_text, "application backup must remain disabled")
+need('tools:targetApi="33"' in manifest_text, "manifest must acknowledge API-gated application attributes for minSdk 26")
+
+for theme_path in (
+    ROOT / "app/src/main/res/values/themes.xml",
+    ROOT / "app/src/main/res/values-night/themes.xml",
+):
+    theme_text = theme_path.read_text(encoding="utf-8")
+    need('android:windowLightNavigationBar' not in theme_text, f"API 27 navigation-bar light flag must not be placed in base resources: {theme_path.relative_to(ROOT)}")
+    need('android:forceDarkAllowed' not in theme_text, f"API 29 force-dark flag must not be placed in minSdk 26 base resources: {theme_path.relative_to(ROOT)}")
 
 network = ET.parse(ROOT / "app/src/main/res/xml/network_security_config.xml").getroot()
 base = network.find("base-config")

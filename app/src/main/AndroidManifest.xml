@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Internet is used only for cryptographically signed threat-database updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -21,7 +22,8 @@
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:theme="@style/Theme.AmanSecurity">
+        android:theme="@style/Theme.AmanSecurity"
+        tools:targetApi="33">
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
