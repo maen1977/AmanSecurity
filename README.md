@@ -34,7 +34,7 @@ See `docs/RELEASE_CHECKLIST.md`, `docs/RELEASE_SIGNING.md`, and `docs/PRIVACY_PO
 ## GitHub Actions: single workflow policy
 
 This release contains exactly one workflow file: `.github/workflows/main.yml`.
-It is manual-only (`workflow_dispatch`) so pushes/uploads do not create a large list of automatic workflow runs. Start it from GitHub **Actions → Build Aman Security Android → Run workflow**.
+It runs automatically on every push to `main`, while keeping exactly one workflow file. `concurrency` cancels an older in-progress build when a newer push arrives. A manual `workflow_dispatch` fallback is also available from GitHub Actions.
 The workflow also has a concurrency guard and cancels an older in-progress build if a newer manual build is started.
 
 Important: uploading these files over an existing repository does not delete old workflow YAML files already committed on GitHub. Before running this release, remove every old `.yml`/`.yaml` under `.github/workflows/` except `main.yml` once.
