@@ -41,3 +41,7 @@ PHASE1_SOURCE_GATE_OK
 ## Important limitation
 
 A hash that is absent from the Phase 1 local database is **not proof that the file is safe**. This is why unknown APK files are reported as unknown. Real threat-feed ingestion and signed GitHub database updates belong to Phase 2.
+
+## GitHub Actions build
+This package includes `.github/workflows/main.yml` for automated Android APK builds on GitHub Actions.
+The Kotlin JVM target uses the modern `compilerOptions` DSL required by the current Kotlin Gradle plugin.
