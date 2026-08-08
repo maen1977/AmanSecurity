@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#155E75</color>
+    <color name="brand_primary_dark">#164E63</color>
+    <color name="brand_secondary">#0F766E</color>
+    <color name="surface_soft">#F8FAFC</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="status_ok">#15803D</color>
+    <color name="status_warn">#B45309</color>
+    <color name="status_danger">#B91C1C</color>
+</resources>

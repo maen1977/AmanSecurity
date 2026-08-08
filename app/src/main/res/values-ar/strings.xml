@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">أمان</string>
+    <string name="app_subtitle">المرحلة الأولى لفحص البرمجيات الضارة</string>
+    <string name="security_status_title">أساس الحماية</string>
+    <string name="security_status_body">فحص الملفات محليًا جاهز، ولا يتم رفع أي ملف إلى أي جهة.</string>
+    <string name="choose_file">اختيار ملف</string>
+    <string name="scan_file">فحص الملف</string>
+    <string name="change_language">اللغة</string>
+    <string name="language_dialog_title">اختر اللغة</string>
+    <string name="language_english">الإنجليزية</string>
+    <string name="language_arabic">العربية</string>
+    <string name="selected_file_title">الملف المحدد</string>
+    <string name="no_file_selected">لم يتم اختيار ملف</string>
+    <string name="scan_result_title">نتيجة الفحص</string>
+    <string name="result_not_scanned">اختر ملفًا لبدء الفحص.</string>
+    <string name="scanning">جارٍ الفحص…</string>
+    <string name="result_no_known_threat">لم يتم العثور على تهديد معروف</string>
+    <string name="result_unknown_apk">حزمة تطبيق غير معروفة</string>
+    <string name="result_suspicious">ملف مشبوه</string>
+    <string name="result_threat">تم اكتشاف تهديد معروف</string>
+    <string name="result_test_signature">تم اكتشاف توقيع اختبار آمن</string>
+    <string name="reason_no_signature">بصمة SHA-256 غير موجودة في قاعدة التهديدات المحلية.</string>
+    <string name="reason_unknown_apk">حزمة APK هذه غير موجودة في القاعدة المحلية، وهذا لا يثبت أنها آمنة.</string>
+    <string name="reason_double_extension">اسم الملف يستخدم امتدادًا مزدوجًا قد يكون مضللًا.</string>
+    <string name="reason_signature_match">بصمة SHA-256 مطابقة لتوقيع معروف في القاعدة المحلية.</string>
+    <string name="reason_eicar_test">هذا توقيع الاختبار القياسي الآمن لفحص برامج الحماية.</string>
+    <string name="sha256_label">SHA-256</string>
+    <string name="file_size_label">حجم الملف</string>
+    <string name="bytes_value">%1$s بايت</string>
+    <string name="scan_failed">تعذر فحص الملف.</string>
+    <string name="scan_failed_with_reason">فشل الفحص: %1$s</string>
+    <string name="file_access_error">خطأ في الوصول إلى الملف</string>
+    <string name="unknown_error">خطأ غير معروف</string>
+    <string name="privacy_note">المرحلة الأولى تستخدم الفحص على الجهاز فقط.</string>
+    <string name="database_version">إصدار قاعدة التوقيعات: %1$s</string>
+    <string name="classification_label">التصنيف</string>
+    <string name="reason_label">السبب</string>
+    <string name="technical_details">التفاصيل التقنية</string>
+    <string name="safe_wording_note">النتيجة النظيفة تعني فقط عدم العثور على توقيع معروف في القاعدة المحلية.</string>
+</resources>
