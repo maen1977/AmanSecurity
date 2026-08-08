@@ -1,14 +1,14 @@
 name: Build Aman Security Android
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: aman-security-single-build
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
+
+      - name: Verify single workflow file
+        run: python3 tools/verify_single_workflow.py
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -85,11 +88,10 @@ jobs:
       - name: Write build summary
         shell: bash
         run: |
+          echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
           if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
-            echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
             echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### Aman Security 1.0.0" >> "$GITHUB_STEP_SUMMARY"
             echo "Release AAB is unsigned because upload-key secrets were not configured." >> "$GITHUB_STEP_SUMMARY"
           fi
 

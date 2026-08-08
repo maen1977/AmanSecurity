@@ -37,7 +37,7 @@ object ApkRiskEvaluator {
             ApkRiskSignal.SMS_ACCESS in signals &&
             ApkRiskSignal.CONTACTS_ACCESS in signals &&
             ApkRiskSignal.BOOT_START in signals
-        ) score += 15
+        ) score += 20
         if (ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE in signals && ApkRiskSignal.OVERLAY_PERMISSION in signals) score += 10
         if (ApkRiskSignal.DYNAMIC_CODE_LOADING in signals && ApkRiskSignal.RUNTIME_EXECUTION in signals) score += 8
         if (ApkRiskSignal.SMS_ACCESS in signals && ApkRiskSignal.SMS_API in signals) score += 5
