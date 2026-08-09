@@ -2,11 +2,11 @@
 
 **Last updated:** 8 August 2026
 
-Aman Security 1.1.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
+Aman Security 2.0.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
 
 Internet access is used to download the signed threat database from the configured update location. Threat-database packages are accepted only after cryptographic signature and hash verification. The app schedules these update checks periodically with Android WorkManager when suitable network/battery conditions are available.
 
-An optional cloud-hash reputation feature can be compiled into a distribution by configuring an HTTPS reputation API URL. It is disabled by default and requires an explicit user opt-in. When enabled, the implemented client sends the SHA-256 identifier only during a user-selected APK/file scan to the configured reputation endpoint; it does **not** upload the APK file, and background installed-app scans do not perform cloud lookups. Before shipping a build with that feature configured, the publisher must disclose the backend operator, purpose, retention behavior, security controls, and applicable data-safety declarations.
+An optional signed online-reputation feature is disabled by default and requires explicit user opt-in. For a user-selected APK/file scan, the client requests only the first two hexadecimal characters of the file SHA-256 from the GitHub-hosted signed reputation shards, verifies the detached signature locally, and performs the full-hash match on-device. It does **not** upload the APK file or the complete SHA-256, and background installed-app scans do not perform online reputation lookups.
 
 When the user enables background protection, Aman Security can inspect newly installed or updated applications and, if the user explicitly chooses a folder through Android's Storage Access Framework, periodically inspect new or changed files in that folder. The app does not automatically install, open, delete, uninstall, or quarantine detected items.
 

@@ -12,7 +12,10 @@ object ThreatDbCrypto {
         .digest(bytes)
         .joinToString("") { "%02x".format(it) }
 
-    fun verifyManifest(context: Context, manifestBytes: ByteArray, signatureBytes: ByteArray): Boolean {
+    fun verifyManifest(context: Context, manifestBytes: ByteArray, signatureBytes: ByteArray): Boolean =
+        verifyDetached(context, manifestBytes, signatureBytes)
+
+    fun verifyDetached(context: Context, payloadBytes: ByteArray, signatureBytes: ByteArray): Boolean {
         val pem = context.assets.open("keys/threat_update_public_key.pem")
             .bufferedReader()
             .use { it.readText() }
@@ -24,7 +27,7 @@ object ThreatDbCrypto {
         val publicKey = KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(keyBytes))
         val verifier = Signature.getInstance("SHA256withRSA")
         verifier.initVerify(publicKey)
-        verifier.update(manifestBytes)
+        verifier.update(payloadBytes)
         return verifier.verify(signatureBytes)
     }
 }

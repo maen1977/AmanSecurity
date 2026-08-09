@@ -17,7 +17,7 @@ object ThreatUpdateScheduler {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .setRequiresBatteryNotLow(true)
             .build()
-        val request = PeriodicWorkRequestBuilder<ThreatUpdateWorker>(12, TimeUnit.HOURS, 2, TimeUnit.HOURS)
+        val request = PeriodicWorkRequestBuilder<ThreatUpdateWorker>(6, TimeUnit.HOURS, 1, TimeUnit.HOURS)
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()

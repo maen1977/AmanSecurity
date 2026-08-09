@@ -1,0 +1,2 @@
+kind,sha256,id,family,confidence,disposition,source,first_seen,last_seen
+# Add reviewed SAFE or MALICIOUS exact hashes here. Never add unreviewed allowlist entries.

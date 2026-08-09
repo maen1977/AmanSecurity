@@ -27,11 +27,11 @@ class InstalledAppScanner(
     private val packageManager: PackageManager = context.packageManager
     private val deepAnalyzer by lazy { ApkStaticAnalyzer(context, database) }
 
-    fun scanUserApps(): InstalledAppsScanSummary {
+    fun scanUserApps(deep: Boolean = true): InstalledAppsScanSummary {
         val packages = installedPackages().asSequence()
             .filter { it.packageName != context.packageName }
             .filterNot(::isSystemPackage)
-            .map { scanPackage(it, deep = false) }
+            .map { scanPackage(it, deep = deep) }
             .sortedWith(compareByDescending<InstalledAppScanResult> { it.riskScore }.thenBy { it.appName.lowercase() })
             .toList()
         val review = packages.count { it.riskLevel != AppRiskLevel.LOW }

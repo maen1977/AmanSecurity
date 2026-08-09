@@ -1,4 +1,4 @@
-# Aman Security 1.1.0 release checklist
+# Aman Security 2.0.0 release checklist
 
 ## Automated gates
 

@@ -1,30 +1,9 @@
-# Optional cloud reputation API contract
+# Signed GitHub prefix reputation
 
-Cloud reputation is an optional extension. The Android client remains disabled unless both conditions are true:
+Aman Security 2.0 does not require a private reputation backend. The optional online reputation layer is hosted as static signed files under `reputation/v1/file/`.
 
-1. `BuildConfig.REPUTATION_API_BASE_URL` is a non-empty HTTPS URL.
-2. The user explicitly enables cloud reputation in the app.
+For a selected file SHA-256 such as `ab...`, the app requests only `ab.json` and `ab.sig`. It verifies the RSA/SHA-256 signature locally using the same bundled public key used for threat-database updates. The response contains candidate full hashes for that prefix, and exact matching happens on-device.
 
-The APK file is never uploaded by this client. Cloud lookup is used only for a user-selected APK/file scan; installed-app background/deep scans keep cloud lookup disabled. The request shape is:
+This design means the network request reveals a 2-hex-character prefix, not the complete SHA-256. The APK/file itself is never uploaded. The feature remains user-opt-in.
 
-```text
-GET {base}/v1/hash/{sha256}
-Accept: application/json
-```
-
-Supported responses:
-
-- `404` — hash unknown.
-- `200` — JSON up to 32 KiB:
-
-```json
-{
-  "malicious": true,
-  "id": "provider-reference",
-  "family": "TROJAN"
-}
-```
-
-`family` should use one of the app's `ThreatFamily` enum values. Unknown values are treated as `UNKNOWN`. Redirects are disabled, timeouts are bounded, malformed responses become network errors, and only an explicitly malicious response becomes a confirmed cloud-reputation finding.
-
-A production backend should implement authentication/rate limiting as needed, avoid exposing secrets in the APK, document retention/privacy behavior, and never treat an unknown hash as proof that a file is safe.
+The shards are rebuilt by GitHub Actions using `tools/build_reputation_shards.py` whenever signed threat/reputation content changes.

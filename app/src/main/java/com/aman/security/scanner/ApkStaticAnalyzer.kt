@@ -145,19 +145,24 @@ class ApkStaticAnalyzer(
         fileReputation?.toFinding()?.let(findings::add)
         // Only reviewed exact-file or signer SAFE reputation may suppress heuristics.
         // Package-name reputation alone is not sufficient because a malicious APK can reuse a package name.
-        val trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
+        var trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
             fileReputation?.disposition == ReputationDisposition.SAFE
         if (allowCloudLookup) {
             when (val cloud = CloudReputationClient(context).querySha256(fileSha256)) {
-                is CloudReputationClient.Result.Known -> if (cloud.malicious) {
-                    findings += DetectionFinding(
-                        id = cloud.id,
-                        source = DetectionSource.CLOUD_REPUTATION,
-                        score = 100,
-                        confidence = FindingConfidence.CONFIRMED,
-                        family = cloud.family.takeUnless { it == ThreatFamily.UNKNOWN } ?: ThreatFamily.MALWARE,
-                        reference = cloud.id
-                    )
+                is CloudReputationClient.Result.Known -> {
+                    if (cloud.malicious) {
+                        findings += DetectionFinding(
+                            id = cloud.id,
+                            source = DetectionSource.CLOUD_REPUTATION,
+                            score = 100,
+                            confidence = FindingConfidence.CONFIRMED,
+                            family = cloud.family.takeUnless { it == ThreatFamily.UNKNOWN } ?: ThreatFamily.MALWARE,
+                            reference = cloud.id
+                        )
+                    } else if (cloud.safe) {
+                        // Only an exact full-hash SAFE record from a signed shard may suppress heuristics.
+                        trustedAllowlist = true
+                    }
                 }
                 else -> Unit
             }
@@ -513,6 +518,16 @@ class ApkStaticAnalyzer(
             "Ljavax/crypto/Cipher;" to MarkerEffect("FILE_ENCRYPTION"),
             "listFiles" to MarkerEffect("MASS_FILE_ACCESS"),
             "Ljava/lang/System;->loadLibrary" to MarkerEffect("NATIVE_LOAD"),
+            "Landroid/provider/ContactsContract;" to MarkerEffect("CONTACTS_API"),
+            "Landroid/provider/CallLog;" to MarkerEffect("CALL_LOG_API"),
+            "Landroid/location/LocationManager;" to MarkerEffect("LOCATION_API"),
+            "Landroid/media/MediaRecorder;" to MarkerEffect("AUDIO_RECORDING"),
+            "Landroid/view/accessibility/AccessibilityNodeInfo;" to MarkerEffect("ACCESSIBILITY_NODE"),
+            "addJavascriptInterface" to MarkerEffect("WEBVIEW_BRIDGE"),
+            "getInstalledPackages" to MarkerEffect("APP_ENUMERATION"),
+            "getInstalledApplications" to MarkerEffect("APP_ENUMERATION"),
+            "Landroid/app/admin/DevicePolicyManager;" to MarkerEffect("DEVICE_POLICY"),
+            "Landroid/accounts/AccountManager;" to MarkerEffect("ACCOUNT_ACCESS"),
             "com.stub.StubApp" to MarkerEffect("PACKER_PRESENT"),
             "com.secneo" to MarkerEffect("PACKER_PRESENT"),
             "com.bangcle" to MarkerEffect("PACKER_PRESENT")

@@ -24,12 +24,12 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.1.0"
+        versionCode = 10
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "THREAT_DB_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/\"")
-        buildConfigField("String", "REPUTATION_API_BASE_URL", "\"\"")
+        buildConfigField("String", "REPUTATION_SHARD_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/reputation/v1/file/\"")
     }
 
     signingConfigs {

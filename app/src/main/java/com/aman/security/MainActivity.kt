@@ -175,7 +175,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configureCloudReputation() {
-        val available = BuildConfig.REPUTATION_API_BASE_URL.isNotBlank()
+        val available = BuildConfig.REPUTATION_SHARD_BASE_URL.isNotBlank()
         binding.switchCloudReputation.visibility = if (available) View.VISIBLE else View.GONE
         binding.txtCloudReputationNote.visibility = if (available) View.VISIBLE else View.GONE
         if (!available) {

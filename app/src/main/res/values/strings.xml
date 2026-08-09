@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Aman Security</string>
-    <string name="app_subtitle">On-device malware, app, link, and background protection</string>
+    <string name="app_subtitle">Multi-engine mobile anti-malware, app, link, and background protection</string>
     <string name="security_status_title">Threat intelligence</string>
     <string name="security_status_body">File and link scanning use a signed threat database. Updates are accepted only after cryptographic verification.</string>
     <string name="choose_file">Choose file</string>
@@ -47,10 +47,10 @@
     <string name="installed_apps_body">Review user-installed apps using local threat signatures, requested permissions, install source, accessibility services, and package fingerprints.</string>
     <string name="scan_installed_apps">Scan installed apps</string>
     <string name="installed_apps_disclosure_title">Installed-app scan</string>
-    <string name="installed_apps_disclosure_body">To perform this security scan, Aman Security reads the installed app list, requested permissions, install source, accessibility-service declarations, and local package fingerprints. This information stays on this device and is not uploaded.</string>
+    <string name="installed_apps_disclosure_body">To perform the full security scan, Aman Security reads the installed app list and locally analyzes package fingerprints, signing certificates, permissions, components, code markers, network indicators, and install source. The app files and inventory stay on this device and are not uploaded.</string>
     <string name="continue_scan">Continue</string>
     <string name="cancel">Cancel</string>
-    <string name="scanning_installed_apps">Scanning installed apps…</string>
+    <string name="scanning_installed_apps">Running a full deep scan of installed apps…</string>
     <string name="installed_scan_idle">Run a scan to review user-installed apps.</string>
     <string name="installed_scan_summary">Scanned: %1$s • Needs review: %2$s • High-risk indicators: %3$s • Known threats: %4$s</string>
     <string name="installed_scan_failed">Installed-app scan could not be completed.</string>
@@ -207,8 +207,8 @@
     <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
     <string name="reason_apk_identity_test">A safe signed package-identity test indicator matched. It is not a malware verdict.</string>
     <string name="background_protection_title">Background protection</string>
-    <string name="background_protection_body">When enabled, Aman scans user-installed or updated apps promptly and periodically checks new or changed files inside one folder you choose.</string>
-    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Android may defer the battery-aware folder check; app-install scans are event driven.</string>
+    <string name="background_protection_body">When enabled, Aman performs a deep scan after user-app installs or updates and periodically checks new or changed files inside one folder you choose.</string>
+    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Signed threat intelligence is checked every six hours when Android allows network work; app-install scans are event driven.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -267,6 +267,6 @@
     <string name="family_riskware">Riskware</string>
     <string name="family_adware">Adware</string>
     <string name="family_test">Safe test indicator</string>
-    <string name="cloud_reputation_title">Optional cloud hash reputation</string>
-    <string name="cloud_reputation_note">When enabled, Aman sends only the selected file SHA-256 to the configured reputation service. The file itself is never uploaded.</string>
+    <string name="cloud_reputation_title">Optional signed online reputation</string>
+    <string name="cloud_reputation_note">When enabled, Aman requests only the first two hexadecimal characters of the selected file SHA-256 from the signed GitHub reputation database, verifies the shard signature, and matches the full hash locally. The file and full hash are never uploaded.</string>
 </resources>

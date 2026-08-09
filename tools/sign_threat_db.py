@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--private-key", required=True, help="Path to the OFFLINE RSA private key. Never commit it.")
     parser.add_argument("--serial", type=int, required=True)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--min-app-version-code", type=int, default=9)
+    parser.add_argument("--min-app-version-code", type=int, default=10)
     args = parser.parse_args()
 
     key = Path(args.private_key).expanduser().resolve()

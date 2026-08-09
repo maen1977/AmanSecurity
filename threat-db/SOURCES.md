@@ -36,3 +36,9 @@ Always check the source's current terms/licensing before redistribution or comme
 ### Threat metadata rows
 
 `detection_rules.csv` also supports `META|id|source|family|confidence|first_seen|last_seen`. These rows attach source/family/confidence and optional dates to indicator IDs without changing the cryptographic indicator itself. Unknown dates are stored as `-`; the project does not invent first/last-seen timestamps when the source did not provide them. The importer records MalwareBazaar first/last-seen dates when available and emits source metadata for imported URL/reputation indicators.
+
+## Version 2.0 automatic GitHub Actions refresh
+
+Aman Security 2.0 keeps the indicator-only safety model but automates the maintenance path in the single GitHub Actions workflow. When `THREAT_DB_PRIVATE_KEY_BASE64` is configured, Actions may query MalwareBazaar/URLhaus using `ABUSECH_AUTH_KEY`, optionally ingest an HTTPS phishing feed configured through `PHISHING_FEED_URL`, merge reviewed reputation, compact the mobile database, increment/sign the manifest only when content changes, rebuild signed reputation prefix shards, verify all signatures/hashes, and commit only the signed threat-data paths.
+
+The updater never calls the MalwareBazaar sample-download (`get_file`) path and never places malware binaries in the repository or Android build.

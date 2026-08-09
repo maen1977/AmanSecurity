@@ -14,6 +14,7 @@ import io
 import json
 import os
 import re
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 DB = ROOT / "threat-db"
@@ -97,11 +98,48 @@ def date_only(value):
     return m.group(1) if m else "-"
 
 
+def threat_family(value):
+    text = str(value or "").lower()
+    mapping = (
+        (("bank", "banker"), "BANKER"),
+        (("spy", "stalker"), "SPYWARE"),
+        (("rat", "remote access"), "RAT"),
+        (("dropper", "loader"), "DROPPER"),
+        (("ransom",), "RANSOMWARE"),
+        (("adware",), "ADWARE"),
+        (("trojan",), "TROJAN"),
+    )
+    for needles, family in mapping:
+        if any(n in text for n in needles):
+            return family
+    return "MALWARE"
+
+
+def fetch_text(url: str, max_bytes: int = 32 * 1024 * 1024):
+    parsed = parse.urlsplit(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise SystemExit("phishing feed URL must use HTTPS")
+    req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+    with request.urlopen(req, timeout=30) as r:
+        data = r.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise SystemExit("phishing feed too large")
+    return data.decode("utf-8", "replace")
+
+
 def fetch_json(url: str, data: dict[str, str], auth_key: str):
     body = parse.urlencode(data).encode()
-    req = request.Request(url, data=body, headers={"Auth-Key": auth_key, "User-Agent": "AmanSecurity-IndicatorBuilder/1.1"})
-    with request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read(8 * 1024 * 1024).decode("utf-8", "replace"))
+    last = None
+    for attempt in range(3):
+        try:
+            req = request.Request(url, data=body, headers={"Auth-Key": auth_key, "User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+            with request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read(8 * 1024 * 1024).decode("utf-8", "replace"))
+        except Exception as exc:
+            last = exc
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+    raise last
 
 
 def import_malwarebazaar(auth_key: str, limit: int):
@@ -117,7 +155,7 @@ def import_malwarebazaar(auth_key: str, limit: int):
         family = str(item.get("signature") or item.get("tags") or "MALWARE")
         rid = clean_id("MB", family, digest)
         rows.append(f"{digest}|{rid}|KNOWN_THREAT")
-        metadata.append((rid, "MALWAREBAZAAR", "MALWARE", "HIGH", date_only(item.get("first_seen")), date_only(item.get("last_seen"))))
+        metadata.append((rid, "MALWAREBAZAAR", threat_family(family), "HIGH", date_only(item.get("first_seen")), date_only(item.get("last_seen"))))
         existing.add(digest)
         added += 1
     write_rows(FILE_DB, comments, rows)
@@ -127,9 +165,20 @@ def import_malwarebazaar(auth_key: str, limit: int):
 
 def import_urlhaus(auth_key: str, limit: int):
     url = f"https://urlhaus-api.abuse.ch/v2/files/exports/{auth_key}/recent.csv"
-    req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/1.1"})
-    with request.urlopen(req, timeout=30) as r:
-        text = r.read(32 * 1024 * 1024).decode("utf-8", "replace")
+    text = None
+    last = None
+    for attempt in range(3):
+        try:
+            req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+            with request.urlopen(req, timeout=30) as r:
+                text = r.read(32 * 1024 * 1024).decode("utf-8", "replace")
+            break
+        except Exception as exc:
+            last = exc
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+    if text is None:
+        raise last
     reader = csv.reader(io.StringIO(text))
     candidates = []
     for row in reader:
@@ -145,6 +194,12 @@ def import_urlhaus(auth_key: str, limit: int):
 
 def import_phishing_file(path: Path, limit: int):
     text = path.read_text(encoding="utf-8", errors="replace")
+    urls = re.findall(r"https?://[^\s,\"'<>]+", text, flags=re.I)[:limit]
+    return import_urls(urls, "PHISH", "PHISHING")
+
+
+def import_phishing_url(url: str, limit: int):
+    text = fetch_text(url)
     urls = re.findall(r"https?://[^\s,\"'<>]+", text, flags=re.I)[:limit]
     return import_urls(urls, "PHISH", "PHISHING")
 
@@ -226,10 +281,11 @@ def main():
     ap.add_argument("--malwarebazaar", action="store_true")
     ap.add_argument("--urlhaus", action="store_true")
     ap.add_argument("--phishing-file", type=Path)
+    ap.add_argument("--phishing-url")
     ap.add_argument("--reputation-file", type=Path)
     ap.add_argument("--limit", type=int, default=1000)
     args = ap.parse_args()
-    if not (args.malwarebazaar or args.urlhaus or args.phishing_file or args.reputation_file):
+    if not (args.malwarebazaar or args.urlhaus or args.phishing_file or args.phishing_url or args.reputation_file):
         ap.error("choose at least one source")
     auth = os.environ.get("ABUSECH_AUTH_KEY", "")
     total = 0
@@ -243,6 +299,8 @@ def main():
         total += import_urlhaus(auth, args.limit)
     if args.phishing_file:
         total += import_phishing_file(args.phishing_file, args.limit)
+    if args.phishing_url:
+        total += import_phishing_url(args.phishing_url, args.limit)
     if args.reputation_file:
         total += import_reputation_file(args.reputation_file, args.limit)
     print(f"THREAT_INTEL_IMPORT_OK added_indicators={total} malware_samples_downloaded=0")

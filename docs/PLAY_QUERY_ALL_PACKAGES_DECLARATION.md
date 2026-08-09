@@ -1,4 +1,4 @@
-# Google Play package-visibility declaration notes — Aman Security 1.1.0
+# Google Play package-visibility declaration notes — Aman Security 2.0.0
 
 Aman Security uses `android.permission.QUERY_ALL_PACKAGES` only for its core antivirus/security function: reviewing user-installed applications locally on the device, both during an explicit installed-app scan and, when background protection is enabled by the user, after a package is installed or updated.
 

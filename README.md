@@ -1,86 +1,91 @@
-# Aman Security 1.1.0 — Detection Engine Upgrade
+# Aman Security 2.0.0 — Real Antivirus Core
 
-Aman Security is a bilingual Android mobile-security scanner with strict Arabic/English UI separation. Version `1.1.0` upgrades the project from a signature/risk scanner into a layered anti-malware architecture while keeping Android privacy and sandbox limits explicit.
+Aman Security is a bilingual Android anti-malware project with strict Arabic/English UI separation. Version `2.0.0` turns the existing scanner into a deeper multi-engine mobile anti-malware core while respecting Android sandbox limits and avoiding automatic destructive actions.
 
-## What 1.1.0 adds
+## Detection stack
 
-1. **Refreshable threat intelligence** — signed file, URL/host/IP, APK identity, reputation, source/family/confidence/first-seen metadata, protected-brand, rule, and local-model records.
-2. **YARA-style local signature rules** — rules combine required and optional static markers without executing the APK.
-3. **Deeper bounded DEX inspection** — dynamic loading, command execution, SMS APIs, device identifiers, screen capture, clipboard, installer/downloader, reflection, networking, encryption, and native loading markers.
-4. **Behavior-combination analysis** — stronger conclusions require meaningful combinations such as Accessibility + overlay or SMS + contacts + boot persistence.
-5. **Packing/obfuscation indicators** — known packer entry names, secondary DEX payloads, reflection-heavy dynamic-code patterns.
-6. **Network IOC extraction** — bounded extraction of URLs/domains from scanned DEX bytes and local matching against the signed URL database.
-7. **Reputation engine** — file, signer, package, and host reputation records can be carried by the signed rules database.
-8. **Impersonation detection** — protected-brand package profiles identify look-alikes as low-confidence context, not an automatic malware verdict.
-9. **Spyware/stalkerware specialization** — dedicated families and behavior chains for spyware, stalkerware, banker, RAT, dropper, ransomware, phishing, adware, and riskware.
-10. **Static behavioral detection** — code/manifest evidence is combined into behavior findings without running untrusted APK code.
-11. **Optional cloud hash reputation** — disabled by default; only available when an HTTPS reputation endpoint is configured and the user opts in. The client sends the SHA-256 identifier for a user-selected APK scan only, never the APK file; background installed-app scans stay local.
-12. **Local ML inference** — lightweight logistic inference uses signed model weights. A training utility is included, but production weights must be trained and benchmarked on a reviewed labeled dataset before making strong detection claims.
-13. **Multi-engine verdict system** — independent engines contribute weighted evidence; confirmed malicious indicators override heuristics.
-14. **False-positive controls** — one low-confidence heuristic cannot produce a high verdict; exact allowlisting caps heuristic escalation while preserving the underlying findings.
-15. **Threat-family classification** — malware, trojan, spyware, stalkerware, banker, RAT, dropper, ransomware, phishing, riskware, adware, and safe test signatures.
-16. **Scheduled signed database updates** — WorkManager checks for signed threat updates every 12 hours when network is available and battery is not low.
-17. **Separated scanner engines** — signature, behavior, network, impersonation, local-model, reputation, and verdict logic are separate modules.
-18. **Regression/benchmark tooling** — unit tests cover the new pure detection engines; `tools/benchmark_detection.py` calculates detection rate, false-positive rate, and precision from labeled exported scores.
-19. **Post-install deep protection** — newly installed/updated user apps receive the deeper static analysis path; broad inventory scans retain the faster layer to control battery/CPU use.
-20. **Release upgrade** — version `1.1.0` (`versionCode 9`), API 36, R8/resource shrinking, release AAB support, and one automatic GitHub Actions workflow.
+- Exact SHA-256 file signatures and signed APK signer/package identity indicators.
+- Full deep scan of user-installed apps on manual inventory scans.
+- Event-driven deep scan after a user app is installed or updated.
+- Bounded APK/DEX static analysis without executing untrusted code.
+- Behavior rules for banker, spyware, stalkerware, RAT, dropper, ransomware, phishing/riskware patterns.
+- Packing/obfuscation and secondary-DEX indicators.
+- Local URL/domain/IP extraction and matching against signed threat intelligence.
+- Reviewed SAFE/MALICIOUS reputation records with exact-file or signer allowlisting only.
+- Local logistic-model inference as a supporting signal, never the sole proof of malware.
+- Multi-engine verdict aggregation with confidence and false-positive controls.
+- Encrypted quarantine, exact-hash exclusions, local scan history, protected-folder scanning, and phishing-link scanning retained from earlier releases.
 
-## Existing protection retained
+## GitHub-hosted reputation without sending the full hash
 
-- File/APK SHA-256 scan and signed threat database.
-- Installed-app permission/source/signing-certificate review.
-- Encrypted AES-GCM quarantine backed by Android Keystore; no automatic deletion/quarantine.
-- Exact-hash exclusions and bounded local scan history.
-- Local URL/phishing scanner and Android share-to-scan flow.
-- SAF protected-folder scanning without broad storage permission.
-- Event-driven scan after package installation/update.
-- Cleartext networking disabled in release.
-- Strict English/Arabic localization gate.
+The optional online reputation feature uses GitHub-hosted **signed prefix shards**. For a user-selected file, Aman requests a shard using only the first two hexadecimal characters of the SHA-256. It verifies the detached RSA signature and performs the exact 64-character hash match locally. The APK/file and the full SHA-256 are not uploaded.
 
-## Detection-safety model
+The signed shards live under `reputation/v1/file/` and are generated by `tools/build_reputation_shards.py`.
 
-Aman Security does **not** claim that any antivirus can identify every harmful program or every zero-day. Detection quality depends on the breadth, freshness, and review quality of threat intelligence plus real-world false-positive testing. The project therefore separates confirmed indicators from heuristic/ML findings and exposes confidence instead of treating a single permission or obfuscation marker as proof of malware.
+## One GitHub Actions pipeline
 
-No malware binary is bundled or downloaded by the threat-intelligence tooling. `tools/update_threat_intel.py` imports indicators only. After reviewing database changes, the maintainer must increment/sign the manifest using the offline update-signing key; the private key must never be committed or packaged with the app.
+There is exactly one workflow file: `.github/workflows/main.yml`.
 
-## Threat intelligence maintenance
+It runs on:
 
-Example indicator-only imports:
+- pushes to `main`;
+- a six-hour schedule for threat-intelligence refresh;
+- manual `workflow_dispatch`.
 
-```bash
-export ABUSECH_AUTH_KEY='...'
-python3 tools/update_threat_intel.py --malwarebazaar --urlhaus --limit 1000
-python3 tools/update_threat_intel.py --phishing-file reviewed_phishing_urls.txt --limit 5000
-python3 tools/update_threat_intel.py --reputation-file reviewed_reputation.csv --limit 5000
-```
+The workflow has two jobs inside the same workflow run:
 
-Then review the diff, update/sign the manifest with the offline key, and run the full gates before publishing the database. See `threat-db/SOURCES.md` and `docs/DETECTION_ENGINE_1_1.md`.
+1. **refresh-threat-intelligence** — imports indicator metadata only, compacts the mobile DB, signs it, builds signed reputation shards, verifies everything, and commits changed threat data back to `main`.
+2. **build-and-verify** — overlays the refreshed threat data, runs localization/security/release gates, a safe synthetic regression benchmark, Android unit tests, release lint, then builds the debug APK and release AAB.
 
-## Local model training and benchmarking
+`concurrency.cancel-in-progress` keeps old runs from piling up. The refresh job alone has `contents: write`; the default/build permissions remain read-only.
 
-```bash
-python3 tools/train_local_model.py labeled_features.csv > model_rows.txt
-python3 tools/benchmark_detection.py labeled_scores.csv --threshold 55
-```
+### Required GitHub Secrets for automatic threat refresh
 
-The included on-device model is a small inference layer, not a substitute for confirmed signatures, reputation, or behavior analysis.
+- `THREAT_DB_PRIVATE_KEY_BASE64` — base64 of the existing offline RSA update-signing private key. Never commit this key.
+- `ABUSECH_AUTH_KEY` — auth key for indicator queries/downloads from MalwareBazaar and URLhaus.
+- `PHISHING_FEED_URL` — optional HTTPS reviewed phishing feed URL.
 
-## Build checks
+Release signing remains optional and uses:
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+If the threat-signing secret is absent, Actions still verifies/builds the current signed DB but skips automatic refresh.
+
+## Threat-intelligence safety
+
+The public project does **not** download or store malware binaries. The updater imports hashes, URLs/hosts, family labels, source/confidence metadata, and reviewed reputation records only. `tools/update_threat_intel.py` deliberately contains no malware-sample retrieval path.
+
+Current abuse.ch community APIs require an Auth-Key. Review their current fair-use/licensing terms before production/commercial use.
+
+## Database update path
+
+The Android app checks the signed `threat-db/` data on GitHub every six hours when WorkManager can run with network and battery constraints. Manifest signature, individual database hashes, serial rollback protection, schema checks, and minimum-app-version checks are enforced before installation.
+
+## Reviewed allowlist/reputation
+
+`threat-intel/reviewed_reputation.csv` is the review-controlled entry point for SAFE or MALICIOUS file/signer/package/host reputation. SAFE reputation should be based on reviewed exact file or signer hashes; package name alone is not accepted as a strong allowlist for APK heuristic suppression.
+
+## Benchmarking
+
+`tools/benchmark_detection.py` calculates detection rate, false-positive rate, precision, accuracy, family accuracy, scan latency, and peak-memory metrics from exported labeled results. CI uses `benchmarks/synthetic_detection.csv` only as a safe regression fixture. It is **not** a claim of real-world detection rate. Production-quality accuracy claims require a large independently reviewed benign/malicious corpus handled in an isolated malware-analysis environment outside this repository.
+
+## Main checks
 
 ```bash
 python3 tools/verify_localization.py
 python3 tools/verify_threat_db.py
+python3 tools/verify_reputation_shards.py
+python3 tools/verify_single_workflow.py
 python3 tools/detection_gate.py
+python3 tools/real_antivirus_gate.py
 python3 tools/quality_gate.py
 python3 tools/release_gate.py
-python3 tools/verify_single_workflow.py
-gradle :app:testDebugUnitTest :app:lintRelease :app:assembleDebug :app:bundleRelease
+python3 tools/benchmark_detection.py benchmarks/synthetic_detection.csv --threshold 55
 ```
 
-## GitHub Actions — exactly one automatic workflow
+Full Android compilation, unit tests, lint, APK and AAB builds are performed by GitHub Actions.
 
-The repository contains exactly one workflow file: `.github/workflows/main.yml`. It runs automatically on pushes to `main`, retains manual `workflow_dispatch` as a fallback, and uses `concurrency` with `cancel-in-progress: true` so a newer push replaces an older in-progress build instead of creating a pile of simultaneous builds.
-
-If this project is copied over an older repository, remove old YAML files already committed under `.github/workflows/` once; copying new files does not delete old repository files.
-
-See also `docs/RELEASE_CHECKLIST.md`, `docs/RELEASE_SIGNING.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `docs/CLOUD_REPUTATION.md`.
+See `docs/REAL_ANTIVIRUS_CORE_2_0.md` and `docs/GITHUB_ACTIONS_THREAT_UPDATES.md`.

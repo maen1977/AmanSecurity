@@ -1,3 +1,5 @@
+> Historical 1.1 design note. Superseded by `REAL_ANTIVIRUS_CORE_2_0.md`.
+
 # Aman Security 1.1.0 detection-engine design
 
 ## Goal
@@ -59,14 +61,14 @@ Operational process:
 
 ## Optional cloud reputation
 
-Cloud reputation is off by default and invisible unless `REPUTATION_API_BASE_URL` is configured at build time. The user must then opt in. The implemented client sends an HTTPS GET for a SHA-256 identifier only during a user-selected APK/file scan; it does not upload the APK, and background installed-app scans remain local. See `CLOUD_REPUTATION.md` for the expected backend contract. Production deployments should publish their privacy/retention policy and avoid logging hashes longer than operationally necessary.
+Historical 1.1 note: this endpoint design was replaced in 2.0 by signed two-character SHA-256 prefix shards hosted on GitHub. See `REAL_ANTIVIRUS_CORE_2_0.md` and `CLOUD_REPUTATION.md`.
 
 ## Background protection
 
 - Package install/update events schedule a deep scan of the affected package.
 - Broad installed-app inventory scans use a faster path to control CPU and battery.
 - Protected-folder scanning stays SAF-scoped and periodic.
-- Signed threat-database updates are scheduled every 12 hours with network/battery constraints.
+- Historical 1.1 behavior used 12-hour checks; 2.0 uses six-hour signed update checks.
 - No background path automatically deletes, uninstalls, or quarantines content.
 
 ## Remaining real-world work before strong marketing claims

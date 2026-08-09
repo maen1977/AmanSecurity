@@ -1,9 +1,9 @@
 {
   "schema": 4,
-  "serial": 7,
-  "version": "2026.08.08.6",
-  "generatedAt": "2026-08-08T21:10:47Z",
-  "minAppVersionCode": 9,
+  "serial": 8,
+  "version": "2026.08.09.1",
+  "generatedAt": "2026-08-08T21:44:53Z",
+  "minAppVersionCode": 10,
   "entries": 5,
   "dbPath": "signatures.csv",
   "dbSha256": "5474ae29f423cda99dc34e7f18d844b4355dcae7681c5918feb0aedf5123c44f",
@@ -13,7 +13,7 @@
   "apkIdentityEntries": 2,
   "apkIdentityDbPath": "apk_indicators.csv",
   "apkIdentityDbSha256": "fd4688d40bfcb5658fd028372fc61c0723d0e0287378e7c32191d4da650080e1",
-  "detectionEntries": 44,
+  "detectionEntries": 62,
   "detectionDbPath": "detection_rules.csv",
-  "detectionDbSha256": "46e856640024e5c431a07f967c2e20263323587eaf80779d6350d4ee8ad85ff3"
+  "detectionDbSha256": "db9e1a7d06774ac81d53cf7ef7a2784451ebab12ae9d723f519d639d9e6a41ec"
 }

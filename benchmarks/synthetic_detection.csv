@@ -1,0 +1,11 @@
+expected_malicious,score,scan_ms,peak_memory_mb,expected_family,predicted_family
+true,100,18,24,BANKER,BANKER
+true,91,22,25,SPYWARE,SPYWARE
+true,88,21,25,RAT,RAT
+true,86,24,26,DROPPER,DROPPER
+true,84,25,27,RANSOMWARE,RANSOMWARE
+true,82,20,24,STALKERWARE,STALKERWARE
+false,0,12,21,,UNKNOWN
+false,8,13,21,,RISKWARE
+false,18,15,22,,RISKWARE
+false,19,14,22,,UNKNOWN

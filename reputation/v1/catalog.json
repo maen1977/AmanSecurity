@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-08-08T21:44:55Z",
+  "kind": "FILE",
+  "schema": 1,
+  "shards": {
+    "04": {
+      "entries": 1,
+      "sha256": "c0dde67bac4014a45e0bb5720d02f8f7f5fe49c340d1c55f028377534af33573"
+    },
+    "27": {
+      "entries": 1,
+      "sha256": "893aa4f72b2ea6841ff79938f8b32542aa97731a40f57ac8c4f7c9251ee6c6ae"
+    },
+    "34": {
+      "entries": 1,
+      "sha256": "770a6bb90aa4ebcd195a9a9571cf4438d2771bad864183f6ed8b32a6bafd530d"
+    },
+    "ad": {
+      "entries": 1,
+      "sha256": "e0393f4ad423b5f3a4f6683298428907ba285d1bcafcc177b3c7774d26f2f4fb"
+    },
+    "e4": {
+      "entries": 1,
+      "sha256": "9125dee269394226304990e50eafd15aebf7de9cb64c40fcb27f7836cd275e83"
+    }
+  },
+  "totalEntries": 5
+}

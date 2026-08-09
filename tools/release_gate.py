@@ -17,7 +17,7 @@ workflow = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
 gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
 need('compileSdk = 36' in build and 'targetSdk = 36' in build, "Android 16 / API 36 target is required")
-need('versionCode = 9' in build and 'versionName = "1.1.0"' in build, "release version must be 1.1.0 / code 9")
+need('versionCode = 10' in build and 'versionName = "2.0.0"' in build, "release version must be 2.0.0 / code 10")
 need('-phase' not in re.search(r'versionName\s*=\s*"([^"]+)"', build).group(1), "release versionName must not contain a phase suffix")
 need('isMinifyEnabled = true' in build and 'isShrinkResources = true' in build, "release must use R8 and resource shrinking")
 need('isDebuggable = false' in build, "release build must explicitly disable debugging")
@@ -46,7 +46,8 @@ need(base is not None and base.attrib.get("cleartextTrafficPermitted") == "false
 need('bundleRelease' in workflow and 'lintRelease' in workflow, "CI must lint and build the release AAB")
 need('jarsigner -verify' in workflow, "CI must verify the signed AAB when signing secrets exist")
 need('ANDROID_KEYSTORE_BASE64' in workflow, "CI signing must use repository secrets")
-need('permissions:\n  contents: read' in workflow, "CI token permissions must be read-only")
+need('permissions:\n  contents: read' in workflow, "workflow default token permissions must be read-only")
+need('refresh-threat-intelligence:' in workflow and 'contents: write' in workflow, "only the threat refresh job may request write access")
 
 for pattern in ('*.jks', '*.keystore', 'keystore.properties', '*.p12', '*.pfx'):
     need(pattern in gitignore, f".gitignore must exclude {pattern}")
@@ -76,6 +77,6 @@ if errors:
         print(" -", error)
     sys.exit(1)
 
-print("PHASE8_RELEASE_GATE_OK target_api=36 version=1.1.0 r8=1 resource_shrink=1 cleartext=0 adaptive_icon=1")
+print("PHASE8_RELEASE_GATE_OK target_api=36 version=2.0.0 r8=1 resource_shrink=1 cleartext=0 adaptive_icon=1")
 print("PHASE8_SIGNING_GATE_OK private_keys=0 env_injected=1 play_bundle=1")
-print("PHASE8_CI_GATE_OK unit_tests=1 lint_release=1 aab=1 read_only_token=1 dependency_updates=1")
+print("PHASE8_CI_GATE_OK unit_tests=1 lint_release=1 aab=1 default_read_only_token=1 threat_refresh_write_job=1 dependency_updates=1")

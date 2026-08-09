@@ -1,24 +1,106 @@
-name: Build Aman Security Android
+name: Aman Security Pipeline
 
 on:
   push:
     branches: [ "main" ]
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: aman-security-single-build
+  group: aman-security-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  refresh-threat-intelligence:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify single workflow file
+        run: python3 tools/verify_single_workflow.py
+
+      - name: Configure threat database signing key
+        id: threat_key
+        env:
+          THREAT_KEY_B64: ${{ secrets.THREAT_DB_PRIVATE_KEY_BASE64 }}
+        shell: bash
+        run: |
+          if [ -n "$THREAT_KEY_B64" ]; then
+            printf '%s' "$THREAT_KEY_B64" | base64 --decode > "$RUNNER_TEMP/aman-threat-signing.pem"
+            chmod 600 "$RUNNER_TEMP/aman-threat-signing.pem"
+            echo "THREAT_PRIVATE_KEY=$RUNNER_TEMP/aman-threat-signing.pem" >> "$GITHUB_ENV"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Threat refresh is skipped until THREAT_DB_PRIVATE_KEY_BASE64 is configured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Refresh indicator-only threat intelligence
+        if: steps.threat_key.outputs.available == 'true'
+        env:
+          ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
+          PHISHING_FEED_URL: ${{ secrets.PHISHING_FEED_URL }}
+        run: python3 tools/refresh_threat_intel.py --private-key "$THREAT_PRIVATE_KEY" --limit 1000
+
+      - name: Verify signed threat data
+        run: |
+          python3 tools/verify_threat_db.py
+          python3 tools/verify_reputation_shards.py
+
+      - name: Commit refreshed indicators when changed
+        if: steps.threat_key.outputs.available == 'true'
+        shell: bash
+        run: |
+          if git diff --quiet -- threat-db reputation app/src/main/assets/threat-db; then
+            echo "No threat-intelligence changes to commit." >> "$GITHUB_STEP_SUMMARY"
+          else
+            git config user.name "aman-security-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add threat-db reputation app/src/main/assets/threat-db
+            git commit -m "chore(threat-intel): refresh signed indicators [skip ci]"
+            git push origin HEAD:main
+            echo "Signed threat intelligence was refreshed and committed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Package refreshed threat data for build job
+        run: tar -czf "$RUNNER_TEMP/aman-threat-refresh.tgz" threat-db reputation app/src/main/assets/threat-db
+
+      - name: Upload refreshed threat data
+        uses: actions/upload-artifact@v4
+        with:
+          name: aman-threat-refresh
+          path: ${{ runner.temp }}/aman-threat-refresh.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  build-and-verify:
+    needs: refresh-threat-intelligence
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Download refreshed threat data
+        uses: actions/download-artifact@v4
+        with:
+          name: aman-threat-refresh
+          path: ${{ runner.temp }}/aman-threat-refresh
+
+      - name: Overlay refreshed threat data
+        run: tar -xzf "$RUNNER_TEMP/aman-threat-refresh/aman-threat-refresh.tgz" -C "$GITHUB_WORKSPACE"
 
       - name: Verify single workflow file
         run: python3 tools/verify_single_workflow.py
@@ -65,10 +147,15 @@ jobs:
       - name: Check Arabic and English localization
         run: python3 tools/verify_localization.py
 
-      - name: Verify signed threat database
-        run: python3 tools/verify_threat_db.py
+      - name: Verify signed threat database and reputation shards
+        run: |
+          python3 tools/verify_threat_db.py
+          python3 tools/verify_reputation_shards.py
 
-      - name: Verify detection engine 1.1 architecture
+      - name: Verify Real Antivirus Core architecture
+        run: python3 tools/real_antivirus_gate.py
+
+      - name: Run detection-engine architecture gate
         run: python3 tools/detection_gate.py
 
       - name: Run source quality gate
@@ -76,6 +163,9 @@ jobs:
 
       - name: Run release-readiness gate
         run: python3 tools/release_gate.py
+
+      - name: Run safe synthetic detection benchmark
+        run: python3 tools/benchmark_detection.py benchmarks/synthetic_detection.csv --threshold 55
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
@@ -93,7 +183,8 @@ jobs:
       - name: Write build summary
         shell: bash
         run: |
-          echo "### Aman Security 1.1.0" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Aman Security 2.0.0 – Real Antivirus Core" >> "$GITHUB_STEP_SUMMARY"
+          echo "Threat database and signed GitHub reputation shards passed verification." >> "$GITHUB_STEP_SUMMARY"
           if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
             echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -103,20 +194,20 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.1.0-Debug-APK
+          name: AmanSecurity-2.0.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.1.0-Release-AAB
+          name: AmanSecurity-2.0.0-Release-AAB
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-1.1.0-R8-Mapping
+          name: AmanSecurity-2.0.0-R8-Mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn

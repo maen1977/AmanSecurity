@@ -61,7 +61,7 @@ data class ThreatDbManifest(
                 require(manifest.apkIdentityDbSha256?.matches(Regex("^[a-f0-9]{64}$")) == true)
             }
             if (schema >= 4) {
-                require(manifest.detectionEntries in 1..100_000)
+                require(manifest.detectionEntries in 1..500_000)
                 require(manifest.detectionDbPath == "detection_rules.csv")
                 require(manifest.detectionDbSha256?.matches(Regex("^[a-f0-9]{64}$")) == true)
             }

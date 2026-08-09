@@ -15,7 +15,9 @@ def require(text: str, needles: list[str], label: str):
 def main():
     subprocess.run([sys.executable, str(ROOT / "tools/verify_localization.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/verify_threat_db.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools/verify_reputation_shards.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/detection_gate.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools/real_antivirus_gate.py")], check=True)
 
     manifest = (ROOT / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     forbidden_storage = ["MANAGE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
@@ -48,7 +50,7 @@ def main():
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "1.1.0"', "versionCode = 9", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "2.0.0"', "versionCode = 10", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
@@ -177,7 +179,7 @@ def main():
     workflow8 = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
     require(manifest, ['android:usesCleartextTraffic="false"', 'android:networkSecurityConfig="@xml/network_security_config"', '@mipmap/ic_launcher'], "PHASE8_MANIFEST_GATE")
     require(network_security, ['cleartextTrafficPermitted="false"', '<certificates src="system"'], "PHASE8_NETWORK_GATE")
-    require(gradle, ['versionName = "1.1.0"', 'versionCode = 9', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
+    require(gradle, ['versionName = "2.0.0"', 'versionCode = 10', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
     require(freshness, ["ThreatDatabaseFreshness", "CURRENT_DAYS", "AGING_DAYS", "Instant.parse"], "PHASE8_FRESHNESS_GATE")
     require(workflow8, ["tools/release_gate.py", ":app:lintRelease", ":app:bundleRelease", "ANDROID_KEYSTORE_BASE64", "jarsigner -verify"], "PHASE8_CI_GATE")
 
@@ -198,7 +200,7 @@ def main():
     print("PHASE6_RISK_GATE_OK combined_signals=1 single_signal_conservative=1 known_identity_override=1")
     print("PHASE7_BACKGROUND_GATE_OK package_added=event_driven folder_scan=workmanager_60m_battery_aware saf_tree=1")
     print("PHASE7_ALERT_GATE_OK known_threat=1 high_risk=1 medium_suppressed=1 exclusions_respected=1")
-    print("PHASE7_PRIVACY_GATE_OK uploads=0 broad_storage=0 auto_delete=0 auto_quarantine=0")
+    print("PHASE7_PRIVACY_GATE_OK full_hash_upload=0 broad_storage=0 auto_delete=0 auto_quarantine=0")
     print("PHASE7_SOURCE_GATE_OK")
     print("PHASE8_HARDENING_GATE_OK cleartext=0 r8=1 resource_shrink=1 adaptive_icon=1 dark_theme=1")
     print("PHASE8_FALSE_POSITIVE_GATE_OK high_threshold=55 background_low_confidence_suppressed=1")

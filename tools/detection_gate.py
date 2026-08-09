@@ -59,7 +59,7 @@ need(has(behavior,'STALKERWARE','SPYWARE'), 'spyware/stalkerware specialization 
 # 10: static behavior chains
 need('STATIC_BEHAVIOR' in models and 'StaticBehaviorEngine.evaluate' in analyzer, 'static behavior engine not integrated')
 # 11: optional cloud hash reputation
-need(has(cloud,'enabled','REPUTATION_API_BASE_URL','/v1/hash/','sha256'), 'optional hash-only cloud reputation missing')
+need(has(cloud,'enabled','REPUTATION_SHARD_BASE_URL','substring(0, 2)','verifyDetached','sha256'), 'optional hash-only cloud reputation missing')
 need(has(analyzer,'allowCloudLookup = true','allowCloudLookup = false','CloudReputationClient(context).querySha256(fileSha256)','DetectionSource.CLOUD_REPUTATION'), 'user-triggered hash cloud reputation integration missing')
 # 12: local ML
 need(has(ml,'probability','LOCAL_MODEL_90','exp('), 'local model inference missing')
@@ -72,7 +72,7 @@ need(has(verdict,'Low-confidence heuristics alone cannot escalate','allowlisted'
 for family in ('TROJAN','SPYWARE','STALKERWARE','BANKER','RAT','DROPPER','RANSOMWARE','PHISHING','RISKWARE','ADWARE'):
     need(family in models, f'threat family missing: {family}')
 # 16: scheduled signed updates
-need(has(scheduler,'PeriodicWorkRequestBuilder<ThreatUpdateWorker>(12, TimeUnit.HOURS','NetworkType.CONNECTED','ExistingPeriodicWorkPolicy.UPDATE','BackoffPolicy.EXPONENTIAL'), 'scheduled threat updates missing')
+need(has(scheduler,'PeriodicWorkRequestBuilder<ThreatUpdateWorker>(6, TimeUnit.HOURS','NetworkType.CONNECTED','ExistingPeriodicWorkPolicy.UPDATE','BackoffPolicy.EXPONENTIAL'), 'scheduled threat updates missing')
 need('schema < 4' in updater and 'instanceFollowRedirects = false' in updater, 'signed schema4 update hardening missing')
 # 17: separated engines
 for name in ('SignatureRuleEngine.kt','StaticBehaviorEngine.kt','LocalMalwareModel.kt','NetworkIndicatorExtractor.kt','ImpersonationDetector.kt','VerdictEngine.kt'):
@@ -92,13 +92,13 @@ for test_name in (
 need('scanPackageByName(packageName' in installed and 'deep: Boolean = true' in installed and 'analyzeInstalledFile' in installed, 'post-install deep scan missing')
 # 20: release upgrade
 build=text('app/build.gradle.kts')
-need('versionName = "1.1.0"' in build and 'versionCode = 9' in build, '1.1 release version missing')
+need('versionName = "2.0.0"' in build and 'versionCode = 10' in build, '2.0 release version missing')
 # single auto workflow remains
-need(workflow.count('name: Build Aman Security Android') == 1 and 'push:' in workflow and 'branches: [ "main" ]' in workflow, 'single automatic workflow missing')
+need(workflow.count('name: Aman Security Pipeline') == 1 and 'push:' in workflow and 'branches: [ "main" ]' in workflow, 'single automatic workflow missing')
 need(len(list((ROOT/'.github/workflows').glob('*.y*ml'))) == 1, 'more than one workflow file found')
 
 if errors:
     print('DETECTION_ENGINE_GATE_FAILED')
     for e in errors: print(' -',e)
     sys.exit(1)
-print('DETECTION_ENGINE_GATE_OK items=20 multi_engine=1 local_ml=1 signed_rules=1 threat_intel_pipeline=1 cloud_opt_in=1 post_install_deep_scan=1')
+print('DETECTION_ENGINE_GATE_OK items=20 multi_engine=1 local_ml=1 signed_rules=1 github_signed_reputation=1 post_install_deep_scan=1')
