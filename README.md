@@ -33,3 +33,17 @@ python3 tools/repository_cleanup_2_6.py --apply
 
 See `docs/MIGRATION_2_6_NO_GITHUB_ACTIONS.md`.
 
+For an existing local Git clone, one-time migration launchers are also included at the repository root:
+
+```powershell
+./MIGRATE_EXISTING_REPO_TO_2_6.ps1
+```
+
+or on Linux/macOS:
+
+```bash
+./MIGRATE_EXISTING_REPO_TO_2_6.sh
+```
+
+These remove tracked legacy workflow/reputation files, run the autonomous 2.6 gates, and stop before commit/push so the deletions can be reviewed.
+
