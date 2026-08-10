@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Build signed, prefix-partitioned file reputation for GitHub hosting.
+"""Build signed reputation artifacts for GitHub hosting.
+
+- v1/file: exact SHA-256 prefix shards. The Android client requests only a two-
+  hex prefix and performs the exact full-hash comparison locally.
+- v2/file_bloom.json: compact signed Bloom prefilter for known-malicious exact
+  hashes. Bloom hits are hints only and never become confirmed verdicts.
 
 Only indicator metadata is emitted. Malware binaries are never downloaded or stored.
-The Android client requests a two-hex-character prefix shard, verifies its RSA
-signature, then performs the full SHA-256 comparison locally.
 """
 from __future__ import annotations
 from pathlib import Path
-import argparse, datetime as dt, hashlib, json, re, shutil, subprocess
+import argparse, base64, datetime as dt, hashlib, json, math, re, shutil, subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 THREAT = ROOT / "threat-db"
 OUT = ROOT / "reputation" / "v1" / "file"
-PUBLIC_KEY = ROOT / "app/src/main/assets/keys/threat_update_public_key.pem"
+V2 = ROOT / "reputation" / "v2"
+ASSET_REP = ROOT / "app/src/main/assets/reputation"
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -53,7 +57,6 @@ def load_entries():
         if len(p) != 7 or p[0] != "REPUTATION" or p[1] != "FILE" or not HASH_RE.fullmatch(p[2]):
             continue
         digest, rid, family, disposition = p[2], p[3], p[4], p[6]
-        # Reviewed explicit reputation wins over the generic signature row.
         by_hash[digest] = {"sha256": digest, "id": rid, "family": family, "disposition": disposition}
     return list(by_hash.values())
 
@@ -63,6 +66,44 @@ def sign(path: Path, private_key: Path):
         "openssl", "dgst", "-sha256", "-sign", str(private_key),
         "-out", str(path.with_suffix(".sig")), str(path)
     ], check=True)
+
+
+def bloom_positions(digest: str, salt: str, bit_count: int, k: int):
+    for i in range(k):
+        raw = hashlib.sha256(f"{salt}:{i}:{digest}".encode()).digest()
+        value = int.from_bytes(raw[:8], "big") & ((1 << 63) - 1)
+        yield value % bit_count
+
+
+def build_bloom(entries, generated: str, private_key: Path):
+    malicious = sorted({e["sha256"] for e in entries if e["disposition"] == "MALICIOUS"})
+    # ~20 bits/entry with a floor provides a very low false-positive rate while
+    # staying tiny for the current dataset and scalable for large feeds.
+    bit_count = max(8192, int(math.ceil(max(1, len(malicious)) * 20 / 8.0) * 8))
+    k = 7
+    salt = "aman-file-reputation-v2"
+    bits = bytearray((bit_count + 7) // 8)
+    for digest in malicious:
+        for bit in bloom_positions(digest, salt, bit_count, k):
+            bits[bit >> 3] |= 1 << (bit & 7)
+    payload = {
+        "schema": 1,
+        "kind": "FILE_MALICIOUS_BLOOM",
+        "generatedAt": generated,
+        "entries": len(malicious),
+        "bitCount": bit_count,
+        "hashFunctions": k,
+        "salt": salt,
+        "bitsBase64": base64.b64encode(bytes(bits)).decode("ascii"),
+    }
+    V2.mkdir(parents=True, exist_ok=True)
+    path = V2 / "file_bloom.json"
+    path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+    sign(path, private_key)
+    ASSET_REP.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, ASSET_REP / path.name)
+    shutil.copy2(path.with_suffix(".sig"), ASSET_REP / "file_bloom.sig")
+    return len(malicious), bit_count
 
 
 def main():
@@ -79,24 +120,26 @@ def main():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
     generated = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    entries = load_entries()
     grouped = {}
-    for entry in load_entries():
+    for entry in entries:
         grouped.setdefault(entry["sha256"][:2], []).append(entry)
 
     catalog = {"schema": 1, "generatedAt": generated, "kind": "FILE", "totalEntries": 0, "shards": {}}
     for prefix in sorted(grouped):
-        entries = sorted(grouped[prefix], key=lambda x: x["sha256"])
-        payload = {"schema": 1, "kind": "FILE", "prefix": prefix, "generatedAt": generated, "entries": entries}
+        shard_entries = sorted(grouped[prefix], key=lambda x: x["sha256"])
+        payload = {"schema": 1, "kind": "FILE", "prefix": prefix, "generatedAt": generated, "entries": shard_entries}
         path = OUT / f"{prefix}.json"
         path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
         sign(path, key)
-        catalog["totalEntries"] += len(entries)
-        catalog["shards"][prefix] = {"entries": len(entries), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+        catalog["totalEntries"] += len(shard_entries)
+        catalog["shards"][prefix] = {"entries": len(shard_entries), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
     catalog_path = OUT.parent / "catalog.json"
     catalog_path.write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     sign(catalog_path, key)
-    print(f"REPUTATION_SHARDS_OK shards={len(grouped)} entries={catalog['totalEntries']} full_hash_sent_by_client=0")
+    malicious, bit_count = build_bloom(entries, generated, key)
+    print(f"REPUTATION_SHARDS_OK shards={len(grouped)} entries={catalog['totalEntries']} full_hash_sent_by_client=0 bloom_entries={malicious} bloom_bits={bit_count}")
 
 if __name__ == "__main__":
     main()

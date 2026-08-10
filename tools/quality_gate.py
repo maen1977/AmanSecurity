@@ -16,6 +16,8 @@ def main():
     subprocess.run([sys.executable, str(ROOT / "tools/verify_localization.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/verify_threat_db.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/verify_reputation_shards.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools/reviewed_reputation_gate.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools/threat_intel_quality_gate.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/detection_gate.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "tools/real_antivirus_gate.py")], check=True)
 
@@ -50,7 +52,7 @@ def main():
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "2.0.0"', "versionCode = 10", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "2.3.0"', "versionCode = 13", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
@@ -179,7 +181,7 @@ def main():
     workflow8 = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
     require(manifest, ['android:usesCleartextTraffic="false"', 'android:networkSecurityConfig="@xml/network_security_config"', '@mipmap/ic_launcher'], "PHASE8_MANIFEST_GATE")
     require(network_security, ['cleartextTrafficPermitted="false"', '<certificates src="system"'], "PHASE8_NETWORK_GATE")
-    require(gradle, ['versionName = "2.0.0"', 'versionCode = 10', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
+    require(gradle, ['versionName = "2.3.0"', 'versionCode = 13', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
     require(freshness, ["ThreatDatabaseFreshness", "CURRENT_DAYS", "AGING_DAYS", "Instant.parse"], "PHASE8_FRESHNESS_GATE")
     require(workflow8, ["tools/release_gate.py", ":app:lintRelease", ":app:bundleRelease", "ANDROID_KEYSTORE_BASE64", "jarsigner -verify"], "PHASE8_CI_GATE")
 

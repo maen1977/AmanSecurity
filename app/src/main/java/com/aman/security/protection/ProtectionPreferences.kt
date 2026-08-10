@@ -32,6 +32,18 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_PERMISSION_LOST, false)
         set(value) = prefs.edit().putBoolean(KEY_PERMISSION_LOST, value).apply()
 
+    var lastAppRescanAt: Long
+        get() = prefs.getLong(KEY_LAST_APP_RESCAN_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_APP_RESCAN_AT, value).apply()
+
+    var lastAppRescanCount: Int
+        get() = prefs.getInt(KEY_LAST_APP_RESCAN_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_APP_RESCAN_COUNT, value).apply()
+
+    var lastAppAlertCount: Int
+        get() = prefs.getInt(KEY_LAST_APP_ALERT_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_APP_ALERT_COUNT, value).apply()
+
     @Synchronized
     fun ledger(): MutableMap<String, String> {
         val raw = prefs.getString(KEY_LEDGER, null) ?: return linkedMapOf()
@@ -53,6 +65,41 @@ class ProtectionPreferences(context: Context) {
 
     fun clearLedger() = prefs.edit().remove(KEY_LEDGER).apply()
 
+    @Synchronized
+    fun appLedger(): MutableMap<String, String> {
+        val raw = prefs.getString(KEY_APP_LEDGER, null) ?: return linkedMapOf()
+        return runCatching {
+            val json = JSONObject(raw)
+            val result = linkedMapOf<String, String>()
+            json.keys().forEach { key -> result[key] = json.optString(key) }
+            result
+        }.getOrDefault(linkedMapOf())
+    }
+
+    @Synchronized
+    fun replaceAppFingerprint(packageName: String, fingerprint: String): String? {
+        val values = appLedger()
+        val previous = values.put(packageName, fingerprint)
+        saveAppLedger(values)
+        return previous
+    }
+
+    @Synchronized
+    fun pruneAppLedger(activePackages: Set<String>) {
+        val values = appLedger().filterKeys { it in activePackages }
+        saveAppLedger(values)
+    }
+
+    @Synchronized
+    fun saveAppLedger(values: Map<String, String>) {
+        val bounded = values.entries.toList().takeLast(MAX_APP_LEDGER_ENTRIES)
+        val json = JSONObject()
+        bounded.forEach { (key, value) -> json.put(key, value) }
+        prefs.edit().putString(KEY_APP_LEDGER, json.toString()).apply()
+    }
+
+    fun clearAppLedger() = prefs.edit().remove(KEY_APP_LEDGER).apply()
+
     fun ledgerKey(documentId: String): String = MessageDigest.getInstance("SHA-256")
         .digest(documentId.toByteArray(Charsets.UTF_8))
         .joinToString(separator = "") { byte -> "%02x".format(byte) }
@@ -66,6 +113,11 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LAST_ALERT_COUNT = "last_alert_count"
         private const val KEY_PERMISSION_LOST = "folder_permission_lost"
         private const val KEY_LEDGER = "document_ledger"
+        private const val KEY_APP_LEDGER = "app_detection_ledger"
+        private const val KEY_LAST_APP_RESCAN_AT = "last_app_rescan_at"
+        private const val KEY_LAST_APP_RESCAN_COUNT = "last_app_rescan_count"
+        private const val KEY_LAST_APP_ALERT_COUNT = "last_app_alert_count"
         private const val MAX_LEDGER_ENTRIES = 2000
+        private const val MAX_APP_LEDGER_ENTRIES = 1500
     }
 }

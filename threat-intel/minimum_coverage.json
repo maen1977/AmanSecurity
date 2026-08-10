@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "minimumKnownThreatFileHashes": 9,
+  "minimumDetectionRecords": 73,
+  "minimumSignedReputationEntries": 10,
+  "requiredRuleFamilies": [
+    "BANKER",
+    "SPYWARE",
+    "STALKERWARE",
+    "RAT",
+    "DROPPER",
+    "RANSOMWARE"
+  ]
+}

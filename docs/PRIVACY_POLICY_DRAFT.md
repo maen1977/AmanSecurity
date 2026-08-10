@@ -2,7 +2,7 @@
 
 **Last updated:** 8 August 2026
 
-Aman Security 2.0.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
+Aman Security 2.3.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
 
 Internet access is used to download the signed threat database from the configured update location. Threat-database packages are accepted only after cryptographic signature and hash verification. The app schedules these update checks periodically with Android WorkManager when suitable network/battery conditions are available.
 

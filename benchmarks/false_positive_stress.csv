@@ -1,0 +1,17 @@
+case_id,expected_malicious,score,scan_ms,peak_memory_mb,expected_family,predicted_family
+video_editor_camera_mic,false,28,18,28,,RISKWARE
+navigation_location_boot,false,24,17,25,,RISKWARE
+backup_dynamic_storage,false,31,22,30,,RISKWARE
+enterprise_accessibility,false,34,19,27,,RISKWARE
+password_manager_clipboard,false,18,13,22,,RISKWARE
+vpn_network_native,false,29,20,31,,RISKWARE
+browser_webview_network,false,26,16,26,,RISKWARE
+file_manager_archive_native,false,23,19,29,,RISKWARE
+automation_boot_overlay,false,38,21,28,,RISKWARE
+companion_notification_listener,false,27,18,25,,RISKWARE
+chat_camera_contacts,false,25,17,24,,RISKWARE
+voice_recorder_microphone,false,12,12,21,,UNKNOWN
+scanner_camera_storage,false,16,14,23,,UNKNOWN
+launcher_app_enumeration,false,21,15,24,,RISKWARE
+security_app_package_enumeration,false,25,18,27,,RISKWARE
+near_high_boundary_benign,false,54,22,30,,RISKWARE

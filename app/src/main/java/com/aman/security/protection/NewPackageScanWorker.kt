@@ -21,7 +21,13 @@ class NewPackageScanWorker(
             val database = SignatureDatabase(applicationContext)
             val result = InstalledAppScanner(applicationContext, database).scanPackageByName(packageName)
                 ?: return Result.success()
-            if (!ProtectionPolicy.shouldNotifyApp(result.riskLevel)) return Result.success()
+            if (!ProtectionPolicy.shouldNotifyApp(result.riskLevel)) {
+                preferences.replaceAppFingerprint(packageName, AppRescanPolicy.fingerprint(result))
+                return Result.success()
+            }
+            val fingerprint = AppRescanPolicy.fingerprint(result)
+            val previous = preferences.replaceAppFingerprint(packageName, fingerprint)
+            if (!AppRescanPolicy.shouldNotify(previous, result)) return Result.success()
             val severity = ProtectionPolicy.severityForApp(result.riskLevel) ?: return Result.success()
             val event = ProtectionEventStore(applicationContext).add(
                 type = ProtectionEventType.APP,

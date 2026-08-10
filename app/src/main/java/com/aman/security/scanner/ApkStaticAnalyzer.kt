@@ -21,6 +21,7 @@ import com.aman.security.detection.ReputationKind
 import com.aman.security.detection.SignatureRuleEngine
 import com.aman.security.detection.StaticBehaviorEngine
 import com.aman.security.detection.ThreatFamily
+import com.aman.security.detection.ThreatGraphEngine
 import com.aman.security.detection.VerdictEngine
 import java.io.File
 import java.io.FileInputStream
@@ -135,7 +136,7 @@ class ApkStaticAnalyzer(
         val ruleFindings = SignatureRuleEngine.match(markers, ruleset.rules)
         findings += ruleFindings
         findings += StaticBehaviorEngine.evaluate(signals, markers)
-        findings += ImpersonationDetector.evaluate(packageInfo.packageName, ruleset.brands)
+        findings += ImpersonationDetector.evaluate(packageInfo.packageName, null, ruleset.brands, signerSha256 = certificateHash)
 
         val signerReputation = certificateHash?.let { database.findReputation(ReputationKind.SIGNER, it) }
         val packageReputation = packageHash?.let { database.findReputation(ReputationKind.PACKAGE, it) }
@@ -143,6 +144,15 @@ class ApkStaticAnalyzer(
         signerReputation?.toFinding()?.let(findings::add)
         packageReputation?.toFinding()?.let(findings::add)
         fileReputation?.toFinding()?.let(findings::add)
+        if (database.find(fileSha256) == null && fileReputation == null && database.mightContainMaliciousFileHash(fileSha256)) {
+            findings += DetectionFinding(
+                "OFFLINE_BLOOM_REPUTATION_HIT",
+                DetectionSource.REPUTATION,
+                8,
+                FindingConfidence.LOW,
+                ThreatFamily.MALWARE
+            )
+        }
         // Only reviewed exact-file or signer SAFE reputation may suppress heuristics.
         // Package-name reputation alone is not sufficient because a malicious APK can reuse a package name.
         var trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
@@ -223,6 +233,7 @@ class ApkStaticAnalyzer(
         val modelFeatures = buildModelFeatures(signals, markers, archive, knownNetworkMatches)
         val modelResult = LocalMalwareModel(ruleset.modelWeights).infer(modelFeatures)
         modelResult.finding?.let(findings::add)
+        findings += ThreatGraphEngine.correlate(findings, ruleset.graphLinks)
 
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
         val combinedScore = maxOf(basicEvaluation.score, verdict.score)

@@ -7,28 +7,55 @@ object ImpersonationDetector {
     fun evaluate(
         packageName: String,
         appLabel: String?,
-        profiles: List<ProtectedBrandProfile>
+        profiles: List<ProtectedBrandProfile>,
+        signerSha256: String? = null,
+        isSideloaded: Boolean = false
     ): List<DetectionFinding> {
         val normalizedPackage = packageName.lowercase()
         val normalizedLabel = appLabel.orEmpty().lowercase()
+        val normalizedSigner = signerSha256?.lowercase()
         return profiles.mapNotNull { profile ->
             val official = profile.officialPackage.lowercase()
-            if (normalizedPackage == official) return@mapNotNull null
+            val hasReviewedSigners = profile.trustedSignerSha256.isNotEmpty()
+            val signerMismatch = hasReviewedSigners && normalizedSigner != null &&
+                normalizedSigner !in profile.trustedSignerSha256
+
+            if (normalizedPackage == official) {
+                if (!signerMismatch) return@mapNotNull null
+                return@mapNotNull DetectionFinding(
+                    id = "OFFICIAL_PACKAGE_SIGNER_MISMATCH_${profile.id}",
+                    source = DetectionSource.IMPERSONATION,
+                    score = 42,
+                    confidence = FindingConfidence.HIGH,
+                    family = ThreatFamily.PHISHING,
+                    reference = profile.id
+                )
+            }
+
             val closePackage = editDistance(normalizedPackage, official) <= 3
             val packageTokenHit = profile.tokens.any { token -> normalizedPackage.contains(token.lowercase()) }
             val labelTokenHit = normalizedLabel.isNotBlank() && profile.tokens.any { token ->
                 normalizedLabel.contains(token.lowercase())
             }
             if (!closePackage && !packageTokenHit && !labelTokenHit) return@mapNotNull null
+
+            var score = when {
+                closePackage -> 18
+                labelTokenHit -> 14
+                else -> 10
+            }
+            if (isSideloaded) score += 8
+            if (signerMismatch) score += 14
+            val confidence = if (signerMismatch || (isSideloaded && (closePackage || labelTokenHit))) {
+                FindingConfidence.MEDIUM
+            } else {
+                FindingConfidence.LOW
+            }
             DetectionFinding(
                 id = "IMPERSONATION_${profile.id}",
                 source = DetectionSource.IMPERSONATION,
-                score = when {
-                    closePackage -> 18
-                    labelTokenHit -> 14
-                    else -> 10
-                },
-                confidence = FindingConfidence.LOW,
+                score = score.coerceAtMost(44),
+                confidence = confidence,
                 family = ThreatFamily.PHISHING,
                 reference = profile.id
             )

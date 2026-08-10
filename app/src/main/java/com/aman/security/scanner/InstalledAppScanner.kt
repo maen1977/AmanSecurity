@@ -15,6 +15,7 @@ import com.aman.security.detection.ImpersonationDetector
 import com.aman.security.detection.ReputationDisposition
 import com.aman.security.detection.ReputationKind
 import com.aman.security.detection.ThreatFamily
+import com.aman.security.detection.ThreatGraphEngine
 import com.aman.security.detection.VerdictEngine
 import java.io.File
 import java.io.FileInputStream
@@ -102,7 +103,22 @@ class InstalledAppScanner(
         signerReputation?.toFinding()?.let(findings::add)
         packageReputation?.toFinding()?.let(findings::add)
         fileReputation?.toFinding()?.let(findings::add)
-        val impersonationFindings = ImpersonationDetector.evaluate(packageInfo.packageName, appName, database.detectionRuleset.brands)
+        if (apkSha256 != null && fileThreat == null && fileReputation == null && database.mightContainMaliciousFileHash(apkSha256)) {
+            findings += DetectionFinding(
+                "OFFLINE_BLOOM_REPUTATION_HIT",
+                DetectionSource.REPUTATION,
+                8,
+                FindingConfidence.LOW,
+                ThreatFamily.MALWARE
+            )
+        }
+        val impersonationFindings = ImpersonationDetector.evaluate(
+            packageInfo.packageName,
+            appName,
+            database.detectionRuleset.brands,
+            signerSha256 = signerHash,
+            isSideloaded = source != AppInstallSource.STORE
+        )
         findings += impersonationFindings
         if (impersonationFindings.isNotEmpty() && AppRiskSignal.NON_STORE_INSTALL in basic.signals) {
             findings += DetectionFinding(
@@ -118,6 +134,7 @@ class InstalledAppScanner(
 
         val deepAnalysis = if (deep && apkFile != null && apkSha256 != null) deepAnalyzer.analyzeInstalledFile(apkFile, apkSha256) else null
         deepAnalysis?.advancedVerdict?.findings?.let(findings::addAll)
+        findings += ThreatGraphEngine.correlate(findings, database.detectionRuleset.graphLinks)
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
         val finalScore = maxOf(basic.score, deepAnalysis?.riskScore ?: 0, verdict.score).coerceIn(0, 100)
         val finalLevel = when {

@@ -10,6 +10,8 @@ import com.aman.security.detection.ReputationIndicator
 import com.aman.security.detection.ReputationKind
 import com.aman.security.detection.ThreatFamily
 import com.aman.security.detection.ThreatIntelMetadata
+import com.aman.security.detection.ThreatGraphLink
+import com.aman.security.detection.ThreatGraphRelation
 
 object ThreatDbValidator {
     data class ValidatedPackage(
@@ -45,6 +47,7 @@ object ThreatDbValidator {
             .toList()
         require(parsed.size == manifest.entries)
         require(parsed.map { it.sha256 }.distinct().size == parsed.size)
+        if (manifest.schema >= 4) require(ThreatDbCanary.valid(parsed)) { "Signed threat DB canary missing or invalid" }
 
         val urls = if (manifest.schema >= 2) {
             val urlBytes = requireNotNull(urlDatabaseBytes)
@@ -128,6 +131,8 @@ object ThreatDbValidator {
         val model = linkedMapOf<String, Double>()
         val reputation = linkedMapOf<String, ReputationIndicator>()
         val metadata = linkedMapOf<String, ThreatIntelMetadata>()
+        val brandSigners = linkedMapOf<String, MutableSet<String>>()
+        val graphLinks = mutableListOf<ThreatGraphLink>()
         var rows = 0
         bytes.toString(Charsets.UTF_8).lineSequence().filter(::dataLine).forEach { line ->
             rows += 1
@@ -152,6 +157,23 @@ object ThreatDbValidator {
                     val tokens = p[3].split(';').map { it.trim().lowercase() }.filter { it.length >= 3 }.toSet()
                     require(tokens.isNotEmpty())
                     brands += ProtectedBrandProfile(id, official, tokens)
+                }
+                "BRAND_SIGNER" -> {
+                    require(p.size == 3)
+                    val brandId = strictId(p[1])
+                    val hash = p[2].trim().lowercase()
+                    require(hash.matches(Regex("^[a-f0-9]{64}$")))
+                    brandSigners.getOrPut(brandId) { linkedSetOf() }.add(hash)
+                }
+                "LINK" -> {
+                    require(p.size == 6)
+                    val fromId = strictId(p[1])
+                    val toId = strictId(p[2])
+                    require(fromId != toId)
+                    val relation = ThreatGraphRelation.valueOf(p[3])
+                    val confidence = FindingConfidence.valueOf(p[4])
+                    val weight = p[5].toInt().also { require(it in 1..24) }
+                    graphLinks += ThreatGraphLink(fromId, toId, relation, confidence, weight)
                 }
                 "MODEL" -> {
                     require(p.size == 3)
@@ -191,7 +213,19 @@ object ThreatDbValidator {
         require(rows == expectedCount)
         require(rules.map { it.id }.distinct().size == rules.size)
         require(brands.map { it.id }.distinct().size == brands.size)
-        return DetectionRuleset(rules, brands, model, reputation, metadata)
+        require(graphLinks.map { "${it.fromId}:${it.toId}:${it.relation}" }.distinct().size == graphLinks.size)
+        val knownBrands = brands.map { it.id }.toSet()
+        require(brandSigners.keys.all(knownBrands::contains))
+        brandSigners.values.flatten().forEach { signerHash ->
+            val rep = reputation["${ReputationKind.SIGNER}:$signerHash"]
+            require(rep != null && rep.disposition == ReputationDisposition.SAFE && rep.confidence == FindingConfidence.CONFIRMED) {
+                "Trusted brand signer must have CONFIRMED SAFE signer reputation"
+            }
+        }
+        val enrichedBrands = brands.map { brand ->
+            brand.copy(trustedSignerSha256 = brandSigners[brand.id]?.toSet().orEmpty())
+        }
+        return DetectionRuleset(rules, enrichedBrands, model, reputation, metadata, graphLinks)
     }
 
     private fun strictId(value: String): String = value.trim().also {

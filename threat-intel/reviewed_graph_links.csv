@@ -1,0 +1,2 @@
+from_id,to_id,relation,confidence,weight,source,reviewed_at
+# Add only reviewed relationships. Graph links never become confirmed threats by themselves.

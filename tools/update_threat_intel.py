@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Indicator-only threat-intelligence importer for Aman Security.
 
-This tool never downloads malware binaries. It converts external metadata into
-SHA-256 indicators that can be reviewed and then signed with sign_threat_db.py.
+The importer intentionally never downloads malware binaries. External feeds are
+converted to cryptographic indicators/metadata that can be validated and signed.
+MalwareBazaar ingestion is Android-focused: only records identified as APK or
+Android-related are accepted into the mobile file-signature database.
 """
 from __future__ import annotations
 from pathlib import Path
@@ -22,6 +24,7 @@ FILE_DB = DB / "signatures.csv"
 URL_DB = DB / "url_indicators.csv"
 DETECTION_DB = DB / "detection_rules.csv"
 ID_RE = re.compile(r"[^A-Z0-9_]+")
+HASH_RE = re.compile(r"[0-9a-f]{64}")
 
 
 def sha256_text(value: str) -> str:
@@ -45,7 +48,10 @@ def normalize_url(raw: str):
         host = u.hostname.rstrip(".").encode("idna").decode("ascii").lower()
     except Exception:
         return None
-    port = u.port
+    try:
+        port = u.port
+    except ValueError:
+        return None
     default = (scheme == "http" and port == 80) or (scheme == "https" and port == 443)
     netloc = host if not port or default else f"{host}:{port}"
     path = u.path or "/"
@@ -74,11 +80,6 @@ def write_rows(path: Path, comments, rows):
 
 
 def append_metadata(entries):
-    """Append META rows keyed by indicator id.
-
-    entries: iterable of (id, source, family, confidence, first_seen, last_seen)
-    Dates may be YYYY-MM-DD or '-'.
-    """
     comments, rows = load_rows(DETECTION_DB)
     existing = {row.split("|")[1] for row in rows if row.startswith("META|") and len(row.split("|")) == 7}
     added = 0
@@ -101,13 +102,14 @@ def date_only(value):
 def threat_family(value):
     text = str(value or "").lower()
     mapping = (
-        (("bank", "banker"), "BANKER"),
-        (("spy", "stalker"), "SPYWARE"),
+        (("bank", "banker", "credential"), "BANKER"),
+        (("stalker",), "STALKERWARE"),
+        (("spy", "surveillance"), "SPYWARE"),
         (("rat", "remote access"), "RAT"),
         (("dropper", "loader"), "DROPPER"),
         (("ransom",), "RANSOMWARE"),
+        (("joker", "trojan"), "TROJAN"),
         (("adware",), "ADWARE"),
-        (("trojan",), "TROJAN"),
     )
     for needles, family in mapping:
         if any(n in text for n in needles):
@@ -118,12 +120,12 @@ def threat_family(value):
 def fetch_text(url: str, max_bytes: int = 32 * 1024 * 1024):
     parsed = parse.urlsplit(url)
     if parsed.scheme != "https" or not parsed.hostname:
-        raise SystemExit("phishing feed URL must use HTTPS")
-    req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+        raise SystemExit("feed URL must use HTTPS")
+    req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.3"})
     with request.urlopen(req, timeout=30) as r:
         data = r.read(max_bytes + 1)
     if len(data) > max_bytes:
-        raise SystemExit("phishing feed too large")
+        raise SystemExit("feed too large")
     return data.decode("utf-8", "replace")
 
 
@@ -132,9 +134,18 @@ def fetch_json(url: str, data: dict[str, str], auth_key: str):
     last = None
     for attempt in range(3):
         try:
-            req = request.Request(url, data=body, headers={"Auth-Key": auth_key, "User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+            req = request.Request(
+                url,
+                data=body,
+                headers={"Auth-Key": auth_key, "User-Agent": "AmanSecurity-IndicatorBuilder/2.3"},
+            )
             with request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read(8 * 1024 * 1024).decode("utf-8", "replace"))
+                raw = r.read(16 * 1024 * 1024)
+            payload = json.loads(raw.decode("utf-8", "replace"))
+            status = str(payload.get("query_status") or "ok")
+            if status not in {"ok", "no_results"}:
+                raise RuntimeError(f"feed query_status={status}")
+            return payload
         except Exception as exc:
             last = exc
             if attempt < 2:
@@ -142,20 +153,65 @@ def fetch_json(url: str, data: dict[str, str], auth_key: str):
     raise last
 
 
+def is_android_record(item: dict) -> bool:
+    file_type = str(item.get("file_type") or "").lower()
+    mime = str(item.get("file_type_mime") or "").lower()
+    tags = item.get("tags") or []
+    if isinstance(tags, str):
+        tags = [x.strip() for x in tags.split(",") if x.strip()]
+    tag_text = " ".join(map(str, tags)).lower()
+    name = str(item.get("file_name") or "").lower()
+    return (
+        file_type == "apk"
+        or "android" in tag_text
+        or " apk" in f" {tag_text}"
+        or name.endswith(".apk")
+        or mime in {"application/vnd.android.package-archive", "application/zip"} and "apk" in tag_text
+    )
+
+
 def import_malwarebazaar(auth_key: str, limit: int):
-    payload = fetch_json("https://mb-api.abuse.ch/api/v1/", {"query": "get_recent", "selector": str(min(limit, 100))}, auth_key)
+    """Import Android/APK hashes only from MalwareBazaar metadata."""
+    requested = max(1, min(limit, 5000))
+    per_query = min(requested, 1000)
+    merged: dict[str, dict] = {}
+    # Query several Android-relevant tags. Non-Android records are rejected by is_android_record.
+    for tag in ("apk", "android", "banker", "spyware", "trojan"):
+        payload = fetch_json(
+            "https://mb-api.abuse.ch/api/v1/",
+            {"query": "get_taginfo", "tag": tag, "limit": str(per_query)},
+            auth_key,
+        )
+        for item in payload.get("data") or []:
+            digest = str(item.get("sha256_hash") or "").lower()
+            if HASH_RE.fullmatch(digest) and is_android_record(item):
+                merged[digest] = item
+
     comments, rows = load_rows(FILE_DB)
     existing = {row.split("|", 1)[0] for row in rows}
     added = 0
     metadata = []
-    for item in payload.get("data") or []:
-        digest = str(item.get("sha256_hash") or "").lower()
-        if not re.fullmatch(r"[0-9a-f]{64}", digest) or digest in existing:
+    for digest, item in list(merged.items())[:requested]:
+        if digest in existing:
             continue
-        family = str(item.get("signature") or item.get("tags") or "MALWARE")
-        rid = clean_id("MB", family, digest)
+        tags = item.get("tags") or []
+        if isinstance(tags, list):
+            tags = " ".join(map(str, tags))
+        family_text = str(item.get("signature") or tags or "MALWARE")
+        family = threat_family(family_text)
+        rid = clean_id("MBANDROID", family_text, digest)
         rows.append(f"{digest}|{rid}|KNOWN_THREAT")
-        metadata.append((rid, "MALWAREBAZAAR", threat_family(family), "HIGH", date_only(item.get("first_seen")), date_only(item.get("last_seen"))))
+        confidence = "HIGH" if str(item.get("signature") or "").strip() else "MEDIUM"
+        metadata.append(
+            (
+                rid,
+                "MALWAREBAZAAR",
+                family,
+                confidence,
+                date_only(item.get("first_seen")),
+                date_only(item.get("last_seen")),
+            )
+        )
         existing.add(digest)
         added += 1
     write_rows(FILE_DB, comments, rows)
@@ -169,7 +225,7 @@ def import_urlhaus(auth_key: str, limit: int):
     last = None
     for attempt in range(3):
         try:
-            req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.0"})
+            req = request.Request(url, headers={"User-Agent": "AmanSecurity-IndicatorBuilder/2.3"})
             with request.urlopen(req, timeout=30) as r:
                 text = r.read(32 * 1024 * 1024).decode("utf-8", "replace")
             break
@@ -232,11 +288,11 @@ def import_urls(urls, prefix: str, classification: str):
 
 
 def import_reputation_file(path: Path, limit: int):
-    """Import reviewed hash reputation rows without handling any sample binaries.
+    """Import reviewed reputation without handling any sample binaries.
 
-    CSV columns: kind,sha256,id,family,confidence,disposition
-    kind: FILE|SIGNER|PACKAGE|HOST
-    disposition: MALICIOUS|SAFE|TEST
+    CSV columns: kind,sha256,id,family,confidence,disposition,source,first_seen,last_seen
+    SAFE entries must be CONFIRMED and carry a non-generic review source; a separate
+    CI gate validates that policy before the database can be signed for release.
     """
     comments, rows = load_rows(DETECTION_DB)
     existing = {"|".join(row.split("|")[:3]) for row in rows if row.startswith("REPUTATION|")}
@@ -254,7 +310,7 @@ def import_reputation_file(path: Path, limit: int):
             disposition = str(record.get("disposition") or "MALICIOUS").strip().upper()
             if kind not in {"FILE", "SIGNER", "PACKAGE", "HOST"}:
                 continue
-            if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            if not HASH_RE.fullmatch(digest):
                 continue
             if not re.fullmatch(r"[A-Z0-9_]{3,96}", rid):
                 continue
@@ -276,6 +332,7 @@ def import_reputation_file(path: Path, limit: int):
     append_metadata(metadata)
     return added
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--malwarebazaar", action="store_true")
@@ -289,22 +346,24 @@ def main():
         ap.error("choose at least one source")
     auth = os.environ.get("ABUSECH_AUTH_KEY", "")
     total = 0
+    results = []
     if args.malwarebazaar:
         if not auth:
             raise SystemExit("ABUSECH_AUTH_KEY is required for MalwareBazaar")
-        total += import_malwarebazaar(auth, args.limit)
+        n = import_malwarebazaar(auth, args.limit); total += n; results.append(("MALWAREBAZAAR_ANDROID", n))
     if args.urlhaus:
         if not auth:
             raise SystemExit("ABUSECH_AUTH_KEY is required for URLhaus")
-        total += import_urlhaus(auth, args.limit)
+        n = import_urlhaus(auth, args.limit); total += n; results.append(("URLHAUS", n))
     if args.phishing_file:
-        total += import_phishing_file(args.phishing_file, args.limit)
+        n = import_phishing_file(args.phishing_file, args.limit); total += n; results.append(("PHISHING_FILE", n))
     if args.phishing_url:
-        total += import_phishing_url(args.phishing_url, args.limit)
+        n = import_phishing_url(args.phishing_url, args.limit); total += n; results.append(("PHISHING_FEED", n))
     if args.reputation_file:
-        total += import_reputation_file(args.reputation_file, args.limit)
-    print(f"THREAT_INTEL_IMPORT_OK added_indicators={total} malware_samples_downloaded=0")
-    print("Review the diff, then sign the database with tools/sign_threat_db.py using the offline private key.")
+        n = import_reputation_file(args.reputation_file, args.limit); total += n; results.append(("REVIEWED_REPUTATION", n))
+    for source, count in results:
+        print(f"SOURCE_RESULT source={source} added={count}")
+    print(f"THREAT_INTEL_IMPORT_OK added_indicators={total} malware_samples_downloaded=0 android_only_malwarebazaar=1")
 
 
 if __name__ == "__main__":

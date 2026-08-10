@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
 object ProtectionScheduler {
     private const val PERIODIC_WORK_NAME = "aman_protected_folder_periodic"
     private const val IMMEDIATE_WORK_NAME = "aman_protected_folder_immediate"
+    private const val APP_RESCAN_WORK_NAME = "aman_installed_apps_reputation_rescan"
+    private const val APP_RESCAN_NOW_WORK_NAME = "aman_installed_apps_reputation_rescan_now"
 
     fun enable(context: Context) {
         val constraints = Constraints.Builder()
@@ -25,10 +27,24 @@ object ProtectionScheduler {
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             PERIODIC_WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
             request
+        )
+
+        val appConstraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .setRequiresStorageNotLow(true)
+            .build()
+        val appRescan = PeriodicWorkRequestBuilder<InstalledAppsRescanWorker>(24, TimeUnit.HOURS, 3, TimeUnit.HOURS)
+            .setConstraints(appConstraints)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            APP_RESCAN_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            appRescan
         )
         checkNow(context)
     }
@@ -37,6 +53,8 @@ object ProtectionScheduler {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelUniqueWork(PERIODIC_WORK_NAME)
         workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
+        workManager.cancelUniqueWork(APP_RESCAN_WORK_NAME)
+        workManager.cancelUniqueWork(APP_RESCAN_NOW_WORK_NAME)
         workManager.cancelAllWorkByTag(PACKAGE_SCAN_TAG)
     }
 
@@ -47,6 +65,24 @@ object ProtectionScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(
             IMMEDIATE_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
+
+    fun rescanInstalledAppsNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<InstalledAppsRescanWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresStorageNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            APP_RESCAN_NOW_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
             request
         )
     }

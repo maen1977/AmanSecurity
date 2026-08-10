@@ -39,3 +39,9 @@ A commit made by the workflow uses the repository `GITHUB_TOKEN`; GitHub prevent
 The workflow default is `contents: read`. Only the `refresh-threat-intelligence` job requests `contents: write` so it can commit signed indicator updates.
 
 If branch protection prevents the Actions bot from pushing to `main`, allow the workflow's GitHub Actions identity to update the threat-data paths or use a reviewed pull-request process instead.
+
+## Version 2.1 fail-safe source handling
+
+External feeds are attempted independently. MalwareBazaar is filtered to Android/APK metadata before hashes are accepted. If one feed is temporarily unavailable, Actions records the failure in `threat-intel/source_status.json`, preserves the last verified signed database, and continues the Android verification/build path. Malformed local curated reputation or invalid signed data still fails CI because those are repository-integrity errors rather than transient network failures.
+
+The source-health JSON is uploaded as a workflow artifact and passed to the build job, but it is not committed on every scheduled run, avoiding repository churn solely from timestamps.

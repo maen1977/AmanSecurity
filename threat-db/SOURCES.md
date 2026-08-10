@@ -42,3 +42,17 @@ Always check the source's current terms/licensing before redistribution or comme
 Aman Security 2.0 keeps the indicator-only safety model but automates the maintenance path in the single GitHub Actions workflow. When `THREAT_DB_PRIVATE_KEY_BASE64` is configured, Actions may query MalwareBazaar/URLhaus using `ABUSECH_AUTH_KEY`, optionally ingest an HTTPS phishing feed configured through `PHISHING_FEED_URL`, merge reviewed reputation, compact the mobile database, increment/sign the manifest only when content changes, rebuild signed reputation prefix shards, verify all signatures/hashes, and commit only the signed threat-data paths.
 
 The updater never calls the MalwareBazaar sample-download (`get_file`) path and never places malware binaries in the repository or Android build.
+
+## Version 2.1 Android-focused validation seed
+
+Version 2.1 narrows automated MalwareBazaar ingestion to metadata identified as Android/APK before a file hash can enter the mobile signature database. The bundled seed was also expanded with additional reviewed MalwareBazaar Android indicators (hashes only):
+
+| Threat reference | SHA-256 | Family used by Aman |
+|---|---|---|
+| MBANDROID_ANTIDOT_8EF35A906236 | 8ef35a9062369b6ce2e99571b0dc263be74ef888548a1072c609581b9adf3a93 | BANKER |
+| MBANDROID_JOKER_E744D2E0EA26 | e744d2e0ea2649cdd2eed0ace7442cf228582021f21e570fd288ea5054e38520 | TROJAN |
+| MBANDROID_JOKER_62DA23D7B407 | 62da23d7b4078e960bd6d7845f91be6b94d9bc07837af1e6dea7040d18a93cb5 | TROJAN |
+| MBANDROID_FAKETELEGRAM_7D44E0009D25 | 7d44e0009d251ae4983f5bf29f7d8aa9af668df88dba05a17a7a314f6780ceff | SPYWARE |
+| MBANDROID_BADBAZAAR_A041BC05FFA2 | a041bc05ffa20dc6df3387818a06329b54c84ca70cb281c0358d936aee0b3858 | MALWARE |
+
+These rows are detection indicators, not embedded samples. Aman does not download, redistribute, execute, or unpack the corresponding malware files.

@@ -50,7 +50,30 @@ jobs:
         env:
           ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
           PHISHING_FEED_URL: ${{ secrets.PHISHING_FEED_URL }}
-        run: python3 tools/refresh_threat_intel.py --private-key "$THREAT_PRIVATE_KEY" --limit 1000
+        run: python3 tools/refresh_threat_intel.py --private-key "$THREAT_PRIVATE_KEY" --limit 5000
+
+      - name: Create source status when refresh is disabled
+        if: steps.threat_key.outputs.available != 'true'
+        shell: bash
+        run: |
+          mkdir -p threat-intel
+          python3 - <<'PY'
+          import datetime as dt, json
+          from pathlib import Path
+          now=dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace('+00:00','Z')
+          Path('threat-intel/source_status.json').write_text(json.dumps({
+            'schema':1,'generatedAt':now,'refreshEnabled':False,'dataChanged':False,'signed':False,
+            'malwareBinariesDownloaded':0,'sources':{}
+          },indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          PY
+
+      - name: Verify threat-intelligence quality
+        run: |
+          python3 tools/sync_reviewed_relationships.py
+          python3 tools/reviewed_reputation_gate.py
+          python3 tools/threat_intel_quality_gate.py
+          python3 tools/threat_db_continuity_gate.py
+          python3 tools/threat_source_health_gate.py threat-intel/source_status.json --max-age-hours 24
 
       - name: Verify signed threat data
         run: |
@@ -61,27 +84,35 @@ jobs:
         if: steps.threat_key.outputs.available == 'true'
         shell: bash
         run: |
-          if git diff --quiet -- threat-db reputation app/src/main/assets/threat-db; then
+          if git diff --quiet -- threat-db reputation app/src/main/assets/threat-db app/src/main/assets/reputation; then
             echo "No threat-intelligence changes to commit." >> "$GITHUB_STEP_SUMMARY"
           else
             git config user.name "aman-security-bot"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add threat-db reputation app/src/main/assets/threat-db
-            git commit -m "chore(threat-intel): refresh signed indicators [skip ci]"
+            git add threat-db reputation app/src/main/assets/threat-db app/src/main/assets/reputation
+            git commit -m "chore(threat-intel): refresh signed Android indicators [skip ci]"
             git push origin HEAD:main
-            echo "Signed threat intelligence was refreshed and committed." >> "$GITHUB_STEP_SUMMARY"
+            echo "Signed Android threat intelligence was refreshed and committed." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Package refreshed threat data for build job
-        run: tar -czf "$RUNNER_TEMP/aman-threat-refresh.tgz" threat-db reputation app/src/main/assets/threat-db
+        run: tar -czf "$RUNNER_TEMP/aman-threat-refresh.tgz" threat-db reputation app/src/main/assets/threat-db app/src/main/assets/reputation threat-intel/source_status.json
 
-      - name: Upload refreshed threat data
+      - name: Upload threat refresh state
         uses: actions/upload-artifact@v4
         with:
           name: aman-threat-refresh
           path: ${{ runner.temp }}/aman-threat-refresh.tgz
           if-no-files-found: error
           retention-days: 1
+
+      - name: Upload source-health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanSecurity-2.3.0-Threat-Source-Health
+          path: threat-intel/source_status.json
+          if-no-files-found: error
+          retention-days: 30
 
   build-and-verify:
     needs: refresh-threat-intelligence
@@ -152,11 +183,25 @@ jobs:
           python3 tools/verify_threat_db.py
           python3 tools/verify_reputation_shards.py
 
+      - name: Verify threat-intelligence quality and source health
+        run: |
+          python3 tools/sync_reviewed_relationships.py
+          python3 tools/reviewed_reputation_gate.py
+          python3 tools/threat_intel_quality_gate.py
+          python3 tools/threat_db_continuity_gate.py
+          python3 tools/threat_source_health_gate.py threat-intel/source_status.json --max-age-hours 24
+
       - name: Verify Real Antivirus Core architecture
         run: python3 tools/real_antivirus_gate.py
 
       - name: Run detection-engine architecture gate
         run: python3 tools/detection_gate.py
+
+      - name: Verify continuous protection hardening
+        run: python3 tools/continuous_protection_gate.py
+
+      - name: Verify threat intelligence and reputation expansion
+        run: python3 tools/threat_reputation_2_3_gate.py
 
       - name: Run source quality gate
         run: python3 tools/quality_gate.py
@@ -164,8 +209,33 @@ jobs:
       - name: Run release-readiness gate
         run: python3 tools/release_gate.py
 
-      - name: Run safe synthetic detection benchmark
-        run: python3 tools/benchmark_detection.py benchmarks/synthetic_detection.csv --threshold 55
+      - name: Run strict safe regression benchmark
+        run: |
+          python3 tools/benchmark_detection.py benchmarks/regression_detection.csv \
+            --threshold 55 --min-detection-rate 1.0 --max-false-positive-rate 0.0 \
+            --min-precision 1.0 --min-family-accuracy 1.0 \
+            --json-out build/reports/aman-regression-quality.json
+
+      - name: Run false-positive boundary stress benchmark
+        run: |
+          python3 tools/benchmark_detection.py benchmarks/false_positive_stress.csv \
+            --threshold 55 --min-detection-rate 0.0 --max-false-positive-rate 0.0 \
+            --min-precision 0.0 \
+            --json-out build/reports/aman-false-positive-stress-quality.json
+
+      - name: Run reviewed real-world verdict gate when corpus is configured
+        shell: bash
+        run: |
+          ROWS=$(tail -n +2 benchmarks/reviewed_detection_results.csv | grep -cv '^$' || true)
+          if [ "$ROWS" -gt 0 ]; then
+            python3 tools/benchmark_detection.py benchmarks/reviewed_detection_results.csv \
+              --threshold 55 --min-detection-rate 0.95 --max-false-positive-rate 0.01 \
+              --min-precision 0.95 --min-family-accuracy 0.80 \
+              --json-out build/reports/aman-reviewed-quality.json
+            echo "Reviewed detection corpus quality gate ran on $ROWS exported verdicts." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Reviewed real-world verdict corpus is not configured; no public detection-rate claim is produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
@@ -183,31 +253,39 @@ jobs:
       - name: Write build summary
         shell: bash
         run: |
-          echo "### Aman Security 2.0.0 – Real Antivirus Core" >> "$GITHUB_STEP_SUMMARY"
-          echo "Threat database and signed GitHub reputation shards passed verification." >> "$GITHUB_STEP_SUMMARY"
+          echo "### Aman Security 2.3.0 – Threat Intelligence & Reputation Expansion" >> "$GITHUB_STEP_SUMMARY"
+          echo "Android-focused threat intelligence, reviewed signer/graph infrastructure, signed exact reputation shards and Bloom prefilter, stronger impersonation detection, compound DEX rules, continuity checks, unit tests and lint passed." >> "$GITHUB_STEP_SUMMARY"
           if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
             echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Release AAB is unsigned because upload-key secrets were not configured." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Upload detection-quality reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanSecurity-2.3.0-Detection-Quality
+          path: build/reports/aman-*-quality.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.0.0-Debug-APK
+          name: AmanSecurity-2.3.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.0.0-Release-AAB
+          name: AmanSecurity-2.3.0-Release-AAB
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.0.0-R8-Mapping
+          name: AmanSecurity-2.3.0-R8-Mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn

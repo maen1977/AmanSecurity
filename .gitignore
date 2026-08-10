@@ -16,3 +16,6 @@ keystore.properties
 release-signing.properties
 *.p12
 *.pfx
+
+# GitHub Actions generated source-health state
+threat-intel/source_status.json

@@ -4,6 +4,7 @@ import android.content.Context
 import com.aman.security.detection.DetectionRuleset
 import com.aman.security.detection.ReputationIndicator
 import com.aman.security.detection.ReputationKind
+import com.aman.security.detection.OfflineReputationBloom
 
 class SignatureDatabase(private val context: Context) {
     data class Info(
@@ -20,6 +21,7 @@ class SignatureDatabase(private val context: Context) {
     }
 
     private val storage = ThreatDbStorage(context)
+    private val offlineBloom = OfflineReputationBloom(context)
     private val bundled: ThreatDbValidator.ValidatedPackage = loadBundled()
     @Volatile private var active: ThreatDbValidator.ValidatedPackage
     @Volatile private var downloaded = false
@@ -54,6 +56,10 @@ class SignatureDatabase(private val context: Context) {
     fun findApk(kind: ApkIndicatorKind, sha256: String): ApkIdentityIndicator? = active.apkIdentityIndicators["$kind:${sha256.lowercase()}"]
 
     fun findReputation(kind: ReputationKind, sha256: String): ReputationIndicator? = active.detectionRuleset.findReputation(kind, sha256)
+
+    fun mightContainMaliciousFileHash(sha256: String): Boolean = offlineBloom.mightContain(sha256)
+
+    fun canaryHealthy(): Boolean = ThreatDbCanary.valid(active.signatures.values)
 
     @Synchronized
     fun reloadAfterUpdate() {

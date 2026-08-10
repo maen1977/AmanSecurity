@@ -79,10 +79,10 @@ def main() -> int:
         apk_keys.append(parts[0] + ":" + parts[1])
 
     detection_rows = list(data_rows(detection_db))
-    allowed_types = {"RULE", "BRAND", "MODEL", "REPUTATION", "META"}
+    allowed_types = {"RULE", "BRAND", "BRAND_SIGNER", "LINK", "MODEL", "REPUTATION", "META"}
     families = {"UNKNOWN","MALWARE","TROJAN","SPYWARE","STALKERWARE","BANKER","RAT","DROPPER","RANSOMWARE","PHISHING","RISKWARE","ADWARE","TEST"}
     confidences = {"LOW","MEDIUM","HIGH","CONFIRMED"}
-    rule_ids, brand_ids, model_features, reputation_keys, metadata_ids = [], [], [], [], []
+    rule_ids, brand_ids, brand_signers, graph_links, model_features, reputation_keys, metadata_ids = [], [], [], [], [], [], []
     for raw in detection_rows:
         parts = raw.split("|")
         if parts[0] not in allowed_types:
@@ -109,6 +109,22 @@ def main() -> int:
             if not tokens:
                 raise SystemExit(f"THREAT_DB_GATE_FAILED bad_brand_tokens={raw}")
             brand_ids.append(parts[1])
+        elif parts[0] == "BRAND_SIGNER":
+            if len(parts) != 3 or not re.fullmatch(r"[A-Z0-9_]{3,96}", parts[1]) or not re.fullmatch(r"[0-9a-f]{64}", parts[2]):
+                raise SystemExit(f"THREAT_DB_GATE_FAILED bad_brand_signer={raw}")
+            brand_signers.append(parts[1] + ":" + parts[2])
+        elif parts[0] == "LINK":
+            if len(parts) != 6 or not re.fullmatch(r"[A-Z0-9_]{3,96}", parts[1]) or not re.fullmatch(r"[A-Z0-9_]{3,96}", parts[2]):
+                raise SystemExit(f"THREAT_DB_GATE_FAILED bad_graph_link={raw}")
+            if parts[3] not in {"SAME_SIGNER","SAME_PACKAGE","SAME_CAMPAIGN","CONTACTS_HOST","DROPS_PAYLOAD","REVIEWED_ASSOCIATION"} or parts[4] not in confidences:
+                raise SystemExit(f"THREAT_DB_GATE_FAILED bad_graph_link_meta={raw}")
+            try:
+                weight = int(parts[5])
+            except ValueError:
+                raise SystemExit(f"THREAT_DB_GATE_FAILED bad_graph_link_weight={raw}")
+            if not 1 <= weight <= 24:
+                raise SystemExit(f"THREAT_DB_GATE_FAILED bad_graph_link_weight={raw}")
+            graph_links.append(parts[1] + ":" + parts[2] + ":" + parts[3])
         elif parts[0] == "MODEL":
             if len(parts) != 3 or not re.fullmatch(r"[A-Z0-9_]{2,64}", parts[1]):
                 raise SystemExit(f"THREAT_DB_GATE_FAILED bad_model={raw}")
@@ -144,12 +160,26 @@ def main() -> int:
     for values, name in (
         (rule_ids, "rule_id"),
         (brand_ids, "brand_id"),
+        (brand_signers, "brand_signer"),
+        (graph_links, "graph_link"),
         (model_features, "model_feature"),
         (reputation_keys, "reputation_key"),
         (metadata_ids, "metadata_id"),
     ):
         if len(values) != len(set(values)):
             raise SystemExit(f"THREAT_DB_GATE_FAILED duplicate_{name}")
+
+    # Every trusted brand signer must be backed by an exact CONFIRMED SAFE SIGNER reputation row.
+    reputation_map = {}
+    for raw in detection_rows:
+        p = raw.split("|")
+        if len(p) == 7 and p[0] == "REPUTATION":
+            reputation_map[p[1] + ":" + p[2]] = p
+    for item in brand_signers:
+        _, digest = item.split(":", 1)
+        rep = reputation_map.get("SIGNER:" + digest)
+        if not rep or rep[5] != "CONFIRMED" or rep[6] != "SAFE":
+            raise SystemExit(f"THREAT_DB_GATE_FAILED unreviewed_brand_signer={item}")
 
     counts = [
         (file_hashes, "entries"),

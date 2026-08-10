@@ -11,8 +11,8 @@ enum class ThreatDatabaseFreshness {
 }
 
 object ThreatDatabaseHealth {
-    private const val CURRENT_DAYS = 7L
-    private const val AGING_DAYS = 30L
+    private const val CURRENT_DAYS = 2L
+    private const val AGING_DAYS = 7L
     private const val MAX_FUTURE_SKEW_HOURS = 24L
 
     fun classify(generatedAt: String, now: Instant = Instant.now()): ThreatDatabaseFreshness {

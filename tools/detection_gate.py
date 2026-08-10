@@ -92,7 +92,7 @@ for test_name in (
 need('scanPackageByName(packageName' in installed and 'deep: Boolean = true' in installed and 'analyzeInstalledFile' in installed, 'post-install deep scan missing')
 # 20: release upgrade
 build=text('app/build.gradle.kts')
-need('versionName = "2.0.0"' in build and 'versionCode = 10' in build, '2.0 release version missing')
+need('versionName = "2.3.0"' in build and 'versionCode = 13' in build, '2.3 release version missing')
 # single auto workflow remains
 need(workflow.count('name: Aman Security Pipeline') == 1 and 'push:' in workflow and 'branches: [ "main" ]' in workflow, 'single automatic workflow missing')
 need(len(list((ROOT/'.github/workflows').glob('*.y*ml'))) == 1, 'more than one workflow file found')

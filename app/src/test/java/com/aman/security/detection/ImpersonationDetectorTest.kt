@@ -30,4 +30,30 @@ class ImpersonationDetectorTest {
         assertEquals(FindingConfidence.LOW, result.first().confidence)
         assertEquals(ThreatFamily.PHISHING, result.first().family)
     }
+    @Test
+    fun officialPackageWithReviewedSignerMismatchIsHighConfidenceSignal() {
+        val reviewed = profile.copy(trustedSignerSha256 = setOf("a".repeat(64)))
+        val result = ImpersonationDetector.evaluate(
+            "com.whatsapp",
+            "WhatsApp",
+            listOf(reviewed),
+            signerSha256 = "b".repeat(64)
+        )
+        assertEquals(1, result.size)
+        assertEquals(FindingConfidence.HIGH, result.first().confidence)
+        assertTrue(result.first().score >= 40)
+    }
+
+    @Test
+    fun sideloadedLookalikeEscalatesOnlyToMediumConfidence() {
+        val result = ImpersonationDetector.evaluate(
+            "com.whatsapq",
+            "WhatsApp",
+            listOf(profile),
+            isSideloaded = true
+        )
+        assertEquals(FindingConfidence.MEDIUM, result.first().confidence)
+        assertTrue(result.first().score < 55)
+    }
+
 }

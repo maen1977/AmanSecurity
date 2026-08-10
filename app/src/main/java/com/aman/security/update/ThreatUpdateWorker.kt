@@ -3,6 +3,8 @@ package com.aman.security.update
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.aman.security.protection.ProtectionPreferences
+import com.aman.security.protection.ProtectionScheduler
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.ThreatDatabaseUpdater
 
@@ -15,8 +17,13 @@ class ThreatUpdateWorker(appContext: Context, params: WorkerParameters) : Worker
             // allow the next scheduled cycle to check again.
             ThreatDatabaseUpdater.Result.InvalidDatabase,
             ThreatDatabaseUpdater.Result.InvalidSignature,
-            ThreatDatabaseUpdater.Result.UpToDate,
-            is ThreatDatabaseUpdater.Result.Updated -> Result.success()
+            ThreatDatabaseUpdater.Result.UpToDate -> Result.success()
+            is ThreatDatabaseUpdater.Result.Updated -> {
+                if (ProtectionPreferences(applicationContext).enabled) {
+                    ProtectionScheduler.rescanInstalledAppsNow(applicationContext)
+                }
+                Result.success()
+            }
         }
     }
 }

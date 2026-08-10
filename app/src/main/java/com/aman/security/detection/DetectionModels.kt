@@ -30,7 +30,8 @@ enum class DetectionSource {
     STATIC_BEHAVIOR,
     LOCAL_MODEL,
     CLOUD_REPUTATION,
-    USER_ALLOWLIST
+    USER_ALLOWLIST,
+    THREAT_GRAPH
 }
 
 enum class FindingConfidence(val rank: Int) {
@@ -81,7 +82,8 @@ data class DetectionRule(
 data class ProtectedBrandProfile(
     val id: String,
     val officialPackage: String,
-    val tokens: Set<String>
+    val tokens: Set<String>,
+    val trustedSignerSha256: Set<String> = emptySet()
 )
 
 enum class ReputationKind {
@@ -96,6 +98,24 @@ enum class ReputationDisposition {
     SAFE,
     TEST
 }
+
+
+enum class ThreatGraphRelation {
+    SAME_SIGNER,
+    SAME_PACKAGE,
+    SAME_CAMPAIGN,
+    CONTACTS_HOST,
+    DROPS_PAYLOAD,
+    REVIEWED_ASSOCIATION
+}
+
+data class ThreatGraphLink(
+    val fromId: String,
+    val toId: String,
+    val relation: ThreatGraphRelation,
+    val confidence: FindingConfidence,
+    val weight: Int
+)
 
 data class ReputationIndicator(
     val kind: ReputationKind,
@@ -121,10 +141,14 @@ data class DetectionRuleset(
     val brands: List<ProtectedBrandProfile> = emptyList(),
     val modelWeights: Map<String, Double> = emptyMap(),
     val reputation: Map<String, ReputationIndicator> = emptyMap(),
-    val metadata: Map<String, ThreatIntelMetadata> = emptyMap()
+    val metadata: Map<String, ThreatIntelMetadata> = emptyMap(),
+    val graphLinks: List<ThreatGraphLink> = emptyList()
 ) {
     fun findReputation(kind: ReputationKind, sha256: String): ReputationIndicator? =
         reputation["$kind:${sha256.lowercase()}"]
 
     fun findMetadata(id: String): ThreatIntelMetadata? = metadata[id]
+
+    fun trustedSignerHashesForBrand(brandId: String): Set<String> =
+        brands.firstOrNull { it.id == brandId }?.trustedSignerSha256.orEmpty()
 }
