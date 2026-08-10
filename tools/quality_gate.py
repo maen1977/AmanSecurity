@@ -14,6 +14,7 @@ def main():
     run('web_protection_2_4_gate.py')
     run('zero_day_2_5_gate.py')
     run('android_kotlin_sanity_gate.py')
+    run('android_api_compat_gate.py')
     run('android_string_format_gate.py')
     run('smart_ui_gate.py')
     run('production_validation_gate.py')

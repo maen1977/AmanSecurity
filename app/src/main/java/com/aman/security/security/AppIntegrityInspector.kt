@@ -56,9 +56,16 @@ object AppIntegrityInspector {
             @Suppress("DEPRECATION")
             pm.getPackageInfo(context.packageName, signingFlag)
         }
-        val signingInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) packageInfo.signingInfo else null
-        val bytes = if (signingInfo != null) {
-            val signers = if (signingInfo.hasMultipleSigners()) signingInfo.apkContentsSigners else signingInfo.signingCertificateHistory
+        val bytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // SigningInfo and its signer accessors are API 28+. Keep every call inside
+            // the SDK-gated branch so Android Lint can prove minSdk 26 compatibility.
+            val signingInfo = packageInfo.signingInfo
+                ?: throw IllegalStateException("SigningInfo unavailable")
+            val signers = if (signingInfo.hasMultipleSigners()) {
+                signingInfo.apkContentsSigners
+            } else {
+                signingInfo.signingCertificateHistory
+            }
             signers.firstOrNull()?.toByteArray()
         } else {
             @Suppress("DEPRECATION")
