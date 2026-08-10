@@ -8,7 +8,6 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import com.aman.security.detection.CloudReputationClient
 import com.aman.security.detection.DetectionFinding
 import com.aman.security.detection.DetectionSource
 import com.aman.security.detection.DetectionVerdictLevel
@@ -46,7 +45,7 @@ class ApkStaticAnalyzer(
         return try {
             val copiedHash = copyBounded(uri, temp) ?: return ApkStaticAnalysis(ApkAnalysisState.FAILED)
             if (!copiedHash.equals(expectedSha256, ignoreCase = true)) return ApkStaticAnalysis(ApkAnalysisState.SOURCE_CHANGED)
-            analyzeFile(temp, copiedHash, allowCloudLookup = true)
+            analyzeFile(temp, copiedHash)
         } catch (_: SizeLimitExceeded) {
             ApkStaticAnalysis(ApkAnalysisState.LIMIT_EXCEEDED)
         } catch (_: Exception) {
@@ -61,7 +60,7 @@ class ApkStaticAnalyzer(
             if (!file.isFile || file.length() > MAX_APK_BYTES) return ApkStaticAnalysis(ApkAnalysisState.LIMIT_EXCEEDED)
             val actual = FileInputStream(file).use(Sha256::fromStream)
             if (!actual.equals(expectedSha256, ignoreCase = true)) return ApkStaticAnalysis(ApkAnalysisState.SOURCE_CHANGED)
-            analyzeFile(file, actual, allowCloudLookup = false)
+            analyzeFile(file, actual)
         } catch (_: SizeLimitExceeded) {
             ApkStaticAnalysis(ApkAnalysisState.LIMIT_EXCEEDED)
         } catch (_: Exception) {
@@ -69,7 +68,7 @@ class ApkStaticAnalyzer(
         }
     }
 
-    private fun analyzeFile(file: File, fileSha256: String, allowCloudLookup: Boolean): ApkStaticAnalysis {
+    private fun analyzeFile(file: File, fileSha256: String): ApkStaticAnalysis {
         val archive = try {
             inspectArchive(file)
         } catch (_: java.util.zip.ZipException) {
@@ -159,39 +158,10 @@ class ApkStaticAnalyzer(
         signerReputation?.toFinding()?.let(findings::add)
         packageReputation?.toFinding()?.let(findings::add)
         fileReputation?.toFinding()?.let(findings::add)
-        if (database.find(fileSha256) == null && fileReputation == null && database.mightContainMaliciousFileHash(fileSha256)) {
-            findings += DetectionFinding(
-                "OFFLINE_BLOOM_REPUTATION_HIT",
-                DetectionSource.REPUTATION,
-                8,
-                FindingConfidence.LOW,
-                ThreatFamily.MALWARE
-            )
-        }
         // Only reviewed exact-file or signer SAFE reputation may suppress heuristics.
         // Package-name reputation alone is not sufficient because a malicious APK can reuse a package name.
-        var trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
+        val trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
             fileReputation?.disposition == ReputationDisposition.SAFE
-        if (allowCloudLookup) {
-            when (val cloud = CloudReputationClient(context).querySha256(fileSha256)) {
-                is CloudReputationClient.Result.Known -> {
-                    if (cloud.malicious) {
-                        findings += DetectionFinding(
-                            id = cloud.id,
-                            source = DetectionSource.CLOUD_REPUTATION,
-                            score = 100,
-                            confidence = FindingConfidence.CONFIRMED,
-                            family = cloud.family.takeUnless { it == ThreatFamily.UNKNOWN } ?: ThreatFamily.MALWARE,
-                            reference = cloud.id
-                        )
-                    } else if (cloud.safe) {
-                        // Only an exact full-hash SAFE record from a signed shard may suppress heuristics.
-                        trustedAllowlist = true
-                    }
-                }
-                else -> Unit
-            }
-        }
 
         val urlScanner = UrlScanner(database::findUrl)
         var knownNetworkMatches = 0

@@ -5,11 +5,9 @@ build/
 app/build/
 *.iml
 
-# Never commit offline update-signing private keys.
+# Keep any local private/signing material outside the source tree.
 *private*.pem
 *private*.key
-
-# Release signing material must stay outside source control.
 *.jks
 *.keystore
 keystore.properties
@@ -17,5 +15,3 @@ release-signing.properties
 *.p12
 *.pfx
 
-# GitHub Actions generated source-health state
-threat-intel/source_status.json

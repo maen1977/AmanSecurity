@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +20,9 @@ import com.aman.security.databinding.ItemInstalledAppBinding
 import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
 import com.aman.security.databinding.ItemQuarantineBinding
+import com.aman.security.autonomous.AutonomousThreatScheduler
+import com.aman.security.autonomous.AutonomousThreatUpdater
+import com.aman.security.autonomous.AutonomousUpdateResult
 import com.aman.security.protection.ProtectedFolderScanner
 import com.aman.security.protection.ProtectionEvent
 import com.aman.security.protection.ProtectionEventStore
@@ -46,9 +48,6 @@ import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanDetectionReason
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
-import com.aman.security.scanner.ThreatDatabaseUpdater
-import com.aman.security.scanner.ThreatDatabaseFreshness
-import com.aman.security.scanner.ThreatDatabaseHealth
 import com.aman.security.scanner.SharedUrlExtractor
 import com.aman.security.scanner.UrlRiskLevel
 import com.aman.security.scanner.UrlRiskSignal
@@ -60,9 +59,7 @@ import com.aman.security.security.QuarantineManager
 import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
-import com.aman.security.update.ThreatUpdateScheduler
 import com.aman.security.detection.ThreatFamily
-import com.aman.security.detection.CloudReputationPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -77,13 +74,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanner: FileScanner
     private lateinit var apkStaticAnalyzer: ApkStaticAnalyzer
     private lateinit var installedAppScanner: InstalledAppScanner
-    private lateinit var updater: ThreatDatabaseUpdater
+    private lateinit var updater: AutonomousThreatUpdater
     private lateinit var urlScanner: UrlScanner
     private lateinit var recordStore: SecurityRecordStore
     private lateinit var quarantineManager: QuarantineManager
     private lateinit var protectionPreferences: ProtectionPreferences
     private lateinit var protectionEventStore: ProtectionEventStore
-    private lateinit var cloudReputationPreferences: CloudReputationPreferences
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var pendingRestoreId: String? = null
@@ -136,15 +132,14 @@ class MainActivity : AppCompatActivity() {
         apkStaticAnalyzer = ApkStaticAnalyzer(this, database)
         scanner = FileScanner(contentResolver, database, apkStaticAnalyzer)
         installedAppScanner = InstalledAppScanner(this, database)
-        updater = ThreatDatabaseUpdater(this, database)
+        updater = AutonomousThreatUpdater(this, database)
         urlScanner = UrlScanner(database::findUrl)
         recordStore = SecurityRecordStore(this)
         quarantineManager = QuarantineManager(this, recordStore)
         protectionPreferences = ProtectionPreferences(this)
         protectionEventStore = ProtectionEventStore(this)
-        cloudReputationPreferences = CloudReputationPreferences(this)
         ProtectionNotifier.ensureChannel(this)
-        ThreatUpdateScheduler.schedule(this)
+        AutonomousThreatScheduler.schedule(this)
         renderDatabaseInfo()
         renderSecurityManagement()
         renderProtectionStatus()
@@ -167,12 +162,15 @@ class MainActivity : AppCompatActivity() {
             protectionEventStore.clear()
             renderProtectionStatus()
         }
-        configureCloudReputation()
         handleIncomingIntent(intent)
     }
 
     override fun onResume() {
         super.onResume()
+        if (::database.isInitialized) {
+            database.reloadAutonomous()
+            renderDatabaseInfo()
+        }
         if (::protectionPreferences.isInitialized) renderProtectionStatus()
         if (::binding.isInitialized) renderWebGuardStatus()
     }
@@ -181,20 +179,6 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIncomingIntent(intent)
-    }
-
-    private fun configureCloudReputation() {
-        val available = BuildConfig.REPUTATION_SHARD_BASE_URL.isNotBlank()
-        binding.switchCloudReputation.visibility = if (available) View.VISIBLE else View.GONE
-        binding.txtCloudReputationNote.visibility = if (available) View.VISIBLE else View.GONE
-        if (!available) {
-            cloudReputationPreferences.enabled = false
-            return
-        }
-        binding.switchCloudReputation.isChecked = cloudReputationPreferences.enabled
-        binding.switchCloudReputation.setOnCheckedChangeListener { _, checked ->
-            cloudReputationPreferences.enabled = checked
-        }
     }
 
     private fun renderDatabaseInfo() {
@@ -210,15 +194,8 @@ class MainActivity : AppCompatActivity() {
         )
         val generated = runCatching { Date.from(Instant.parse(info.generatedAt)) }.getOrNull()
         val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
-        binding.txtDatabaseFreshness.text = getString(
-            when (ThreatDatabaseHealth.classify(info.generatedAt)) {
-                ThreatDatabaseFreshness.CURRENT -> R.string.database_freshness_current
-                ThreatDatabaseFreshness.AGING -> R.string.database_freshness_aging
-                ThreatDatabaseFreshness.STALE -> R.string.database_freshness_stale
-                ThreatDatabaseFreshness.UNKNOWN -> R.string.database_freshness_unknown
-            },
-            formattedDate
-        )
+        binding.txtDatabaseFreshness.text = getString(R.string.database_baseline_date, formattedDate)
+        renderAutonomousIntel()
     }
 
     private fun updateThreatDatabase() {
@@ -227,23 +204,57 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { updater.update() }
             binding.btnUpdateDatabase.isEnabled = true
+            renderAutonomousIntel()
             when (result) {
-                ThreatDatabaseUpdater.Result.UpToDate -> binding.txtUpdateStatus.setText(R.string.update_up_to_date)
-                is ThreatDatabaseUpdater.Result.Updated -> {
-                    renderDatabaseInfo()
-                    binding.txtUpdateStatus.text = getString(
-                        R.string.update_success,
-                        result.version,
-                        NumberFormat.getIntegerInstance().format(result.fileEntries),
-                        NumberFormat.getIntegerInstance().format(result.urlEntries),
-                        NumberFormat.getIntegerInstance().format(result.apkIdentityEntries),
-                        NumberFormat.getIntegerInstance().format(result.detectionEntries)
-                    )
+                is AutonomousUpdateResult.Success -> {
+                    binding.txtUpdateStatus.text = if (result.changedSources == 0) {
+                        getString(R.string.update_up_to_date)
+                    } else {
+                        getString(
+                            R.string.update_success,
+                            NumberFormat.getIntegerInstance().format(result.info.malwareFileHashes),
+                            NumberFormat.getIntegerInstance().format(result.info.phishingHosts),
+                            NumberFormat.getIntegerInstance().format(result.info.c2Hosts),
+                            NumberFormat.getIntegerInstance().format(result.info.androidCveCount)
+                        )
+                    }
                 }
-                ThreatDatabaseUpdater.Result.InvalidSignature -> binding.txtUpdateStatus.setText(R.string.update_invalid_signature)
-                ThreatDatabaseUpdater.Result.InvalidDatabase -> binding.txtUpdateStatus.setText(R.string.update_invalid_database)
-                ThreatDatabaseUpdater.Result.NetworkError -> binding.txtUpdateStatus.setText(R.string.update_network_error)
+                is AutonomousUpdateResult.Partial -> binding.txtUpdateStatus.text = getString(
+                    R.string.update_partial, result.successfulSources, result.info.totalSources
+                )
+                AutonomousUpdateResult.NoSourceAvailable -> binding.txtUpdateStatus.setText(R.string.update_network_error)
             }
+        }
+    }
+
+    private fun renderAutonomousIntel() {
+        val info = database.autonomousStore.info()
+        binding.txtAutonomousIntel.text = getString(
+            R.string.autonomous_intel_stats,
+            NumberFormat.getIntegerInstance().format(info.malwareFileHashes),
+            NumberFormat.getIntegerInstance().format(info.phishingHosts),
+            NumberFormat.getIntegerInstance().format(info.c2Hosts),
+            NumberFormat.getIntegerInstance().format(info.androidCveCount)
+        )
+        val devicePatch = Build.VERSION.SECURITY_PATCH.orEmpty()
+        val latest = info.latestAndroidSecurityPatch
+        binding.txtDevicePatchStatus.text = when {
+            latest.isNullOrBlank() -> getString(R.string.device_patch_unknown)
+            devicePatch.isBlank() -> getString(R.string.device_patch_unknown)
+            devicePatch >= latest -> getString(R.string.device_patch_current, devicePatch, latest)
+            else -> getString(R.string.device_patch_behind, devicePatch, latest)
+        }
+        binding.txtAutonomousLastUpdate.text = if (info.lastSuccessfulUpdateEpochMs > 0L) {
+            val formatted = DateFormat.getDateTimeInstance().format(Date(info.lastSuccessfulUpdateEpochMs))
+            getString(
+                R.string.autonomous_last_update,
+                formatted,
+                info.successfulSourcesLastRun,
+                info.totalSources,
+                info.freshSources
+            )
+        } else {
+            getString(R.string.autonomous_last_update_never)
         }
     }
 
@@ -324,6 +335,7 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.MANY_SUBDOMAINS -> R.string.url_signal_subdomains
         UrlRiskSignal.LONG_URL -> R.string.url_signal_long
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
+        UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
     }
 
     private fun configureWebGuard() {

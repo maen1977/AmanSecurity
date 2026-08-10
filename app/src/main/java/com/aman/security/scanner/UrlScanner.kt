@@ -21,15 +21,26 @@ class UrlScanner(
             val level = when (known.classification) {
                 UrlThreatClassification.PHISHING -> UrlRiskLevel.KNOWN_PHISHING
                 UrlThreatClassification.MALWARE -> UrlRiskLevel.KNOWN_MALICIOUS
+                UrlThreatClassification.SUSPICIOUS_SOURCE -> UrlRiskLevel.REVIEW
                 UrlThreatClassification.TEST_SIGNATURE -> UrlRiskLevel.TEST_SIGNATURE
+            }
+            val riskScore = when (known.classification) {
+                UrlThreatClassification.TEST_SIGNATURE -> 0
+                UrlThreatClassification.SUSPICIOUS_SOURCE -> 35
+                else -> 100
+            }
+            val sourceSignals = if (known.classification == UrlThreatClassification.SUSPICIOUS_SOURCE) {
+                setOf(UrlRiskSignal.COMMUNITY_THREAT_FEED)
+            } else {
+                emptySet()
             }
             return UrlScanResult(
                 originalInput = input,
                 normalizedUrl = normalized.url,
                 host = normalized.host,
                 riskLevel = level,
-                riskScore = if (level == UrlRiskLevel.TEST_SIGNATURE) 0 else 100,
-                signals = emptySet(),
+                riskScore = riskScore,
+                signals = sourceSignals,
                 threatReference = known.id,
                 matchedKind = known.kind
             )

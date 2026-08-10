@@ -15,7 +15,7 @@ Phase 6 adds a bounded, on-device static-analysis layer for APK files selected b
 
 ## Risk model
 
-Static indicators are contextual. A single ordinary permission or native library does not produce a malware verdict. The risk evaluator combines independent indicators and raises a review level only when the aggregate reaches a threshold. Exact signed threat-identity indicators override heuristic scoring.
+Static indicators are contextual. A single ordinary permission or native library does not produce a malware verdict. The risk evaluator combines independent indicators and raises a review level only when the aggregate reaches a threshold. Exact local threat-identity indicators override heuristic scoring.
 
 This distinction is intentional:
 
@@ -42,7 +42,7 @@ A reviewed future threat entry can therefore still match when an APK payload cha
 
 ## Privacy
 
-Static APK analysis is local-only. It does not send the APK, package name, certificate fingerprint, permissions, code markers, or results to Aman or a third-party service. Internet access remains reserved for downloading the signed threat database.
+Static APK analysis is local-only. It does not send the APK, package name, certificate fingerprint, permissions, code markers, or results to Aman or a third-party service. Internet access is used by the separate autonomous public threat-intelligence updater; APK analysis does not upload the APK or its analysis.
 
 ## Limitations
 

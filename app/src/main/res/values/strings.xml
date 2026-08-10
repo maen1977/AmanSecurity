@@ -3,7 +3,7 @@
     <string name="app_name">Aman Security</string>
     <string name="app_subtitle">Multi-engine mobile anti-malware, app, link, and background protection</string>
     <string name="security_status_title">Threat intelligence</string>
-    <string name="security_status_body">File and link scanning use a signed threat database. Updates are accepted only after cryptographic verification.</string>
+    <string name="security_status_body">Aman scans files, apps, and links locally and refreshes public threat indicators automatically when internet is available.</string>
     <string name="choose_file">Choose file</string>
     <string name="scan_file">Scan file</string>
     <string name="change_language">Language</string>
@@ -31,17 +31,15 @@
     <string name="bytes_value">%1$s bytes</string>
     <string name="scan_failed">The file could not be scanned.</string>
     <string name="file_access_error">File access error</string>
-    <string name="privacy_note">Files, installed-app scan data, and scanned links stay on the device. Internet access is used only for signed threat-database updates.</string>
+    <string name="privacy_note">Files, installed-app inventory, and scan results stay on-device. Internet access is used only to download public threat indicators and Android security bulletins.</string>
     <string name="database_version">Threat database: %1$s</string>
     <string name="database_entries">File indicators: %1$s • Link indicators: %2$s • APK identity indicators: %3$s • Detection intelligence: %4$s</string>
-    <string name="update_database">Update database</string>
-    <string name="update_idle">Updates are verified before activation.</string>
-    <string name="update_checking">Checking for a signed update…</string>
-    <string name="update_up_to_date">Threat database is up to date.</string>
-    <string name="update_success">Updated to %1$s with %2$s file indicators, %3$s link indicators, %4$s APK identity indicators, and %5$s detection-intelligence records.</string>
-    <string name="update_invalid_signature">Update rejected: digital signature verification failed.</string>
-    <string name="update_invalid_database">Update rejected: the database package is invalid.</string>
-    <string name="update_network_error">Could not reach the update server.</string>
+    <string name="update_database">Update protection now</string>
+    <string name="update_idle">Protection intelligence updates automatically about every six hours when internet is available, with no API keys or sign-in.</string>
+    <string name="update_checking">Fetching the latest threat intelligence from public sources…</string>
+    <string name="update_up_to_date">Sources were checked and no newer indicators were found.</string>
+    <string name="update_success">Updated: %1$s malware file hashes • %2$s phishing hosts • %3$s command-and-control hosts • %4$s Android CVEs in the latest bulletin.</string>
+    <string name="update_network_error">No public source could be reached now. Aman kept the last valid data and will retry automatically.</string>
     <string name="safe_wording_note">A clean result only means no known signature was found. It is not a guarantee that a file is safe.</string>
     <string name="installed_apps_title">Installed apps</string>
     <string name="installed_apps_body">Review user-installed apps using local threat signatures, requested permissions, install source, accessibility services, and package fingerprints.</string>
@@ -134,7 +132,7 @@
     <string name="clear_history_confirm_title">Clear scan history?</string>
     <string name="clear_history_confirm_body">This removes saved scan-history records. It does not delete quarantined files or exclusions.</string>
     <string name="url_protection_title">Link protection</string>
-    <string name="url_protection_body">Scan a web link locally before opening it. Aman checks signed link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
+    <string name="url_protection_body">Scan a web link locally before opening it. Aman checks active local link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
     <string name="url_input_hint">Paste or type a web link</string>
     <string name="scan_link_action">Scan link</string>
     <string name="url_result_not_scanned">Enter a link or share one to Aman Security.</string>
@@ -147,7 +145,7 @@
     <string name="url_result_test">Harmless link-test signature detected</string>
     <string name="url_reason_invalid">Only valid web links using the standard web protocols can be scanned.</string>
     <string name="url_reason_low">The normalized link is not in the active link-indicator database and no elevated combination of local indicators was found. This does not guarantee that the site is safe.</string>
-    <string name="url_reason_known">A cryptographic link or host fingerprint matches the active signed threat database.</string>
+    <string name="url_reason_known">The link or host fingerprint matches an active local threat indicator.</string>
     <string name="url_reason_test">This reserved test link verifies the link-detection path without directing you to a malicious site.</string>
     <string name="url_indicators_title">Link indicators</string>
     <string name="url_no_elevated_indicators">No elevated heuristic indicators.</string>
@@ -175,7 +173,7 @@
     <string name="apk_analysis_failed">Advanced APK analysis could not be completed.</string>
     <string name="apk_analysis_summary">Static indicator score: %1$s/100 • Permissions: %2$s • Components: %3$s • Code files: %4$s • Native libraries: %5$s</string>
     <string name="apk_analysis_signer_hash">Signing certificate SHA-256: %1$s</string>
-    <string name="apk_analysis_identity_known">A signed package-identity threat indicator matched the active database.</string>
+    <string name="apk_analysis_identity_known">A local package-identity threat indicator matched the active database.</string>
     <string name="apk_analysis_identity_test">A safe package-identity test indicator matched.</string>
     <string name="apk_analysis_truncated">Code-pattern inspection reached its local safety limit. Manifest, certificate, and package-identity checks are still shown.</string>
     <string name="apk_analysis_indicators_title">Static indicators</string>
@@ -203,12 +201,12 @@
     <string name="apk_signal_device_identifier">Code references device-identifier interfaces</string>
     <string name="reason_apk_static_high_risk">Several independent APK indicators combined to a high review score. This does not prove malware by itself.</string>
     <string name="reason_apk_invalid">The file uses an APK extension, but Android package metadata could not be parsed. Treat the archive as untrusted until its source is verified.</string>
-    <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a signed threat indicator, even though the file SHA-256 may differ.</string>
+    <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a local threat indicator even though the file SHA-256 may differ.</string>
     <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
-    <string name="reason_apk_identity_test">A safe signed package-identity test indicator matched. It is not a malware verdict.</string>
+    <string name="reason_apk_identity_test">A safe local package-identity test indicator matched. It is not a malware verdict.</string>
     <string name="background_protection_title">Background protection</string>
     <string name="background_protection_body">When enabled, Aman performs a deep scan after user-app installs or updates and periodically checks new or changed files inside one folder you choose.</string>
-    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Signed threat intelligence is checked every six hours when Android allows network work; app-install scans are event driven.</string>
+    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Public threat intelligence is refreshed about every six hours when Android allows network work; app-install scans are event driven.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -245,10 +243,7 @@
     <string name="protection_notification_file_body">Aman detected a security alert in file: %1$s</string>
     <string name="protection_notification_app_body">Aman detected a security alert after installing or updating: %1$s</string>
     <string name="app_version">Version %1$s</string>
-    <string name="database_freshness_current">Threat data is current • Generated %1$s</string>
-    <string name="database_freshness_aging">Threat data is aging • Generated %1$s</string>
-    <string name="database_freshness_stale">Threat data is stale; update it before relying on scans • Generated %1$s</string>
-    <string name="database_freshness_unknown">Threat-data age could not be verified • Generated %1$s</string>
+    <string name="database_baseline_date">Bundled detection baseline • Generated %1$s</string>
     <string name="database_date_unknown">unknown date</string>
 
     <string name="reason_apk_multi_engine_known">A confirmed threat indicator matched through the multi-engine APK analysis.</string>
@@ -267,8 +262,6 @@
     <string name="family_riskware">Riskware</string>
     <string name="family_adware">Adware</string>
     <string name="family_test">Safe test indicator</string>
-    <string name="cloud_reputation_title">Optional signed online reputation</string>
-    <string name="cloud_reputation_note">When enabled, Aman requests only the first two hexadecimal characters of the selected file SHA-256 from the signed GitHub reputation database, verifies the shard signature, and matches the full hash locally. The file and full hash are never uploaded.</string>
     <string name="web_guard_title">Aman Web Guard</string>
     <string name="web_guard_checking">Checking this link before opening it…</string>
     <string name="web_guard_safe_title">Link check passed</string>
@@ -276,7 +269,7 @@
     <string name="web_guard_caution_title">Review this link</string>
     <string name="web_guard_caution_body">Aman found a combination of link indicators that deserves review. The link has not been opened.</string>
     <string name="web_guard_blocked_title">Dangerous link blocked</string>
-    <string name="web_guard_blocked_body">This link or host matches the active signed phishing or malware database. Aman did not open it.</string>
+    <string name="web_guard_blocked_body">This link or host matches an active local phishing or malware indicator. Aman did not open it.</string>
     <string name="web_guard_test_title">Safe Web Guard test</string>
     <string name="web_guard_test_body">The harmless test signature was detected correctly. No malicious site was opened.</string>
     <string name="web_guard_invalid_title">Unsupported link</string>
@@ -293,4 +286,17 @@
     <string name="web_guard_status_optional">Web Guard is optional. You can choose Aman for links or enable it from the system default-app settings.</string>
     <string name="web_guard_configure_action">Enable Web Guard</string>
     <string name="web_guard_manage_action">Manage Web Guard</string>
+
+    <string name="autonomous_intel_note">Autonomous updates from public threat-intelligence sources. No API keys, secrets, or file uploads.</string>
+    <string name="autonomous_intel_stats">Autonomous intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s command-and-control hosts • %4$s CVEs in the latest bulletin.</string>
+    <string name="autonomous_last_update_never">Autonomous intelligence has not completed its first online update yet.</string>
+    <string name="autonomous_last_update">Last autonomous update: %1$s • sources reached: %2$d/%3$d • currently fresh: %4$d/%3$d.</string>
+    <string name="url_signal_community_feed">This host appears in a community threat feed and should be reviewed before opening.</string>
+    <string name="device_patch_unknown">Not enough data yet to compare the device security patch.</string>
+    <string name="device_patch_current">Device security patch %1$s is current with the latest published level %2$s.</string>
+    <string name="device_patch_behind">Device security patch %1$s is older than the latest published level %2$s. Check for a system update.</string>
+    <string name="update_partial">Partial update completed from %1$s of %2$s sources; the last valid data was kept for the others.</string>
+
+    <string name="ok">OK</string>
+
 </resources>

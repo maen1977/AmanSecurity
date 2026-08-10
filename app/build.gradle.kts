@@ -5,17 +5,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
-val releaseStorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
-val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
-val releaseKeyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
-val releaseSigningConfigured = listOf(
-    releaseKeystorePath,
-    releaseStorePassword,
-    releaseKeyAlias,
-    releaseKeyPassword
-).all { !it.isNullOrBlank() } && releaseKeystorePath?.let { file(it).isFile } == true
-
 android {
     namespace = "com.aman.security"
     compileSdk = 36
@@ -24,24 +13,12 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "2.5.0"
+        versionCode = 16
+        versionName = "2.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "THREAT_DB_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/\"")
-        buildConfigField("String", "REPUTATION_SHARD_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/reputation/v1/file/\"")
     }
 
-    signingConfigs {
-        if (releaseSigningConfigured) {
-            create("release") {
-                storeFile = file(requireNotNull(releaseKeystorePath))
-                storePassword = releaseStorePassword
-                keyAlias = releaseKeyAlias
-                keyPassword = releaseKeyPassword
-            }
-        }
-    }
 
     buildFeatures {
         viewBinding = true
@@ -57,9 +34,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
-            if (releaseSigningConfigured) {
-                signingConfig = signingConfigs.getByName("release")
-            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

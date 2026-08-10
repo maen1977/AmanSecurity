@@ -10,7 +10,7 @@ import com.aman.security.scanner.SignatureDatabase
  * Lightweight recurring app re-evaluation. It intentionally skips deep DEX
  * analysis because deep analysis already runs on install/update and manual full
  * scans. This pass re-hashes installed APKs and rechecks signer/package/file
- * reputation against the newest signed database so newly published signatures
+ * reputation against the newest local threat intelligence so newly published signatures
  * can protect apps that were already installed.
  */
 class InstalledAppsRescanWorker(

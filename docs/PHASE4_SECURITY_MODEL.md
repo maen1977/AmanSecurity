@@ -27,4 +27,4 @@
 
 - No broad external-storage permission is requested.
 - Existing `QUERY_ALL_PACKAGES` is used for the antivirus app-inventory function from Phase 3.
-- Internet remains limited to signed threat-database updates; quarantine, exclusions, and history do not use networking.
+- Internet is used by the autonomous public threat-intelligence updater; quarantine, exclusions, and history do not use networking.

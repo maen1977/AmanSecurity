@@ -15,7 +15,7 @@ Aman Security uses `android.permission.QUERY_ALL_PACKAGES` only for its core ant
 
 - Installed-app inventory and scan details are processed locally.
 - They are not uploaded to the threat-database host or an analytics service in this project version.
-- Internet access is used by the separate signed threat-database updater.
+- Internet access is used by the separate autonomous public threat-intelligence updater.
 - System packages and Aman Security itself are excluded from the user-app risk list.
 - Permission and behavior signals are presented as risk indicators, not proof of malware.
 - Background alerts are limited to known threat matches or high-risk combinations.

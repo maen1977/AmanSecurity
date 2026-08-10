@@ -25,7 +25,7 @@ The link-indicator file stores only hashes plus an internal reference and classi
 
 `HOST|sha256|reference|TEST_SIGNATURE`
 
-The bundled seed contains only hashes for reserved `.test` values so the URL detection path can be exercised without bundling a live malicious destination. Future signed database releases can add reviewed phishing/malware URL hashes.
+The bundled seed contains only hashes for reserved `.test` values so the URL detection path can be exercised without bundling a live malicious destination. Aman 2.6 can add current phishing/C2 host fingerprints to its app-private autonomous indexes.
 
 ## Normalization and matching
 
@@ -70,4 +70,4 @@ A low heuristic result is never described as proof that a site is safe.
 
 ## Privacy boundaries
 
-The URL scanner contains no network lookup client. `INTERNET` remains in the app only for the cryptographically signed threat-database update path. The quality gate checks the Phase 5 URL scanner sources for accidental network lookup code.
+The URL scanner itself performs no per-link network lookup. Periodic autonomous feed downloads are separate and populate local indexes used by URL scanning.

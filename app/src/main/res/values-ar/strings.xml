@@ -3,7 +3,7 @@
     <string name="app_name">أمان</string>
     <string name="app_subtitle">حماية متعددة المحركات من البرمجيات الضارة والتطبيقات والروابط وفي الخلفية</string>
     <string name="security_status_title">معلومات التهديدات</string>
-    <string name="security_status_body">يعتمد فحص الملفات والروابط على قاعدة تهديدات موقعة، ولا يتم قبول أي تحديث قبل التحقق منه تشفيريًا.</string>
+    <string name="security_status_body">يفحص أمان الملفات والتطبيقات والروابط محليًا، ويحدّث مؤشرات التهديد العامة تلقائيًا عند توفر الإنترنت.</string>
     <string name="choose_file">اختيار ملف</string>
     <string name="scan_file">فحص الملف</string>
     <string name="change_language">اللغة</string>
@@ -31,17 +31,15 @@
     <string name="bytes_value">%1$s بايت</string>
     <string name="scan_failed">تعذر فحص الملف.</string>
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
-    <string name="privacy_note">تبقى الملفات وبيانات فحص التطبيقات المثبتة والروابط المفحوصة على الجهاز، ويستخدم الاتصال بالشبكة فقط لتحديث قاعدة التهديدات الموقعة.</string>
+    <string name="privacy_note">تبقى الملفات وقائمة التطبيقات ونتائج الفحص على الجهاز. يستخدم الإنترنت لتنزيل مؤشرات تهديد عامة ونشرات أمان أندرويد فقط.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
     <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s • مؤشرات هوية APK: %3$s • سجلات الكشف: %4$s</string>
-    <string name="update_database">تحديث القاعدة</string>
-    <string name="update_idle">يتم التحقق من التحديثات قبل تفعيلها.</string>
-    <string name="update_checking">جارٍ التحقق من وجود تحديث موقع…</string>
-    <string name="update_up_to_date">قاعدة التهديدات محدثة.</string>
-    <string name="update_success">تم تحديث القاعدة إلى الإصدار %1$s وتحتوي على %2$s مؤشر ملفات و%3$s مؤشر روابط و%4$s مؤشر هوية APK و%5$s سجل كشف.</string>
-    <string name="update_invalid_signature">تم رفض التحديث لأن التحقق من التوقيع الرقمي فشل.</string>
-    <string name="update_invalid_database">تم رفض التحديث لأن حزمة قاعدة البيانات غير صالحة.</string>
-    <string name="update_network_error">تعذر الوصول إلى خادم التحديث.</string>
+    <string name="update_database">تحديث الحماية الآن</string>
+    <string name="update_idle">تتحدث معلومات الحماية تلقائيًا كل نحو ست ساعات عند توفر الإنترنت، دون مفاتيح أو تسجيل دخول.</string>
+    <string name="update_checking">جارٍ جلب أحدث معلومات التهديد من المصادر العامة…</string>
+    <string name="update_up_to_date">تم فحص المصادر ولم تظهر مؤشرات أحدث.</string>
+    <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مضيف تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة أندرويد في أحدث نشرة.</string>
+    <string name="update_network_error">تعذر الوصول إلى أي مصدر الآن. احتفظ أمان بآخر بيانات سليمة وسيحاول مجددًا تلقائيًا.</string>
     <string name="safe_wording_note">النتيجة النظيفة تعني فقط عدم العثور على توقيع معروف، ولا تضمن أن الملف آمن.</string>
     <string name="installed_apps_title">التطبيقات المثبتة</string>
     <string name="installed_apps_body">مراجعة التطبيقات التي ثبتها المستخدم بالاعتماد على توقيعات التهديدات المحلية والصلاحيات المطلوبة ومصدر التثبيت وخدمات إمكانية الوصول وبصمات الحزم.</string>
@@ -134,7 +132,7 @@
     <string name="clear_history_confirm_title">مسح سجل الفحص؟</string>
     <string name="clear_history_confirm_body">سيؤدي هذا إلى إزالة سجلات الفحص المحفوظة، ولن يحذف الملفات المحجورة أو الاستثناءات.</string>
     <string name="url_protection_title">حماية الروابط</string>
-    <string name="url_protection_body">افحص رابط ويب محليًا قبل فتحه. يتحقق أمان من مؤشرات الروابط الموقعة ويجمع عدة مؤشرات لاحتمال التصيد دون اعتبار أي مؤشر واحد دليلًا قاطعًا.</string>
+    <string name="url_protection_body">افحص رابط ويب محليًا قبل فتحه. يتحقق أمان من مؤشرات الروابط المحلية النشطة ويجمع عدة مؤشرات لاحتمال التصيد دون اعتبار أي مؤشر واحد دليلًا قاطعًا.</string>
     <string name="url_input_hint">الصق رابط ويب أو اكتبه</string>
     <string name="scan_link_action">فحص الرابط</string>
     <string name="url_result_not_scanned">أدخل رابطًا أو شاركه إلى أمان.</string>
@@ -147,7 +145,7 @@
     <string name="url_result_test">تم اكتشاف توقيع اختبار آمن للروابط</string>
     <string name="url_reason_invalid">يمكن فحص روابط الويب الصالحة التي تستخدم بروتوكولات الويب القياسية فقط.</string>
     <string name="url_reason_low">الرابط بعد توحيده غير موجود في قاعدة مؤشرات الروابط النشطة، ولم يتم العثور على مجموعة مؤشرات محلية مرتفعة. هذا لا يضمن أن الموقع آمن.</string>
-    <string name="url_reason_known">تطابقت بصمة تشفيرية للرابط أو المضيف مع قاعدة التهديدات الموقعة النشطة.</string>
+    <string name="url_reason_known">تطابقت بصمة الرابط أو المضيف مع مؤشر تهديد محلي نشط.</string>
     <string name="url_reason_test">هذا رابط اختبار محجوز للتحقق من مسار كشف الروابط دون توجيهك إلى موقع ضار.</string>
     <string name="url_indicators_title">مؤشرات الرابط</string>
     <string name="url_no_elevated_indicators">لا توجد مؤشرات تحليلية مرتفعة.</string>
@@ -175,7 +173,7 @@
     <string name="apk_analysis_failed">تعذر إكمال التحليل المتقدم لملف APK.</string>
     <string name="apk_analysis_summary">درجة مؤشرات التحليل الثابت: %1$s من 100 • الصلاحيات: %2$s • المكونات: %3$s • ملفات الشفرة: %4$s • المكتبات الأصلية: %5$s</string>
     <string name="apk_analysis_signer_hash">بصمة شهادة التوقيع SHA-256: %1$s</string>
-    <string name="apk_analysis_identity_known">تطابق مؤشر تهديد موقع لهوية الحزمة مع قاعدة البيانات النشطة.</string>
+    <string name="apk_analysis_identity_known">تطابق مؤشر تهديد محلي لهوية الحزمة مع قاعدة البيانات النشطة.</string>
     <string name="apk_analysis_identity_test">تطابق مؤشر اختبار آمن لهوية الحزمة.</string>
     <string name="apk_analysis_truncated">وصل فحص أنماط الشفرة إلى حد الأمان المحلي، وما زالت نتائج بيانات الحزمة والشهادة وهوية الحزمة معروضة.</string>
     <string name="apk_analysis_indicators_title">مؤشرات التحليل الثابت</string>
@@ -203,12 +201,12 @@
     <string name="apk_signal_device_identifier">تشير الشفرة إلى واجهات برمجية لمعرّفات الجهاز</string>
     <string name="reason_apk_static_high_risk">اجتمعت عدة مؤشرات مستقلة في ملف APK ووصلت إلى درجة مرتفعة للمراجعة، وهذا لا يثبت وحده وجود برمجية ضارة.</string>
     <string name="reason_apk_invalid">يستخدم الملف امتداد APK، لكن تعذر تحليل بيانات حزمة أندرويد. تعامل مع الحزمة على أنها غير موثوقة حتى تتحقق من مصدرها.</string>
-    <string name="reason_apk_identity_match">تطابق اسم الحزمة أو بصمة شهادة التوقيع مع مؤشر تهديد موقع، حتى لو اختلفت بصمة الملف SHA-256.</string>
+    <string name="reason_apk_identity_match">تطابق اسم الحزمة أو بصمة شهادة التوقيع مع مؤشر تهديد محلي، حتى لو اختلفت بصمة SHA-256 للملف.</string>
     <string name="apk_analysis_note">لا يشغّل التحليل الثابت ملف APK مطلقًا؛ بل يفحص بيانات الحزمة وبنية الأرشيف ضمن حدود آمنة وهوية التوقيع ومؤشرات مختارة في الشفرة محليًا على الجهاز.</string>
-    <string name="reason_apk_identity_test">تطابق مؤشر اختبار آمن وموقع لهوية الحزمة، وهذه ليست نتيجة تشير إلى برمجية ضارة.</string>
+    <string name="reason_apk_identity_test">تطابق مؤشر اختبار آمن ومحلي لهوية الحزمة، وهذه ليست نتيجة تشير إلى برمجية ضارة.</string>
     <string name="background_protection_title">الحماية في الخلفية</string>
     <string name="background_protection_body">عند تفعيلها، يجري أمان فحصًا عميقًا بعد تثبيت تطبيقات المستخدم أو تحديثها، ويفحص دوريًا الملفات الجديدة أو المتغيرة داخل مجلد واحد تختاره.</string>
-    <string name="background_protection_note">الحماية محلية ومحافظة. لا يثبت أمان أي ملف ولا يفتحه ولا يحذفه ولا يحجره تلقائيًا. يتم التحقق من بيانات التهديد الموقعة كل ست ساعات عندما يسمح أندرويد بالاتصال، بينما فحص تثبيت التطبيقات يعتمد على حدث التثبيت.</string>
+    <string name="background_protection_note">الحماية محلية ومحافظة. لا يثبت أمان أي ملف ولا يفتحه ولا يحذفه ولا يحجره تلقائيًا. يتم تحديث معلومات التهديد العامة كل نحو ست ساعات عندما يسمح أندرويد بالاتصال، بينما فحص تثبيت التطبيقات يعتمد على حدث التثبيت.</string>
     <string name="protection_state_enabled">الحماية مفعلة</string>
     <string name="protection_state_disabled">الحماية معطلة</string>
     <string name="protection_state_notifications_off">الحماية مفعلة، لكن إذن إشعارات أندرويد متوقف. ستبقى التنبيهات محفوظة في نشاط الحماية الأخير.</string>
@@ -245,10 +243,7 @@
     <string name="protection_notification_file_body">اكتشف أمان تنبيهًا أمنيًا في الملف: %1$s</string>
     <string name="protection_notification_app_body">اكتشف أمان تنبيهًا أمنيًا بعد تثبيت أو تحديث: %1$s</string>
     <string name="app_version">الإصدار %1$s</string>
-    <string name="database_freshness_current">بيانات التهديد محدثة • أُنشئت %1$s</string>
-    <string name="database_freshness_aging">بيانات التهديد بدأت تتقادم • أُنشئت %1$s</string>
-    <string name="database_freshness_stale">بيانات التهديد قديمة؛ حدّثها قبل الاعتماد على الفحص • أُنشئت %1$s</string>
-    <string name="database_freshness_unknown">تعذر التحقق من عمر بيانات التهديد • أُنشئت %1$s</string>
+    <string name="database_baseline_date">قاعدة الكشف المضمنة • أُنشئت %1$s</string>
     <string name="database_date_unknown">تاريخ غير معروف</string>
 
     <string name="reason_apk_multi_engine_known">تطابق مؤشر تهديد مؤكد عبر التحليل متعدد المحركات لملف APK.</string>
@@ -267,8 +262,6 @@
     <string name="family_riskware">برمجية عالية المخاطر</string>
     <string name="family_adware">برمجية إعلانية مزعجة</string>
     <string name="family_test">مؤشر اختبار آمن</string>
-    <string name="cloud_reputation_title">سمعة شبكية موقعة اختيارية</string>
-    <string name="cloud_reputation_note">عند التفعيل، يطلب أمان أول رمزين سداسيين فقط من بصمة SHA-256 للملف من قاعدة السمعة الموقعة، ثم يتحقق من توقيع الجزء ويطابق البصمة الكاملة محليًا. لا يتم رفع الملف ولا البصمة الكاملة.</string>
     <string name="web_guard_title">حارس الويب في أمان</string>
     <string name="web_guard_checking">يتم فحص هذا الرابط قبل فتحه…</string>
     <string name="web_guard_safe_title">اجتاز الرابط الفحص</string>
@@ -276,7 +269,7 @@
     <string name="web_guard_caution_title">راجع هذا الرابط</string>
     <string name="web_guard_caution_body">وجد أمان مجموعة مؤشرات في الرابط تستحق المراجعة. لم يتم فتح الرابط.</string>
     <string name="web_guard_blocked_title">تم حظر رابط خطر</string>
-    <string name="web_guard_blocked_body">تطابق الرابط أو المضيف مع قاعدة التصيد أو البرمجيات الخبيثة الموقعة النشطة. لم يفتح أمان الرابط.</string>
+    <string name="web_guard_blocked_body">تطابق الرابط أو المضيف مع مؤشر تصيد أو برمجية ضارة نشط ومحلي. لم يفتح أمان الرابط.</string>
     <string name="web_guard_test_title">اختبار آمن لحارس الويب</string>
     <string name="web_guard_test_body">تم اكتشاف توقيع الاختبار الآمن بصورة صحيحة، ولم يتم فتح أي موقع ضار.</string>
     <string name="web_guard_invalid_title">الرابط غير مدعوم</string>
@@ -293,4 +286,17 @@
     <string name="web_guard_status_optional">حارس الويب اختياري. يمكنك اختيار أمان للروابط أو تفعيله من إعدادات التطبيقات الافتراضية في النظام.</string>
     <string name="web_guard_configure_action">تفعيل حارس الويب</string>
     <string name="web_guard_manage_action">إدارة حارس الويب</string>
+
+    <string name="autonomous_intel_note">تحديث ذاتي من مصادر معلومات تهديد عامة. لا مفاتيح واجهات ولا أسرار ولا رفع للملفات.</string>
+    <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مضيف تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة في أحدث نشرة.</string>
+    <string name="autonomous_last_update_never">لم يكتمل بعد أول تحديث ذاتي عبر الإنترنت.</string>
+    <string name="autonomous_last_update">آخر تحديث ذاتي: %1$s • المصادر التي تم الوصول إليها: %2$d من %3$d • المصادر الحديثة حاليًا: %4$d من %3$d.</string>
+    <string name="url_signal_community_feed">ظهر هذا المضيف في مصدر تهديد مجتمعي، لذلك يحتاج إلى مراجعة قبل فتحه.</string>
+    <string name="device_patch_unknown">لم تتوفر بعد بيانات كافية لمقارنة تصحيح أمان الجهاز.</string>
+    <string name="device_patch_current">تصحيح أمان الجهاز %1$s يواكب أحدث مستوى منشور %2$s.</string>
+    <string name="device_patch_behind">تصحيح أمان الجهاز %1$s أقدم من أحدث مستوى منشور %2$s. افحص تحديثات النظام.</string>
+    <string name="update_partial">اكتمل تحديث جزئي من %1$s من أصل %2$s مصادر، وتم الاحتفاظ بآخر بيانات سليمة للمصادر الأخرى.</string>
+
+    <string name="ok">حسنًا</string>
+
 </resources>

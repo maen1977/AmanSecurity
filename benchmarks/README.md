@@ -1,13 +1,3 @@
-# Detection quality corpora
+# Detection benchmarks
 
-`regression_detection.csv` is a safe synthetic regression fixture. It checks that CI thresholds and reporting do not regress, but it is **not** evidence of real-world detection performance.
-
-`reviewed_detection_results.csv` is intentionally empty in the public project. Populate it only with **exported verdict results** from an isolated, reviewed lab corpus. Do not commit malware APKs, DEX files, or infected archives. Each row is a verdict summary, not a sample.
-
-When reviewed rows are present, GitHub Actions enforces:
-- detection rate >= 95%
-- false-positive rate <= 1%
-- precision >= 95%
-- family accuracy >= 80% when family labels are available
-
-These thresholds are release gates, not marketing claims. A public detection-rate claim should use an independent, representative corpus and document methodology.
+`regression_detection.csv` and `false_positive_stress.csv` are deterministic internal regression fixtures, not claims of real-world detection rate. `reviewed_detection_results.csv` is reserved for independently reviewed corpus results. Run `tools/benchmark_detection.py` locally or in a trusted build environment.

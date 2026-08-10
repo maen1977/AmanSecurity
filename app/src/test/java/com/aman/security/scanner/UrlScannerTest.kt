@@ -48,7 +48,7 @@ class UrlScannerTest {
     }
 
     @Test
-    fun signedHostMatchOverridesHeuristicScore() {
+    fun confirmedHostMatchOverridesHeuristicScore() {
         val hostHash = UrlScanner.sha256("example.com")
         val scanner = UrlScanner { kind, hash ->
             if (kind == UrlIndicatorKind.HOST && hash == hostHash) {
@@ -59,6 +59,20 @@ class UrlScannerTest {
         assertEquals(UrlRiskLevel.KNOWN_PHISHING, result.riskLevel)
         assertEquals(100, result.riskScore)
         assertEquals("URL000100", result.threatReference)
+    }
+
+    @Test
+    fun communityFeedMatchRequiresReviewInsteadOfHardBlock() {
+        val hostHash = UrlScanner.sha256("community.example")
+        val scanner = UrlScanner { kind, hash ->
+            if (kind == UrlIndicatorKind.HOST && hash == hostHash) {
+                UrlThreatIndicator(kind, hash, "COMMUNITY", UrlThreatClassification.SUSPICIOUS_SOURCE)
+            } else null
+        }
+        val result = scanner.scan("https://community.example/login")
+        assertEquals(UrlRiskLevel.REVIEW, result.riskLevel)
+        assertEquals(35, result.riskScore)
+        assertTrue(UrlRiskSignal.COMMUNITY_THREAT_FEED in result.signals)
     }
 
     @Test

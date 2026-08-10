@@ -1,6 +1,5 @@
 package com.aman.security.scanner
 
-import android.content.Context
 import com.aman.security.detection.DetectionRule
 import com.aman.security.detection.DetectionRuleset
 import com.aman.security.detection.FindingConfidence
@@ -23,22 +22,18 @@ object ThreatDbValidator {
     )
 
     fun validate(
-        context: Context,
         manifestBytes: ByteArray,
-        signatureBytes: ByteArray,
         databaseBytes: ByteArray,
         urlDatabaseBytes: ByteArray? = null,
         apkIdentityDatabaseBytes: ByteArray? = null,
         detectionDatabaseBytes: ByteArray? = null
     ): ValidatedPackage {
         require(manifestBytes.size <= 64 * 1024)
-        require(signatureBytes.size <= 16 * 1024)
         require(databaseBytes.size <= 64 * 1024 * 1024)
-        require(ThreatDbCrypto.verifyManifest(context, manifestBytes, signatureBytes))
 
         val manifest = ThreatDbManifest.parse(manifestBytes)
         require(manifest.minAppVersionCode <= com.aman.security.BuildConfig.VERSION_CODE)
-        require(ThreatDbCrypto.sha256(databaseBytes) == manifest.dbSha256)
+        require(sha256(databaseBytes) == manifest.dbSha256)
 
         val parsed = databaseBytes.toString(Charsets.UTF_8)
             .lineSequence()
@@ -47,12 +42,12 @@ object ThreatDbValidator {
             .toList()
         require(parsed.size == manifest.entries)
         require(parsed.map { it.sha256 }.distinct().size == parsed.size)
-        if (manifest.schema >= 4) require(ThreatDbCanary.valid(parsed)) { "Signed threat DB canary missing or invalid" }
+        if (manifest.schema >= 4) require(ThreatDbCanary.valid(parsed)) { "Bundled threat DB canary missing or invalid" }
 
         val urls = if (manifest.schema >= 2) {
             val urlBytes = requireNotNull(urlDatabaseBytes)
             require(urlBytes.size <= 96 * 1024 * 1024)
-            require(ThreatDbCrypto.sha256(urlBytes) == manifest.urlDbSha256)
+            require(sha256(urlBytes) == manifest.urlDbSha256)
             val parsedUrls = urlBytes.toString(Charsets.UTF_8)
                 .lineSequence().filter(::dataLine).mapNotNull(::parseUrlLine).toList()
             require(parsedUrls.size == manifest.urlEntries)
@@ -63,7 +58,7 @@ object ThreatDbValidator {
         val apkIdentities = if (manifest.schema >= 3) {
             val apkBytes = requireNotNull(apkIdentityDatabaseBytes)
             require(apkBytes.size <= 64 * 1024 * 1024)
-            require(ThreatDbCrypto.sha256(apkBytes) == manifest.apkIdentityDbSha256)
+            require(sha256(apkBytes) == manifest.apkIdentityDbSha256)
             val parsedApk = apkBytes.toString(Charsets.UTF_8)
                 .lineSequence().filter(::dataLine).mapNotNull(::parseApkIdentityLine).toList()
             require(parsedApk.size == manifest.apkIdentityEntries)
@@ -74,7 +69,7 @@ object ThreatDbValidator {
         val detectionRuleset = if (manifest.schema >= 4) {
             val bytes = requireNotNull(detectionDatabaseBytes)
             require(bytes.size <= 16 * 1024 * 1024)
-            require(ThreatDbCrypto.sha256(bytes) == manifest.detectionDbSha256)
+            require(sha256(bytes) == manifest.detectionDbSha256)
             parseDetectionRules(bytes, manifest.detectionEntries)
         } else DetectionRuleset()
 
@@ -86,6 +81,10 @@ object ThreatDbValidator {
             detectionRuleset = detectionRuleset
         )
     }
+
+    private fun sha256(bytes: ByteArray): String = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { "%02x".format(it) }
 
     private fun dataLine(line: String): Boolean = line.isNotBlank() && !line.trimStart().startsWith("#")
 

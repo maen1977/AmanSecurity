@@ -8,6 +8,7 @@ enum class UrlIndicatorKind {
 enum class UrlThreatClassification {
     PHISHING,
     MALWARE,
+    SUSPICIOUS_SOURCE,
     TEST_SIGNATURE
 }
 
@@ -36,7 +37,8 @@ enum class UrlRiskSignal {
     NON_STANDARD_PORT,
     MANY_SUBDOMAINS,
     LONG_URL,
-    SUSPICIOUS_KEYWORDS
+    SUSPICIOUS_KEYWORDS,
+    COMMUNITY_THREAT_FEED
 }
 
 data class UrlScanResult(

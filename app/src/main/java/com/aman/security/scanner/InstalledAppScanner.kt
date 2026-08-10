@@ -103,15 +103,6 @@ class InstalledAppScanner(
         signerReputation?.toFinding()?.let(findings::add)
         packageReputation?.toFinding()?.let(findings::add)
         fileReputation?.toFinding()?.let(findings::add)
-        if (apkSha256 != null && fileThreat == null && fileReputation == null && database.mightContainMaliciousFileHash(apkSha256)) {
-            findings += DetectionFinding(
-                "OFFLINE_BLOOM_REPUTATION_HIT",
-                DetectionSource.REPUTATION,
-                8,
-                FindingConfidence.LOW,
-                ThreatFamily.MALWARE
-            )
-        }
         val impersonationFindings = ImpersonationDetector.evaluate(
             packageInfo.packageName,
             appName,

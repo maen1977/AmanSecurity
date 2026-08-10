@@ -138,23 +138,32 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switchCloudReputation"
+                <TextView
+                    android:id="@+id/txtAutonomousIntel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="@string/cloud_reputation_title"
-                    android:visibility="gone" />
+                    android:text="@string/autonomous_intel_note"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
 
                 <TextView
-                    android:id="@+id/txtCloudReputationNote"
+                    android:id="@+id/txtAutonomousLastUpdate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/cloud_reputation_note"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/autonomous_last_update_never"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/txtDevicePatchStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/device_patch_unknown"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
