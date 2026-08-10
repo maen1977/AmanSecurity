@@ -99,7 +99,7 @@ jobs:
         run: tar -czf "$RUNNER_TEMP/aman-threat-refresh.tgz" threat-db reputation app/src/main/assets/threat-db app/src/main/assets/reputation threat-intel/source_status.json
 
       - name: Upload threat refresh state
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aman-threat-refresh
           path: ${{ runner.temp }}/aman-threat-refresh.tgz
@@ -107,7 +107,7 @@ jobs:
           retention-days: 1
 
       - name: Upload source-health report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AmanSecurity-2.5.0-Threat-Source-Health
           path: threat-intel/source_status.json
@@ -268,7 +268,7 @@ jobs:
           fi
 
       - name: Upload detection-quality reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AmanSecurity-2.5.0-Detection-Quality
           path: build/reports/aman-*-quality.json
@@ -276,21 +276,21 @@ jobs:
           retention-days: 30
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AmanSecurity-2.5.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release App Bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AmanSecurity-2.5.0-Release-AAB
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload R8 mapping
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AmanSecurity-2.5.0-R8-Mapping
           path: app/build/outputs/mapping/release/mapping.txt
