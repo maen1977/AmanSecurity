@@ -109,7 +109,7 @@ jobs:
       - name: Upload source-health report
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.3.0-Threat-Source-Health
+          name: AmanSecurity-2.5.0-Threat-Source-Health
           path: threat-intel/source_status.json
           if-no-files-found: error
           retention-days: 30
@@ -203,6 +203,12 @@ jobs:
       - name: Verify threat intelligence and reputation expansion
         run: python3 tools/threat_reputation_2_3_gate.py
 
+      - name: Verify Web Protection and Safe Link Guard
+        run: python3 tools/web_protection_2_4_gate.py
+
+      - name: Verify zero-day behavior hardening
+        run: python3 tools/zero_day_2_5_gate.py
+
       - name: Run source quality gate
         run: python3 tools/quality_gate.py
 
@@ -253,8 +259,8 @@ jobs:
       - name: Write build summary
         shell: bash
         run: |
-          echo "### Aman Security 2.3.0 – Threat Intelligence & Reputation Expansion" >> "$GITHUB_STEP_SUMMARY"
-          echo "Android-focused threat intelligence, reviewed signer/graph infrastructure, signed exact reputation shards and Bloom prefilter, stronger impersonation detection, compound DEX rules, continuity checks, unit tests and lint passed." >> "$GITHUB_STEP_SUMMARY"
+          echo "### Aman Security 2.5.0 – Zero-Day & Behavior Detection Hardening" >> "$GITHUB_STEP_SUMMARY"
+          echo "Signed threat intelligence, Web Guard, hidden-payload inspection, anti-analysis detection, evidence-domain scoring, continuity checks, unit tests and lint passed." >> "$GITHUB_STEP_SUMMARY"
           if [ "$RELEASE_SIGNING_CONFIGURED" = "true" ]; then
             echo "Release AAB was signed with the configured upload key." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -264,7 +270,7 @@ jobs:
       - name: Upload detection-quality reports
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.3.0-Detection-Quality
+          name: AmanSecurity-2.5.0-Detection-Quality
           path: build/reports/aman-*-quality.json
           if-no-files-found: warn
           retention-days: 30
@@ -272,20 +278,20 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.3.0-Debug-APK
+          name: AmanSecurity-2.5.0-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.3.0-Release-AAB
+          name: AmanSecurity-2.5.0-Release-AAB
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.3.0-R8-Mapping
+          name: AmanSecurity-2.5.0-R8-Mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn

@@ -153,7 +153,7 @@ def main():
         serial = int(old.get('serial', 0)) + 1
         now = dt.datetime.now(dt.timezone.utc)
         version = now.strftime('%Y.%m.%d.%H%M')
-        run_checked('tools/sign_threat_db.py', '--private-key', key, '--serial', str(serial), '--version', version, '--min-app-version-code', '13')
+        run_checked('tools/sign_threat_db.py', '--private-key', key, '--serial', str(serial), '--version', version, '--min-app-version-code', '15')
         run_checked('tools/sync_threat_assets.py')
         subprocess.run([sys.executable, 'tools/build_reputation_shards.py', '--private-key', str(key)], cwd=ROOT, check=True)
         run_checked('tools/verify_threat_db.py')

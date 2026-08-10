@@ -13,6 +13,10 @@ class UrlScanner(
         val hostHash = sha256(normalized.host)
         val known = lookup(UrlIndicatorKind.URL, urlHash)
             ?: lookup(UrlIndicatorKind.HOST, hostHash)
+            ?: hostSuffixes(normalized.host)
+                .asSequence()
+                .mapNotNull { suffix -> lookup(UrlIndicatorKind.HOST, sha256(suffix)) }
+                .firstOrNull()
         if (known != null) {
             val level = when (known.classification) {
                 UrlThreatClassification.PHISHING -> UrlRiskLevel.KNOWN_PHISHING
@@ -66,6 +70,11 @@ class UrlScanner(
             score += 10
         }
 
+        // Compound web-phishing signals matter more than any single weak heuristic.
+        if (UrlRiskSignal.PLAIN_HTTP in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 10
+        if (UrlRiskSignal.PUNYCODE_HOST in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 15
+        if (UrlRiskSignal.IP_ADDRESS_HOST in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 10
+
         score = score.coerceAtMost(100)
         val level = when {
             score >= 55 -> UrlRiskLevel.HIGH
@@ -80,6 +89,13 @@ class UrlScanner(
             riskScore = score,
             signals = signals
         )
+    }
+
+    private fun hostSuffixes(host: String): List<String> {
+        if (host.contains(':') || host.matches(Regex("^\\d+(?:\\.\\d+){3}$"))) return emptyList()
+        val labels = host.split('.')
+        if (labels.size <= 2) return emptyList()
+        return (1 until labels.size - 1).map { labels.drop(it).joinToString(".") }
     }
 
     private fun containsSuspiciousKeyword(url: String, host: String): Boolean {

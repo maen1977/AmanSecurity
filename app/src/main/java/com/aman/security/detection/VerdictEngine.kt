@@ -1,6 +1,16 @@
 package com.aman.security.detection
 
 object VerdictEngine {
+    private enum class EvidenceDomain {
+        IDENTITY,
+        STATIC_CODE,
+        NETWORK,
+        REPUTATION,
+        IMPERSONATION,
+        GRAPH,
+        USER
+    }
+
     fun evaluate(
         findings: Collection<DetectionFinding>,
         allowlisted: Boolean = false
@@ -41,6 +51,7 @@ object VerdictEngine {
         }
 
         val sources = normalized.map { it.source }.distinct().size
+        val domains = normalized.map { evidenceDomain(it.source) }.distinct().size
         var score = normalized.sumOf { finding ->
             val confidenceFactor = when (finding.confidence) {
                 FindingConfidence.LOW -> 0.45
@@ -51,19 +62,27 @@ object VerdictEngine {
             (finding.score * confidenceFactor).toInt()
         }
 
-        // Multiple independent engines agreeing is materially stronger than one heuristic.
+        // Only genuinely different evidence domains earn a convergence bonus. Multiple static
+        // engines often derive from the same DEX/manifest evidence and must not double-count it.
         score += when {
-            sources >= 5 -> 18
-            sources >= 4 -> 12
-            sources >= 3 -> 8
-            sources >= 2 -> 4
+            domains >= 5 -> 16
+            domains >= 4 -> 10
+            domains >= 3 -> 6
+            domains >= 2 -> 3
             else -> 0
         }
+
+        // Small consensus bonus when at least three independent evidence domains agree on a family.
+        val familyDomainCounts = normalized
+            .filter { it.family != ThreatFamily.UNKNOWN && it.family != ThreatFamily.TEST && it.confidence.rank >= FindingConfidence.MEDIUM.rank }
+            .groupBy { it.family }
+            .mapValues { (_, values) -> values.map { evidenceDomain(it.source) }.distinct().size }
+        if ((familyDomainCounts.values.maxOrNull() ?: 0) >= 3) score += 4
 
         // Low-confidence heuristics alone cannot escalate to a high verdict.
         val highestConfidence = normalized.maxByOrNull { it.confidence.rank }?.confidence ?: FindingConfidence.LOW
         if (highestConfidence == FindingConfidence.LOW) score = score.coerceAtMost(34)
-        if (highestConfidence == FindingConfidence.MEDIUM && sources < 2) score = score.coerceAtMost(49)
+        if (highestConfidence == FindingConfidence.MEDIUM && domains < 2) score = score.coerceAtMost(49)
 
         if (allowlisted) score = score.coerceAtMost(19)
         score = score.coerceIn(0, 99)
@@ -89,5 +108,26 @@ object VerdictEngine {
             engineCount = sources,
             allowlisted = allowlisted
         )
+    }
+
+    private fun evidenceDomain(source: DetectionSource): EvidenceDomain = when (source) {
+        DetectionSource.FILE_HASH,
+        DetectionSource.SIGNER_IDENTITY,
+        DetectionSource.PACKAGE_IDENTITY -> EvidenceDomain.IDENTITY
+
+        DetectionSource.SIGNATURE_RULE,
+        DetectionSource.MANIFEST,
+        DetectionSource.DEX,
+        DetectionSource.PACKER,
+        DetectionSource.STATIC_BEHAVIOR,
+        DetectionSource.ZERO_DAY_HEURISTIC,
+        DetectionSource.LOCAL_MODEL -> EvidenceDomain.STATIC_CODE
+
+        DetectionSource.NETWORK -> EvidenceDomain.NETWORK
+        DetectionSource.REPUTATION,
+        DetectionSource.CLOUD_REPUTATION -> EvidenceDomain.REPUTATION
+        DetectionSource.IMPERSONATION -> EvidenceDomain.IMPERSONATION
+        DetectionSource.THREAT_GRAPH -> EvidenceDomain.GRAPH
+        DetectionSource.USER_ALLOWLIST -> EvidenceDomain.USER
     }
 }

@@ -19,7 +19,7 @@ object UrlNormalizer {
     fun normalize(input: String): Normalized? {
         val trimmed = input.trim()
         if (trimmed.isEmpty() || trimmed.length > MAX_INPUT_LENGTH) return null
-        if (trimmed.any { it == '\u0000' || it == '\r' || it == '\n' || it == '\t' }) return null
+        if (trimmed.any { it == '\u0000' || it == '\r' || it == '\n' || it == '\t' || it == '\\' }) return null
 
         val withScheme = when {
             trimmed.startsWith("//") -> "https:$trimmed"

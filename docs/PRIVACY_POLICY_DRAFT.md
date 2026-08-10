@@ -2,7 +2,7 @@
 
 **Last updated:** 8 August 2026
 
-Aman Security 2.3.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
+Aman Security 2.5.0 is designed to perform security analysis primarily on the Android device. File contents, scanned-link text, installed-app inventory, app permissions, package fingerprints, static APK findings, quarantine records, exclusions, scan history, and background-protection events are processed locally by default.
 
 Internet access is used to download the signed threat database from the configured update location. Threat-database packages are accepted only after cryptographic signature and hash verification. The app schedules these update checks periodically with Android WorkManager when suitable network/battery conditions are available.
 
@@ -17,3 +17,7 @@ The application requests broad visibility of installed packages because installe
 Threat-intelligence maintenance tooling in the source repository is separate from the Android app. It imports reviewed indicators and is designed not to download malware binaries.
 
 This is a publisher-review draft, not a hosted final privacy policy. Before publication, the publisher must review it against the exact distributed build, configured cloud/update endpoints, support practices, store declarations, and any services added later, then publish the finalized policy at a public URL.
+
+
+## Web Guard
+Aman Web Guard is optional. When the user chooses Aman for an HTTP/HTTPS link, the URL is normalized and checked locally before Aman hands allowed links to an external browser. Aman does not decrypt HTTPS, inject certificates, inspect page bodies, or capture arbitrary device traffic in this feature.

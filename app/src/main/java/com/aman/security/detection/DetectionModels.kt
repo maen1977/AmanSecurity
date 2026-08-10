@@ -31,7 +31,8 @@ enum class DetectionSource {
     LOCAL_MODEL,
     CLOUD_REPUTATION,
     USER_ALLOWLIST,
-    THREAT_GRAPH
+    THREAT_GRAPH,
+    ZERO_DAY_HEURISTIC
 }
 
 enum class FindingConfidence(val rank: Int) {
@@ -134,6 +135,19 @@ data class ThreatIntelMetadata(
     val confidence: FindingConfidence,
     val firstSeen: String? = null,
     val lastSeen: String? = null
+)
+
+
+data class ZeroDayProfile(
+    val signals: Set<com.aman.security.scanner.ApkRiskSignal>,
+    val markers: Set<String>,
+    val hiddenDexPayloadCount: Int = 0,
+    val hiddenElfPayloadCount: Int = 0,
+    val nestedArchivePayloadCount: Int = 0,
+    val highEntropyAssetCount: Int = 0,
+    val dexFileCount: Int = 0,
+    val nativeLibraryCount: Int = 0,
+    val codeScanTruncated: Boolean = false
 )
 
 data class DetectionRuleset(

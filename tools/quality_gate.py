@@ -37,8 +37,19 @@ def main():
         ],
         "PHASE6_MANIFEST_GATE",
     )
-    if "android.intent.action.VIEW" in manifest or "android.intent.category.BROWSABLE" in manifest:
-        raise SystemExit("PHASE5_SHARE_GATE_FAILED browser_interception_not_allowed")
+    require(
+        manifest,
+        [
+            ".web.LinkGuardActivity",
+            "android.intent.action.VIEW",
+            "android.intent.category.BROWSABLE",
+            'android:scheme="http"',
+            'android:scheme="https"',
+        ],
+        "PHASE24_WEB_GUARD_MANIFEST_GATE",
+    )
+    if "android.net.VpnService" in manifest or "BIND_VPN_SERVICE" in manifest:
+        raise SystemExit("PHASE24_WEB_GUARD_FAILED incomplete_vpn_not_allowed")
     require(
         manifest,
         [
@@ -52,7 +63,7 @@ def main():
 
     gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
     expected = "https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/"
-    require(gradle, [expected, 'versionName = "2.3.0"', "versionCode = 13", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
+    require(gradle, [expected, 'versionName = "2.5.0"', "versionCode = 15", 'androidx.work:work-runtime-ktx:2.10.1'], "PHASE7_GRADLE_GATE")
 
     updater = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt").read_text(encoding="utf-8")
     validator = (ROOT / "app/src/main/java/com/aman/security/scanner/ThreatDbValidator.kt").read_text(encoding="utf-8")
@@ -181,7 +192,7 @@ def main():
     workflow8 = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
     require(manifest, ['android:usesCleartextTraffic="false"', 'android:networkSecurityConfig="@xml/network_security_config"', '@mipmap/ic_launcher'], "PHASE8_MANIFEST_GATE")
     require(network_security, ['cleartextTrafficPermitted="false"', '<certificates src="system"'], "PHASE8_NETWORK_GATE")
-    require(gradle, ['versionName = "2.3.0"', 'versionCode = 13', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
+    require(gradle, ['versionName = "2.5.0"', 'versionCode = 15', 'isShrinkResources = true', 'isDebuggable = false', 'ANDROID_KEYSTORE_PATH'], "PHASE8_RELEASE_GRADLE_GATE")
     require(freshness, ["ThreatDatabaseFreshness", "CURRENT_DAYS", "AGING_DAYS", "Instant.parse"], "PHASE8_FRESHNESS_GATE")
     require(workflow8, ["tools/release_gate.py", ":app:lintRelease", ":app:bundleRelease", "ANDROID_KEYSTORE_BASE64", "jarsigner -verify"], "PHASE8_CI_GATE")
 

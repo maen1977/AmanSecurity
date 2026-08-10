@@ -24,8 +24,8 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "2.3.0"
+        versionCode = 15
+        versionName = "2.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "THREAT_DB_BASE_URL", "\"https://raw.githubusercontent.com/maen1977/AmanSecurity/main/threat-db/\"")

@@ -92,4 +92,17 @@ class VerdictEngineTest {
         assertEquals(DetectionVerdictLevel.LOW, verdict.level)
         assertTrue(verdict.allowlisted)
     }
+
+    @Test
+    fun correlatedStaticEnginesDoNotReceiveIndependentDomainBonus() {
+        val a = VerdictEngine.evaluate(
+            listOf(
+                DetectionFinding("RULE", DetectionSource.SIGNATURE_RULE, 20, FindingConfidence.MEDIUM, ThreatFamily.DROPPER),
+                DetectionFinding("ZERO", DetectionSource.ZERO_DAY_HEURISTIC, 20, FindingConfidence.MEDIUM, ThreatFamily.DROPPER)
+            )
+        )
+        // Both findings come from the same static-code evidence domain, so no convergence bonus is added.
+        assertEquals(30, a.score)
+        assertEquals(DetectionVerdictLevel.REVIEW, a.level)
+    }
 }

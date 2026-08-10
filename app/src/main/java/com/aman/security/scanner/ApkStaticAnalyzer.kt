@@ -23,6 +23,8 @@ import com.aman.security.detection.StaticBehaviorEngine
 import com.aman.security.detection.ThreatFamily
 import com.aman.security.detection.ThreatGraphEngine
 import com.aman.security.detection.VerdictEngine
+import com.aman.security.detection.ZeroDayHeuristicEngine
+import com.aman.security.detection.ZeroDayProfile
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -136,6 +138,19 @@ class ApkStaticAnalyzer(
         val ruleFindings = SignatureRuleEngine.match(markers, ruleset.rules)
         findings += ruleFindings
         findings += StaticBehaviorEngine.evaluate(signals, markers)
+        findings += ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = signals,
+                markers = markers,
+                hiddenDexPayloadCount = archive.hiddenDexPayloadCount,
+                hiddenElfPayloadCount = archive.hiddenElfPayloadCount,
+                nestedArchivePayloadCount = archive.nestedArchivePayloadCount,
+                highEntropyAssetCount = archive.highEntropyAssetCount,
+                dexFileCount = archive.dexFileCount,
+                nativeLibraryCount = archive.nativeLibraryCount,
+                codeScanTruncated = archive.codeScanTruncated
+            )
+        )
         findings += ImpersonationDetector.evaluate(packageInfo.packageName, null, ruleset.brands, signerSha256 = certificateHash)
 
         val signerReputation = certificateHash?.let { database.findReputation(ReputationKind.SIGNER, it) }
@@ -265,7 +280,9 @@ class ApkStaticAnalyzer(
             networkIndicatorCount = archive.networkUrls.size + archive.networkDomains.size + archive.networkIps.size,
             matchedRuleCount = ruleFindings.size,
             markerCount = markers.size,
-            localModelProbability = modelResult.probability
+            localModelProbability = modelResult.probability,
+            hiddenPayloadCount = archive.hiddenDexPayloadCount + archive.hiddenElfPayloadCount + archive.nestedArchivePayloadCount,
+            antiAnalysisMarkerCount = listOf("ANTI_DEBUG", "EMULATOR_CHECK", "ENVIRONMENT_FINGERPRINT").count(markers::contains)
         )
     }
 
@@ -298,6 +315,9 @@ class ApkStaticAnalyzer(
         put("NATIVE_CODE", bool(archive.nativeLibraryCount > 0))
         put("MANY_DEX", bool(archive.dexFileCount >= MANY_DEX_THRESHOLD))
         put("KNOWN_NETWORK", bool(knownNetworkMatches > 0))
+        put("HIDDEN_PAYLOAD", bool(archive.hiddenDexPayloadCount + archive.hiddenElfPayloadCount > 0))
+        put("ANTI_ANALYSIS", bool("ANTI_DEBUG" in markers && "EMULATOR_CHECK" in markers))
+        put("ENCRYPTED_ASSET", bool(archive.highEntropyAssetCount >= 2))
     }
 
     private fun bool(value: Boolean): Double = if (value) 1.0 else 0.0
@@ -346,6 +366,12 @@ class ApkStaticAnalyzer(
             val networkUrls = linkedSetOf<String>()
             val networkDomains = linkedSetOf<String>()
             val networkIps = linkedSetOf<String>()
+            var hiddenDexPayloadCount = 0
+            var hiddenElfPayloadCount = 0
+            var nestedArchivePayloadCount = 0
+            var highEntropyAssetCount = 0
+            var payloadSampleBudget = MAX_ASSET_SAMPLE_TOTAL_BYTES
+            var payloadCandidates = 0
             val enumeration = zip.entries()
             while (enumeration.hasMoreElements()) {
                 val entry = enumeration.nextElement()
@@ -361,6 +387,27 @@ class ApkStaticAnalyzer(
                 val lower = name.lowercase()
                 if (PACKER_ENTRY_MARKERS.any(lower::contains)) markers += "PACKER_PRESENT"
                 if (lower.endsWith(".dex") && !DEX_NAME.matches(name.substringAfterLast('/'))) markers += "SECONDARY_DEX_PAYLOAD"
+
+                if (!entry.isDirectory && isPayloadCandidate(lower) && payloadCandidates < MAX_ASSET_CANDIDATES && payloadSampleBudget > 0L) {
+                    payloadCandidates += 1
+                    val allowed = minOf(MAX_ASSET_SAMPLE_BYTES, payloadSampleBudget)
+                    val sample = zip.getInputStream(entry).use { readBoundedSample(it, allowed) }
+                    payloadSampleBudget -= sample.size
+                    if (sample.startsWithMagic(DEX_MAGIC)) {
+                        hiddenDexPayloadCount += 1
+                        markers += "HIDDEN_DEX_PAYLOAD"
+                    } else if (sample.startsWithMagic(ELF_MAGIC)) {
+                        hiddenElfPayloadCount += 1
+                        markers += "HIDDEN_ELF_PAYLOAD"
+                    } else if (sample.startsWithMagic(ZIP_MAGIC)) {
+                        nestedArchivePayloadCount += 1
+                        markers += "NESTED_ARCHIVE_PAYLOAD"
+                    }
+                    if (sample.size >= MIN_ENTROPY_SAMPLE_BYTES && shannonEntropy(sample) >= HIGH_ENTROPY_THRESHOLD) {
+                        highEntropyAssetCount += 1
+                        markers += "HIGH_ENTROPY_ASSET"
+                    }
+                }
             }
             val signals = linkedSetOf<ApkRiskSignal>()
             if (nativeCount > 0) signals += ApkRiskSignal.NATIVE_CODE
@@ -379,7 +426,10 @@ class ApkStaticAnalyzer(
                 networkIps += scan.ips
                 if (scan.truncated) { truncated = true; break }
             }
-            return ArchiveSignals(dexEntries.size, nativeCount, signals, markers, networkUrls, networkDomains, networkIps, truncated)
+            return ArchiveSignals(
+                dexEntries.size, nativeCount, signals, markers, networkUrls, networkDomains, networkIps, truncated,
+                hiddenDexPayloadCount, hiddenElfPayloadCount, nestedArchivePayloadCount, highEntropyAssetCount
+            )
         }
     }
 
@@ -422,6 +472,45 @@ class ApkStaticAnalyzer(
         }
         if (total >= maxBytes && input.read() >= 0) truncated = true
         return DexScan(total, signals, markers, urls, domains, ips, truncated)
+    }
+
+
+    private fun isPayloadCandidate(lowerName: String): Boolean {
+        if (lowerName.startsWith("lib/") || lowerName.endsWith(".so")) return false
+        if (DEX_NAME.matches(lowerName.substringAfterLast('/'))) return false
+        return lowerName.startsWith("assets/") || lowerName.startsWith("res/raw/") ||
+            PAYLOAD_EXTENSIONS.any(lowerName::endsWith)
+    }
+
+    private fun readBoundedSample(input: InputStream, maxBytes: Long): ByteArray {
+        val output = java.io.ByteArrayOutputStream(minOf(maxBytes, 256L * 1024L).toInt())
+        val buffer = ByteArray(16 * 1024)
+        var remaining = maxBytes
+        while (remaining > 0) {
+            val read = input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
+            if (read < 0) break
+            output.write(buffer, 0, read)
+            remaining -= read
+        }
+        return output.toByteArray()
+    }
+
+    private fun ByteArray.startsWithMagic(magic: ByteArray): Boolean {
+        if (size < magic.size) return false
+        return magic.indices.all { this[it] == magic[it] }
+    }
+
+    private fun shannonEntropy(data: ByteArray): Double {
+        if (data.isEmpty()) return 0.0
+        val counts = IntArray(256)
+        data.forEach { counts[it.toInt() and 0xff]++ }
+        val size = data.size.toDouble()
+        var entropy = 0.0
+        counts.filter { it > 0 }.forEach { count ->
+            val p = count / size
+            entropy -= p * (kotlin.math.ln(p) / kotlin.math.ln(2.0))
+        }
+        return entropy
     }
 
     private fun containsBytes(haystack: ByteArray, needle: ByteArray): Boolean {
@@ -482,7 +571,11 @@ class ApkStaticAnalyzer(
         val networkUrls: Set<String>,
         val networkDomains: Set<String>,
         val networkIps: Set<String>,
-        val codeScanTruncated: Boolean
+        val codeScanTruncated: Boolean,
+        val hiddenDexPayloadCount: Int,
+        val hiddenElfPayloadCount: Int,
+        val nestedArchivePayloadCount: Int,
+        val highEntropyAssetCount: Int
     )
     private data class DexScan(
         val bytesRead: Long,
@@ -502,11 +595,20 @@ class ApkStaticAnalyzer(
         private const val MAX_DEX_SCAN_BYTES = 64L * 1024L * 1024L
         private const val MAX_NETWORK_INDICATORS = 64
         private const val MAX_NETWORK_LOOKUPS = 32
+        private const val MAX_ASSET_CANDIDATES = 64
+        private const val MAX_ASSET_SAMPLE_BYTES = 256L * 1024L
+        private const val MAX_ASSET_SAMPLE_TOTAL_BYTES = 4L * 1024L * 1024L
+        private const val MIN_ENTROPY_SAMPLE_BYTES = 32 * 1024
+        private const val HIGH_ENTROPY_THRESHOLD = 7.75
         private const val MANY_DEX_THRESHOLD = 8
         private val DEX_NAME = Regex("classes(?:[0-9]+)?\\.dex", RegexOption.IGNORE_CASE)
         private val SMS_PERMISSIONS = setOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS, Manifest.permission.SEND_SMS)
         private val CALL_LOG_PERMISSIONS = setOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.WRITE_CALL_LOG)
         private val PACKER_ENTRY_MARKERS = setOf("libjiagu", "libsecexe", "libsecmain", "bangcle", "secneo", "ijiami", "dexhelper")
+        private val PAYLOAD_EXTENSIONS = setOf(".dat", ".bin", ".blob", ".enc", ".pak", ".payload")
+        private val DEX_MAGIC = byteArrayOf(0x64, 0x65, 0x78, 0x0a)
+        private val ELF_MAGIC = byteArrayOf(0x7f, 0x45, 0x4c, 0x46)
+        private val ZIP_MAGIC = byteArrayOf(0x50, 0x4b, 0x03, 0x04)
         private val CODE_MARKERS = linkedMapOf(
             "Ldalvik/system/DexClassLoader;" to MarkerEffect("DYNAMIC_CODE", ApkRiskSignal.DYNAMIC_CODE_LOADING),
             "Ldalvik/system/InMemoryDexClassLoader;" to MarkerEffect("DYNAMIC_CODE", ApkRiskSignal.DYNAMIC_CODE_LOADING),
@@ -539,6 +641,12 @@ class ApkStaticAnalyzer(
             "getInstalledApplications" to MarkerEffect("APP_ENUMERATION"),
             "Landroid/app/admin/DevicePolicyManager;" to MarkerEffect("DEVICE_POLICY"),
             "Landroid/accounts/AccountManager;" to MarkerEffect("ACCOUNT_ACCESS"),
+            "Landroid/os/Debug;->isDebuggerConnected" to MarkerEffect("ANTI_DEBUG"),
+            "/proc/self/status" to MarkerEffect("ANTI_DEBUG"),
+            "ro.kernel.qemu" to MarkerEffect("EMULATOR_CHECK"),
+            "goldfish" to MarkerEffect("EMULATOR_CHECK"),
+            "Landroid/os/Build;->FINGERPRINT" to MarkerEffect("ENVIRONMENT_FINGERPRINT"),
+            "Ljava/lang/System;->load" to MarkerEffect("NATIVE_LOAD"),
             "com.stub.StubApp" to MarkerEffect("PACKER_PRESENT"),
             "com.secneo" to MarkerEffect("PACKER_PRESENT"),
             "com.bangcle" to MarkerEffect("PACKER_PRESENT")

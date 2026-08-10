@@ -17,7 +17,7 @@ workflow = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
 gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
 need('compileSdk = 36' in build and 'targetSdk = 36' in build, "Android 16 / API 36 target is required")
-need('versionCode = 13' in build and 'versionName = "2.3.0"' in build, "release version must be 2.3.0 / code 13")
+need('versionCode = 15' in build and 'versionName = "2.5.0"' in build, "release version must be 2.5.0 / code 15")
 need('-phase' not in re.search(r'versionName\s*=\s*"([^"]+)"', build).group(1), "release versionName must not contain a phase suffix")
 need('isMinifyEnabled = true' in build and 'isShrinkResources = true' in build, "release must use R8 and resource shrinking")
 need('isDebuggable = false' in build, "release build must explicitly disable debugging")
@@ -77,6 +77,6 @@ if errors:
         print(" -", error)
     sys.exit(1)
 
-print("PHASE8_RELEASE_GATE_OK target_api=36 version=2.3.0 r8=1 resource_shrink=1 cleartext=0 adaptive_icon=1")
+print("PHASE8_RELEASE_GATE_OK target_api=36 version=2.5.0 r8=1 resource_shrink=1 cleartext=0 adaptive_icon=1")
 print("PHASE8_SIGNING_GATE_OK private_keys=0 env_injected=1 play_bundle=1")
 print("PHASE8_CI_GATE_OK unit_tests=1 lint_release=1 aab=1 default_read_only_token=1 threat_refresh_write_job=1 dependency_updates=1")

@@ -1,11 +1,13 @@
 package com.aman.security
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -121,6 +123,10 @@ class MainActivity : AppCompatActivity() {
         renderProtectionStatus()
     }
 
+    private val webGuardRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        renderWebGuardStatus()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -142,11 +148,13 @@ class MainActivity : AppCompatActivity() {
         renderDatabaseInfo()
         renderSecurityManagement()
         renderProtectionStatus()
+        renderWebGuardStatus()
 
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
+        binding.btnConfigureWebGuard.setOnClickListener { configureWebGuard() }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
         binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
@@ -166,6 +174,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (::protectionPreferences.isInitialized) renderProtectionStatus()
+        if (::binding.isInitialized) renderWebGuardStatus()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -315,6 +324,32 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.MANY_SUBDOMAINS -> R.string.url_signal_subdomains
         UrlRiskSignal.LONG_URL -> R.string.url_signal_long
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
+    }
+
+    private fun configureWebGuard() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) && !roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)) {
+                webGuardRoleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_BROWSER))
+                return
+            }
+        }
+        runCatching {
+            webGuardRoleLauncher.launch(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+        }.onFailure {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }
+    }
+
+    private fun renderWebGuardStatus() {
+        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) && roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)
+        } else {
+            false
+        }
+        binding.txtWebGuardStatus.setText(if (active) R.string.web_guard_status_active else R.string.web_guard_status_optional)
+        binding.btnConfigureWebGuard.setText(if (active) R.string.web_guard_manage_action else R.string.web_guard_configure_action)
     }
 
     private fun toggleBackgroundProtection() {

@@ -79,5 +79,7 @@ data class ApkStaticAnalysis(
     val networkIndicatorCount: Int = 0,
     val matchedRuleCount: Int = 0,
     val markerCount: Int = 0,
-    val localModelProbability: Double = 0.0
+    val localModelProbability: Double = 0.0,
+    val hiddenPayloadCount: Int = 0,
+    val antiAnalysisMarkerCount: Int = 0
 )
