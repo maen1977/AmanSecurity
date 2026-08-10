@@ -32,6 +32,11 @@ for %%F in (
   if exist "%%~F" del /f /q "%%~F"
 )
 
+
+if exist "app\src\main\assets\keys" (
+  rmdir /s /q "app\src\main\assets\keys"
+)
+
 git add -A
 if errorlevel 1 exit /b 1
 

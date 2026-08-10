@@ -18,6 +18,12 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
+      - name: Remove legacy pre-2.6 update material
+        shell: bash
+        run: |
+          python3 tools/repository_cleanup_2_6.py --apply
+          echo "Legacy threat-update material removed from build workspace."
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

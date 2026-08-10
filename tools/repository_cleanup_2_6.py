@@ -8,6 +8,7 @@ APPLY = '--apply' in sys.argv[1:]
 
 LEGACY_PATHS = [
     'reputation',
+    'app/src/main/assets/keys',
     'tools/threat_db_continuity_gate.py',
     'tools/reviewed_reputation_gate.py',
     'tools/threat_intel_quality_gate.py',

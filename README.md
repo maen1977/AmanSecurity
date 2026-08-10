@@ -49,3 +49,6 @@ These remove tracked legacy threat-update workflow/reputation files, preserve th
 
 ## If GitHub still reports `minimumSignedReputationEntries`
 That log comes from the pre-2.6 workflow left in an existing repository. On Windows run `FIX_LEGACY_GITHUB_ACTIONS.cmd` from the root of the local Git clone, then commit and push the staged deletions. Do not add the old signed-reputation key back; Aman 2.6 intentionally has no GitHub Actions threat-update pipeline.
+
+### 2.6 build migration note
+The manual GitHub build removes the legacy pre-2.6 `app/src/main/assets/keys` directory from the runner workspace before quality gates and Android packaging. Aman 2.6 does not use those update keys.

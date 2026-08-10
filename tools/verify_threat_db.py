@@ -17,6 +17,9 @@ def main():
   if len(rows(DB/n))!=m.get(k): raise SystemExit(f'THREAT_DB_GATE_FAILED count={k}')
  file_rows=rows(DB/'signatures.csv')
  if not any('TEST_SIGNATURE' in r for r in file_rows): raise SystemExit('THREAT_DB_GATE_FAILED canary')
- if any(ROOT.rglob('*.pem')) or any(ROOT.rglob('*.key')): raise SystemExit('THREAT_DB_GATE_FAILED key_material')
+ key_files=sorted({*ROOT.rglob('*.pem'),*ROOT.rglob('*.key')})
+ if key_files:
+  rel=','.join(str(x.relative_to(ROOT)) for x in key_files)
+  raise SystemExit(f'THREAT_DB_GATE_FAILED key_material paths={rel}')
  print(f"THREAT_DB_GATE_OK serial={m['serial']} version={m['version']} file_entries={m['entries']} url_entries={m['urlEntries']} apk_identity_entries={m['apkIdentityEntries']} detection_entries={m['detectionEntries']} bundled_hash_integrity=1")
 if __name__=='__main__': main()
