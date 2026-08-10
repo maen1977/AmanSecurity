@@ -23,6 +23,17 @@ for rel in [
     if not p.exists() or required_branch not in p.read_text(encoding='utf-8'):
         errors.append(f'missing_community_feed_branch:{rel}')
 
+
+# Android Lint StringFormatMatches: update_partial uses string placeholders, so numeric
+# counts must be locale-formatted to String before getString() receives them.
+main_activity=(ROOT/'app/src/main/java/com/aman/security/MainActivity.kt').read_text(encoding='utf-8')
+for expected in [
+    'NumberFormat.getIntegerInstance().format(result.successfulSources)',
+    'NumberFormat.getIntegerInstance().format(result.info.totalSources)',
+]:
+    if expected not in main_activity:
+        errors.append('update_partial_number_not_formatted:' + expected)
+
 if errors:
     raise SystemExit('ANDROID_KOTLIN_SANITY_GATE_FAILED ' + ' '.join(errors))
-print('ANDROID_KOTLIN_SANITY_GATE_OK view_imports=1 url_signal_exhaustive=1')
+print('ANDROID_KOTLIN_SANITY_GATE_OK view_imports=1 url_signal_exhaustive=1 string_format_numeric=1')

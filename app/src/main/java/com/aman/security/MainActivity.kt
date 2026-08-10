@@ -221,7 +221,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 is AutonomousUpdateResult.Partial -> binding.txtUpdateStatus.text = getString(
-                    R.string.update_partial, result.successfulSources, result.info.totalSources
+                    R.string.update_partial,
+                    NumberFormat.getIntegerInstance().format(result.successfulSources),
+                    NumberFormat.getIntegerInstance().format(result.info.totalSources)
                 )
                 AutonomousUpdateResult.NoSourceAvailable -> binding.txtUpdateStatus.setText(R.string.update_network_error)
             }
