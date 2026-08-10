@@ -9,6 +9,18 @@ APPLY = '--apply' in sys.argv[1:]
 LEGACY_PATHS = [
     'reputation',
     'app/src/main/assets/keys',
+    'app/src/main/assets/reputation',
+    'app/src/main/assets/threat-db/manifest.sig',
+    # Pre-2.6 GitHub/signed-reputation runtime classes. These paths no longer
+    # exist in the autonomous engine and can survive when new files are copied
+    # over an existing Git checkout without recording deletions.
+    'app/src/main/java/com/aman/security/detection/CloudReputationClient.kt',
+    'app/src/main/java/com/aman/security/detection/OfflineReputationBloom.kt',
+    'app/src/main/java/com/aman/security/scanner/ThreatDatabaseUpdater.kt',
+    'app/src/main/java/com/aman/security/scanner/ThreatDbCrypto.kt',
+    'app/src/main/java/com/aman/security/scanner/ThreatDbStorage.kt',
+    'app/src/main/java/com/aman/security/update/ThreatUpdateScheduler.kt',
+    'app/src/main/java/com/aman/security/update/ThreatUpdateWorker.kt',
     'tools/threat_db_continuity_gate.py',
     'tools/reviewed_reputation_gate.py',
     'tools/threat_intel_quality_gate.py',

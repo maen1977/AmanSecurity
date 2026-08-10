@@ -36,6 +36,22 @@ for %%F in (
 if exist "app\src\main\assets\keys" (
   rmdir /s /q "app\src\main\assets\keys"
 )
+if exist "app\src\main\assets\reputation" (
+  rmdir /s /q "app\src\main\assets\reputation"
+)
+if exist "app\src\main\assets\threat-db\manifest.sig" del /f /q "app\src\main\assets\threat-db\manifest.sig"
+
+for %%F in (
+  "app\src\main\java\com\aman\security\detection\CloudReputationClient.kt"
+  "app\src\main\java\com\aman\security\detection\OfflineReputationBloom.kt"
+  "app\src\main\java\com\aman\security\scanner\ThreatDatabaseUpdater.kt"
+  "app\src\main\java\com\aman\security\scanner\ThreatDbCrypto.kt"
+  "app\src\main\java\com\aman\security\scanner\ThreatDbStorage.kt"
+  "app\src\main\java\com\aman\security\update\ThreatUpdateScheduler.kt"
+  "app\src\main\java\com\aman\security\update\ThreatUpdateWorker.kt"
+) do (
+  if exist "%%~F" del /f /q "%%~F"
+)
 
 git add -A
 if errorlevel 1 exit /b 1

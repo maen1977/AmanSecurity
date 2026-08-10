@@ -36,13 +36,16 @@ def main():
     need(gradle,['versionName = "2.6.0"','versionCode = 16'],'AUTONOMOUS_2_6_VERSION')
     forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
     scan_paths=[ROOT/'app/src/main', ROOT/'app/build.gradle.kts', ROOT/'README.md']
-    parts=[]
+    hits={x:[] for x in forbidden}
     for base in scan_paths:
-        if base.is_file(): parts.append(base.read_text(errors='ignore'))
-        elif base.exists(): parts.extend(p.read_text(errors='ignore') for p in base.rglob('*') if p.is_file() and p.stat().st_size < 2_000_000)
-    corpus='\n'.join(parts)
-    found=[x for x in forbidden if x in corpus]
-    if found: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED forbidden={found}')
+        candidates=[base] if base.is_file() else ([p for p in base.rglob('*') if p.is_file() and p.stat().st_size < 2_000_000] if base.exists() else [])
+        for path in candidates:
+            text=path.read_text(errors='ignore')
+            for marker in forbidden:
+                if marker in text:
+                    hits[marker].append(str(path.relative_to(ROOT)))
+    found={k:v for k,v in hits.items() if v}
+    if found: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED forbidden_paths={found}')
     scheduler=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatScheduler.kt').read_text()
     updater=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatUpdater.kt').read_text()
     http=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatHttpClient.kt').read_text()
