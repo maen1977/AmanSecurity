@@ -47,3 +47,6 @@ or on Linux/macOS:
 
 These remove tracked legacy workflow/reputation files, run the autonomous 2.6 gates, and stop before commit/push so the deletions can be reviewed.
 
+
+## If GitHub still reports `minimumSignedReputationEntries`
+That log comes from the pre-2.6 workflow left in an existing repository. On Windows run `FIX_LEGACY_GITHUB_ACTIONS.cmd` from the root of the local Git clone, then commit and push the staged deletions. Do not add the old signed-reputation key back; Aman 2.6 intentionally has no GitHub Actions threat-update pipeline.
