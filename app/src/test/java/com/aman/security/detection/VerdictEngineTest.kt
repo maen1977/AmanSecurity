@@ -45,9 +45,10 @@ class VerdictEngineTest {
     fun independentEnginesIncreaseConfidence() {
         val verdict = VerdictEngine.evaluate(
             listOf(
+                // Use genuinely independent evidence domains: static code, network, and impersonation.
                 DetectionFinding("RULE", DetectionSource.SIGNATURE_RULE, 30, FindingConfidence.HIGH, ThreatFamily.SPYWARE),
-                DetectionFinding("BEHAVIOR", DetectionSource.STATIC_BEHAVIOR, 25, FindingConfidence.HIGH, ThreatFamily.SPYWARE),
-                DetectionFinding("NETWORK", DetectionSource.NETWORK, 20, FindingConfidence.HIGH, ThreatFamily.SPYWARE)
+                DetectionFinding("NETWORK", DetectionSource.NETWORK, 25, FindingConfidence.HIGH, ThreatFamily.SPYWARE),
+                DetectionFinding("IMPERSONATION", DetectionSource.IMPERSONATION, 20, FindingConfidence.HIGH, ThreatFamily.SPYWARE)
             )
         )
         assertEquals(3, verdict.engineCount)

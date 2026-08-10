@@ -1,3 +1,7 @@
+# Aman 2.6 build workflow
+
+The single GitHub Actions workflow is **build-only**. It runs automatically on every push to `main` and can also be started manually with `workflow_dispatch`. It has no schedule, no threat-intelligence refresh job, and no API keys or signing secrets for threat updates. Threat intelligence updates remain inside the Android app.
+
 # Manual GitHub build for Aman Security 2.6
 
 Aman 2.6 does not use GitHub Actions for threat-intelligence updates. Threat intelligence is refreshed by the Android app itself.

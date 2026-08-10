@@ -44,7 +44,7 @@ or on Linux/macOS:
 ./MIGRATE_EXISTING_REPO_TO_2_6.sh
 ```
 
-These remove tracked legacy threat-update workflow/reputation files, preserve the manual build workflow, run the autonomous 2.6 gates, and stop before commit/push so the changes can be reviewed.
+These remove tracked legacy threat-update workflow/reputation files, preserve the build workflow, run the autonomous 2.6 gates, and stop before commit/push so the changes can be reviewed.
 
 
 ## If GitHub still reports `minimumSignedReputationEntries`
@@ -52,3 +52,6 @@ That log comes from the pre-2.6 workflow left in an existing repository. On Wind
 
 ### 2.6 build migration note
 The manual GitHub build removes the legacy pre-2.6 `app/src/main/assets/keys` directory from the runner workspace before quality gates and Android packaging. Aman 2.6 does not use those update keys.
+
+
+Build automation: `.github/workflows/build.yml` runs automatically on pushes to `main` and also supports manual dispatch. It only tests/builds the app; threat intelligence updates are performed by Aman on-device.

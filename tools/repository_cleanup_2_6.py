@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove legacy threat-update GitHub Actions while preserving the manual build workflow."""
+"""Remove legacy threat-update GitHub Actions while preserving the build-only workflow."""
 from pathlib import Path
 import shutil, sys
 
