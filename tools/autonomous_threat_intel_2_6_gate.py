@@ -9,6 +9,17 @@ def need(text, items, label):
 
 def main():
     if (ROOT/'.github').exists(): raise SystemExit('AUTONOMOUS_2_6_GATE_FAILED github_automation_present')
+    legacy = [
+        'tools/threat_db_continuity_gate.py',
+        'tools/reputation_gate.py',
+        'tools/verify_reputation_shards.py',
+        'tools/single_workflow_gate.py',
+        'tools/real_antivirus_gate.py',
+        'tools/refresh_threat_intel.py',
+        'tools/update_threat_intel.py',
+    ]
+    stale=[rel for rel in legacy if (ROOT/rel).exists()]
+    if stale: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED legacy_github_pipeline={stale}')
     gradle=(ROOT/'app/build.gradle.kts').read_text()
     need(gradle,['versionName = "2.6.0"','versionCode = 16'],'AUTONOMOUS_2_6_VERSION')
     forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']

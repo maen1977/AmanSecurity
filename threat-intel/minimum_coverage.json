@@ -1,8 +1,8 @@
 {
-  "schema": 1,
+  "schema": 2,
   "minimumKnownThreatFileHashes": 9,
   "minimumDetectionRecords": 83,
-  "minimumReviewedReputationEntries": 10,
+  "minimumBehaviorRules": 36,
   "requiredRuleFamilies": [
     "BANKER",
     "SPYWARE",

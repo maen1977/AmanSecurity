@@ -8,6 +8,7 @@ def run(name): subprocess.run([sys.executable,str(ROOT/'tools'/name)],check=True
 def main():
     run('verify_localization.py')
     run('verify_threat_db.py')
+    run('autonomous_continuity_gate.py')
     run('autonomous_threat_intel_2_6_gate.py')
     run('web_protection_2_4_gate.py')
     run('zero_day_2_5_gate.py')

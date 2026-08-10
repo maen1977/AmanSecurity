@@ -17,3 +17,19 @@ python3 tools/quality_gate.py
 ```
 
 Full Android unit tests, lint, APK/AAB building and release signing should be run in Android Studio or a trusted build environment with Android SDK 36.
+
+## Upgrading an older GitHub repository to 2.6
+
+Do not only overlay the ZIP on top of old repository files: Git does not remove
+legacy files that are absent from the ZIP. Aman 2.6 has **no GitHub Actions
+threat-update pipeline**. If an older `.github/workflows/main.yml` or legacy
+reputation gates remain, remove them before committing 2.6. A cleanup helper is
+included:
+
+```bash
+python3 tools/repository_cleanup_2_6.py        # preview
+python3 tools/repository_cleanup_2_6.py --apply
+```
+
+See `docs/MIGRATION_2_6_NO_GITHUB_ACTIONS.md`.
+
