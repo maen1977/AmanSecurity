@@ -33,7 +33,7 @@ def main():
     stale=[rel for rel in legacy if (ROOT/rel).exists()]
     if stale: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED legacy_github_pipeline={stale}')
     gradle=(ROOT/'app/build.gradle.kts').read_text()
-    need(gradle,['versionName = "2.6.0"','versionCode = 16'],'AUTONOMOUS_2_6_VERSION')
+    need(gradle,['versionName = "2.7.0"','versionCode = 17'],'AUTONOMOUS_2_7_VERSION')
     forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
     scan_paths=[ROOT/'app/src/main', ROOT/'app/build.gradle.kts', ROOT/'README.md']
     hits={x:[] for x in forbidden}
@@ -55,7 +55,7 @@ def main():
     need(scheduler,['PeriodicWorkRequestBuilder<AutonomousThreatWorker>(6, TimeUnit.HOURS','NetworkType.CONNECTED'],'AUTONOMOUS_2_6_SCHEDULE')
     need(updater,['bazaar.abuse.ch/browse/tag/Android/','api.destroy.tools/v1/feed/primary_active','feodotracker.abuse.ch/downloads/ipblocklist_recommended.json','source.android.com/docs/security/bulletin/asb-overview'],'AUTONOMOUS_2_6_SOURCES')
     need(http,['instanceFollowRedirects = false','AutonomousSourcePolicy.allowed','AutonomousSourcePolicy.textPayloadAllowed','Executable/archive payload rejected'],'AUTONOMOUS_2_6_FETCH')
-    need(store,['atomicWrite','Unexpected source shrink','autonomous-intel-v1','AUTO_PHISHING_PRIMARY','AUTO_PHISHING_COMMUNITY','SUSPICIOUS_SOURCE','PHISHING_TTL_MS','C2_TTL_MS','sourceLastSuccess','android_cves.txt','replaceAndroidCves'],'AUTONOMOUS_2_6_STORAGE')
+    need(store,['atomicWrite','Unexpected source shrink','autonomous-intel-v1','AUTO_PHISHING_PRIMARY','AUTO_PHISHING_COMMUNITY','SUSPICIOUS_SOURCE','sourceLastSuccess','sourceConsecutiveFailures','recordRun','android_cves.txt','replaceAndroidCves'],'AUTONOMOUS_2_7_STORAGE')
     need(url_models,['SUSPICIOUS_SOURCE','COMMUNITY_THREAT_FEED'],'AUTONOMOUS_2_6_FALSE_POSITIVE_POLICY')
     need(main,['txtAutonomousLastUpdate','update_up_to_date'],'AUTONOMOUS_2_6_STATUS_UI')
     for suffix in ['.apk','.dex','.exe','.elf']:
@@ -65,5 +65,5 @@ def main():
     bad=[]
     for pat in key_ext: bad.extend(ROOT.rglob(pat))
     if bad: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED key_material={bad}')
-    print('AUTONOMOUS_THREAT_INTEL_2_6_GATE_OK threat_update_actions=0 build_workflows=1 auto_build_push_main=1 manual_build=1 api_keys=0 schedule_hours=6 sources=5 executable_payloads=0 community_feed=review_only transient_ttl=1 android_cve_store=1')
+    print('AUTONOMOUS_THREAT_INTEL_2_7_GATE_OK threat_update_actions=0 build_workflows=1 auto_build_push_main=1 manual_build=1 api_keys=0 schedule_hours=6 sources=5 executable_payloads=0 community_feed=review_only transient_ttl=1 source_health=1 android_cve_store=1')
 if __name__=='__main__': main()

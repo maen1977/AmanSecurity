@@ -1,57 +1,38 @@
-# Aman Security 2.6.0
+# Aman Security 2.7.0
 
-Android antivirus / anti-malware project with Arabic and English UI, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, continuous installed-app rescans, behavior/zero-day heuristics, and autonomous threat-intelligence updates.
+Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
 
-## 2.6 autonomous intelligence
+## 2.7 production antivirus hardening
 
-The app itself refreshes public no-key threat intelligence about every six hours when Android permits background work and the network is connected. GitHub Actions are not used for threat-intelligence updates. The project contains one manual `build.yml` workflow only for compiling/testing the Android app. No API keys or threat-update private keys are required.
+Aman 2.7 keeps the 2.6 autonomous no-key threat-intelligence architecture and adds source-specific trust/TTL/size policies, last-known-good retention, per-source failure/freshness health, a protection-readiness dashboard signal, install **and update** package events, a configurable release signing-certificate fingerprint check, reviewed-corpus validation infrastructure, dependency/report artifacts, and SHA-256 checksums for CI build outputs.
 
-The updater downloads only text/JSON/HTML indicators from fixed HTTPS sources, rejects executable/archive payloads, validates and stages each source independently, keeps the last valid source data on failure, and triggers an installed-app rescan after a successful refresh when background protection is enabled.
+The app itself refreshes public threat intelligence about every six hours when Android permits background work and the network is connected. GitHub Actions are **not** used for threat-intelligence updates. The single build workflow runs automatically on pushes to `main` and can also be started manually. No API keys or threat-update private keys are required.
 
-See `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md` for the source and safety model.
+The updater downloads only bounded text/JSON/HTML indicator data from fixed HTTPS sources, rejects executable/archive payloads, validates each source independently, keeps last-known-good data when a source fails, expires transient phishing/C2 data by TTL, and re-evaluates installed apps after successful intelligence refreshes when background protection is enabled. Community-only phishing intelligence produces review/caution rather than a confirmed-malicious verdict by itself.
 
-## Development checks
+See `docs/PRODUCTION_ANTIVIRUS_2_7.md` and `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md`.
+
+## Development and release checks
 
 ```bash
 python3 tools/quality_gate.py
 ```
 
-Full Android unit tests, lint, APK/AAB building can be run with the manual GitHub build workflow or Android Studio. Release signing still requires a separate Android signing key; the manual workflow intentionally creates an installable debug APK and an unsigned release AAB without storing secrets.
+The automatic GitHub workflow then runs Android unit tests, release lint, builds an installable debug APK and an unsigned release AAB, records the release dependency inventory, generates SHA-256 checksums, and uploads verification reports.
 
-## Upgrading an older GitHub repository to 2.6
+For production corpus validation, keep malware/benign samples outside the repository and export only reviewed verdict metadata to `benchmarks/reviewed_detection_results.csv`. The shipped reviewed file is intentionally empty; internal regression fixtures are not real-world detection-rate claims. See `benchmarks/README.md`.
 
-Do not only overlay the ZIP on top of old repository files: Git does not remove
-legacy files that are absent from the ZIP. Aman 2.6 has **no GitHub Actions threat-update pipeline**. It keeps exactly one manual build-only workflow (`.github/workflows/build.yml`). If an older `.github/workflows/main.yml` or legacy
-reputation gates remain, remove them before committing 2.6. A cleanup helper is
-included:
+For release self-integrity, a distributor can provide the **public** SHA-256 fingerprint of the expected Android app-signing certificate as the Gradle property `AMAN_RELEASE_CERT_SHA256`. No private signing key is bundled or required by the source tree.
+
+## Upgrading an older GitHub repository
+
+Do not only overlay the ZIP on top of old repository files: Git does not remove legacy files that are absent from a new ZIP. Aman 2.7 has no GitHub threat-update workflow. It keeps one build-only workflow at `.github/workflows/build.yml`.
+
+Use the cleanup helper before committing an overlay onto an old clone:
 
 ```bash
 python3 tools/repository_cleanup_2_6.py        # preview
 python3 tools/repository_cleanup_2_6.py --apply
 ```
 
-See `docs/MIGRATION_2_6_NO_GITHUB_ACTIONS.md`.
-
-For an existing local Git clone, one-time migration launchers are also included at the repository root:
-
-```powershell
-./MIGRATE_EXISTING_REPO_TO_2_6.ps1
-```
-
-or on Linux/macOS:
-
-```bash
-./MIGRATE_EXISTING_REPO_TO_2_6.sh
-```
-
-These remove tracked legacy threat-update workflow/reputation files, preserve the build workflow, run the autonomous 2.6 gates, and stop before commit/push so the changes can be reviewed.
-
-
-## If GitHub still reports `minimumSignedReputationEntries`
-That log comes from the pre-2.6 workflow left in an existing repository. On Windows run `FIX_LEGACY_GITHUB_ACTIONS.cmd` from the root of the local Git clone, then commit and push the staged deletions. Do not add the old signed-reputation key back; Aman 2.6 intentionally has no GitHub Actions threat-update pipeline.
-
-### 2.6 build migration note
-The manual GitHub build removes the legacy pre-2.6 `app/src/main/assets/keys` directory from the runner workspace before quality gates and Android packaging. Aman 2.6 does not use those update keys.
-
-
-Build automation: `.github/workflows/build.yml` runs automatically on pushes to `main` and also supports manual dispatch. It only tests/builds the app; threat intelligence updates are performed by Aman on-device.
+If GitHub still reports `minimumSignedReputationEntries`, the old pre-2.6 pipeline is still present in the repository. Remove the stale workflow/gates rather than restoring the retired signed-reputation configuration.

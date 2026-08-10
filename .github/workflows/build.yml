@@ -46,11 +46,29 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Verify Aman 2.6 quality gates
+      - name: Verify Aman production quality gates
         shell: bash
         run: |
           python3 tools/sync_reviewed_relationships.py
           python3 tools/quality_gate.py
+
+      - name: Evaluate reviewed corpus metadata when present
+        shell: bash
+        run: |
+          mkdir -p app/build/reports
+          if [ "$(wc -l < benchmarks/reviewed_detection_results.csv)" -gt 1 ]; then
+            python3 tools/benchmark_detection.py benchmarks/reviewed_detection_results.csv \
+              --require-reviewed \
+              --json-out app/build/reports/production-validation.json
+          else
+            echo "Reviewed production corpus metadata is empty; no real-world detection claim is generated."
+          fi
+
+      - name: Capture release dependency inventory
+        shell: bash
+        run: |
+          mkdir -p app/build/reports
+          gradle :app:dependencies --configuration releaseRuntimeClasspath > app/build/reports/release-dependencies.txt
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
@@ -64,10 +82,16 @@ jobs:
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
 
+      - name: Generate build artifact checksums
+        shell: bash
+        run: |
+          sha256sum app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          cat build-artifact-sha256.txt
+
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.6.0-Debug-APK
+          name: AmanSecurity-2.7.0-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -75,7 +99,19 @@ jobs:
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-2.6.0-Unsigned-Release-AAB
+          name: AmanSecurity-2.7.0-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmanSecurity-2.7.0-Verification-Reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+            build-artifact-sha256.txt
+          if-no-files-found: ignore
           retention-days: 14

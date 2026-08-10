@@ -297,6 +297,56 @@
     <string name="device_patch_behind">Device security patch %1$s is older than the latest published level %2$s. Check for a system update.</string>
     <string name="update_partial">Partial update completed from %1$s of %2$s sources; the last valid data was kept for the others.</string>
 
+    <string name="source_health_waiting">Threat-source health will appear after the first update attempt.</string>
+    <string name="source_health_summary">Threat-source health: %1$s fresh • %2$s stale • failures in the last run: %3$s.</string>
+    <string name="protection_posture_waiting">Protection readiness is being evaluated.</string>
+    <string name="protection_posture_strong">Protection readiness: strong • %1$s/100</string>
+    <string name="protection_posture_attention">Protection readiness: needs attention • %1$s/100</string>
+    <string name="protection_posture_limited">Protection readiness: limited • %1$s/100</string>
+    <string name="integrity_debug_build">App integrity: development build. Use a signed release for distribution.</string>
+    <string name="integrity_verified_release">App integrity: release signing certificate matches the configured fingerprint.</string>
+    <string name="integrity_unpinned_release">App integrity: signed release detected, but no expected signing-certificate fingerprint is configured.</string>
+    <string name="integrity_signature_mismatch">App integrity warning: the signing certificate does not match the configured release fingerprint.</string>
+    <string name="integrity_unknown">App integrity: signing status could not be verified.</string>
+
     <string name="ok">OK</string>
 
+    <string name="dashboard_score_placeholder">--</string>
+    <string name="dashboard_checking">Checking protection</string>
+    <string name="dashboard_subtitle">Aman combines device posture, installed-app scanning, web protection, and threat intelligence.</string>
+    <string name="smart_scan_action">Smart scan</string>
+    <string name="smart_scan_preparing">Smart scan is running</string>
+    <string name="smart_scan_detail">Analyzing installed apps, signatures, permissions, and current protection posture.</string>
+    <string name="quick_protection_title">Quick protection</string>
+    <string name="quick_scan_apps">Security scan</string>
+    <string name="quick_scan_file">Scan file</string>
+    <string name="quick_web_guard">Web protection</string>
+    <string name="quick_background_protection">Background protection</string>
+    <string name="quick_quarantine">Quarantine</string>
+    <string name="quick_update_protection">Update protection</string>
+    <string name="dashboard_protected">Your device is protected</string>
+    <string name="dashboard_attention">A few items need attention</string>
+    <string name="dashboard_action_required">Action required now</string>
+    <string name="dashboard_limited">Protection is limited</string>
+    <string name="dashboard_protected_detail">Core protection is in good condition. Run Smart scan regularly to review installed apps.</string>
+    <string name="dashboard_attention_detail">Review the scan findings or protection settings below.</string>
+    <string name="dashboard_action_detail">A confirmed or high-risk finding needs your review.</string>
+    <string name="dashboard_limited_detail">Enable the recommended protection layers to improve coverage.</string>
+    <string name="smart_scan_complete_safe">Smart scan complete</string>
+    <string name="smart_scan_complete_attention">Smart scan found items to review</string>
+    <string name="smart_scan_complete_danger">Smart scan found high-risk items</string>
+    <string name="smart_scan_result_summary">Scanned %1$s apps • %2$s review • %3$s high risk • %4$s known threats</string>
+    <string name="smart_scan_result_safe_detail">No high-risk or known malicious installed app was found in this scan.</string>
+    <string name="smart_scan_result_review_detail">Review the flagged applications below before deciding what action to take.</string>
+    <string name="smart_scan_failed_title">Smart scan could not finish</string>
+    <string name="smart_scan_failed_detail">Aman could not complete the installed-app scan. Try again after checking system access.</string>
+    <string name="file_scan_running_title">Scanning selected file</string>
+    <string name="file_scan_running_detail">Checking file hash, identity, static APK behavior, and local threat intelligence.</string>
+    <string name="file_result_safe">File scan complete</string>
+    <string name="file_result_attention">File needs review</string>
+    <string name="file_result_danger">Threat detected in file</string>
+    <string name="file_result_summary">Result: %1$s</string>
+    <string name="url_result_dashboard_title">Link scan complete</string>
+    <string name="url_result_dashboard_summary">Web risk result: %1$s</string>
+    <string name="quick_web_focus_hint">Paste or type the link in Web protection below.</string>
 </resources>

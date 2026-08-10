@@ -1,5 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+val expectedReleaseCertRaw = providers.gradleProperty("AMAN_RELEASE_CERT_SHA256").orNull.orEmpty().trim().lowercase()
+val expectedReleaseCert = expectedReleaseCertRaw.takeIf { Regex("^[a-f0-9]{64}$").matches(it) }.orEmpty()
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -13,8 +16,10 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
-        versionName = "2.6.0"
+        versionCode = 17
+        versionName = "2.7.0"
+
+        buildConfigField("String", "EXPECTED_RELEASE_CERT_SHA256", "\"$expectedReleaseCert\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

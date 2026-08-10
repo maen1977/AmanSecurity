@@ -6,5 +6,5 @@ git add -A
 python3 tools/quality_gate.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if (-not (Test-Path '.github/workflows/build.yml')) { Write-Host 'ERROR: build.yml missing.' -ForegroundColor Red; exit 1 }
-Write-Host 'MIGRATION_2_6_READY: threat-update Actions removed; manual build workflow preserved.' -ForegroundColor Green
+Write-Host 'MIGRATION_2_7_READY: legacy threat-update Actions removed; automatic build workflow preserved.' -ForegroundColor Green
 Write-Host 'Now commit and push.'

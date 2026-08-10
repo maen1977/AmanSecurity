@@ -12,65 +12,89 @@ class AutonomousThreatUpdater(
     private val http = AutonomousThreatHttpClient(context)
 
     fun update(): AutonomousUpdateResult {
-        var successful = 0
         var changed = 0
         var latestPatch: String? = null
         var cveCount: Int? = null
         val successfulSourceKeys = linkedSetOf<String>()
+        val failedSourceKeys = linkedSetOf<String>()
+        val attemptAt = System.currentTimeMillis()
 
-        sourceRun { updateMalwareHashes() }.also { if (it.first) { successful++; successfulSourceKeys += AutonomousThreatStore.SOURCE_MALWARE }; if (it.second) changed++ }
-        sourceRun { updatePhishing(AutonomousThreatStore.IndexKind.PHISHING_PRIMARY, PRIMARY_PHISH, "phish_primary") }.also { if (it.first) { successful++; successfulSourceKeys += AutonomousThreatStore.SOURCE_PHISH_PRIMARY }; if (it.second) changed++ }
-        sourceRun { updatePhishing(AutonomousThreatStore.IndexKind.PHISHING_COMMUNITY, COMMUNITY_PHISH, "phish_community") }.also { if (it.first) { successful++; successfulSourceKeys += AutonomousThreatStore.SOURCE_PHISH_COMMUNITY }; if (it.second) changed++ }
-        sourceRun { updateC2() }.also { if (it.first) { successful++; successfulSourceKeys += AutonomousThreatStore.SOURCE_C2 }; if (it.second) changed++ }
+        fun runSource(key: String, block: () -> Boolean) {
+            try {
+                val changedNow = block()
+                successfulSourceKeys += key
+                if (changedNow) changed++
+            } catch (_: Exception) {
+                failedSourceKeys += key
+            }
+        }
 
-        val bulletin = runCatching { updateAndroidBulletin() }.getOrNull()
-        if (bulletin != null) {
-            successful++
+        runSource(AutonomousThreatStore.SOURCE_MALWARE) { updateMalwareHashes() }
+        runSource(AutonomousThreatStore.SOURCE_PHISH_PRIMARY) {
+            updatePhishing(AutonomousThreatStore.IndexKind.PHISHING_PRIMARY, PRIMARY_PHISH, "phish_primary", AutonomousThreatStore.SOURCE_PHISH_PRIMARY)
+        }
+        runSource(AutonomousThreatStore.SOURCE_PHISH_COMMUNITY) {
+            updatePhishing(AutonomousThreatStore.IndexKind.PHISHING_COMMUNITY, COMMUNITY_PHISH, "phish_community", AutonomousThreatStore.SOURCE_PHISH_COMMUNITY)
+        }
+        runSource(AutonomousThreatStore.SOURCE_C2) { updateC2() }
+
+        try {
+            val bulletin = updateAndroidBulletin()
             successfulSourceKeys += AutonomousThreatStore.SOURCE_ANDROID_BULLETIN
             latestPatch = bulletin.first
             cveCount = bulletin.second
             if (bulletin.third) changed++
+        } catch (_: Exception) {
+            failedSourceKeys += AutonomousThreatStore.SOURCE_ANDROID_BULLETIN
         }
 
-        if (successful == 0) return AutonomousUpdateResult.NoSourceAvailable
-        store.updateState(
-            lastSuccess = System.currentTimeMillis(),
-            successfulSources = successful,
+        // Persist source-level health even on a total outage. Last-known-good indicator files
+        // stay untouched for failed sources, while transient URL/C2 entries expire by TTL.
+        store.recordRun(
+            attemptAt = attemptAt,
             successfulSourceKeys = successfulSourceKeys,
+            failedSourceKeys = failedSourceKeys,
             latestPatch = latestPatch,
             cveCount = cveCount
         )
         database.reloadAutonomous()
         val info = store.info()
-        return if (successful == TOTAL_SOURCES) AutonomousUpdateResult.Success(info, changed)
-        else AutonomousUpdateResult.Partial(info, successful, TOTAL_SOURCES - successful, changed)
+        if (successfulSourceKeys.isEmpty()) return AutonomousUpdateResult.NoSourceAvailable
+        return if (successfulSourceKeys.size == TOTAL_SOURCES) {
+            AutonomousUpdateResult.Success(info, changed)
+        } else {
+            AutonomousUpdateResult.Partial(info, successfulSourceKeys.size, failedSourceKeys.size, changed)
+        }
     }
-
-    private fun sourceRun(block: () -> Boolean): Pair<Boolean, Boolean> = try { true to block() } catch (_: Exception) { false to false }
 
     private fun updateMalwareHashes(): Boolean {
         val response = http.get(MALWARE_BAZAAR_ANDROID, 4 * 1024 * 1024, "text/html", "malware_android")
         if (response.notModified) return false
         val hashes = AutonomousThreatParsers.malwareBazaarAndroidHashes(requireNotNull(response.bytes).toString(Charsets.UTF_8))
-        require(hashes.isNotEmpty())
+        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_MALWARE, hashes.size)
         return store.mergeFileHashes(hashes)
     }
 
-    private fun updatePhishing(kind: AutonomousThreatStore.IndexKind, url: String, cacheKey: String): Boolean {
+    private fun updatePhishing(kind: AutonomousThreatStore.IndexKind, url: String, cacheKey: String, sourceKey: String): Boolean {
         val response = http.get(url, 24 * 1024 * 1024, "application/json, text/plain", cacheKey)
         if (response.notModified) return false
         val hosts = AutonomousThreatParsers.phishingHosts(requireNotNull(response.bytes).toString(Charsets.UTF_8))
-        require(hosts.size >= 10)
-        val hashes = hosts.asSequence().map(UrlScanner::sha256).take(MAX_PHISH_HOSTS).toList()
-        return store.replaceHashes(kind, hashes, minCount = 10, shrinkFloor = 0.25)
+        AutonomousFeedPolicy.validateCount(sourceKey, hosts.size)
+        val hashes = hosts.asSequence().map(UrlScanner::sha256).toList()
+        return store.replaceHashes(kind, hashes, minCount = AutonomousFeedPolicy.forKey(sourceKey).minEntries, shrinkFloor = 0.25)
     }
 
     private fun updateC2(): Boolean {
         val response = http.get(FEODO_RECOMMENDED, 2 * 1024 * 1024, "application/json", "feodo_c2")
         if (response.notModified) return false
         val ips = AutonomousThreatParsers.feodoIps(requireNotNull(response.bytes).toString(Charsets.UTF_8))
-        require(ips.isNotEmpty())
-        return store.replaceHashes(AutonomousThreatStore.IndexKind.C2_HOSTS, ips.map(UrlScanner::sha256), minCount = 1, shrinkFloor = 0.10)
+        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_C2, ips.size)
+        return store.replaceHashes(
+            AutonomousThreatStore.IndexKind.C2_HOSTS,
+            ips.map(UrlScanner::sha256),
+            minCount = AutonomousFeedPolicy.c2.minEntries,
+            shrinkFloor = 0.10
+        )
     }
 
     private fun updateAndroidBulletin(): Triple<String, Int, Boolean> {
@@ -92,6 +116,7 @@ class AutonomousThreatUpdater(
             cveChanged = false
         } else {
             val cves = AutonomousThreatParsers.cves(requireNotNull(bulletin.bytes).toString(Charsets.UTF_8))
+            AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_ANDROID_BULLETIN, cves.size)
             count = cves.size
             cveChanged = store.replaceAndroidCves(cves)
         }
@@ -100,8 +125,7 @@ class AutonomousThreatUpdater(
     }
 
     companion object {
-        const val TOTAL_SOURCES = 5
-        private const val MAX_PHISH_HOSTS = 250_000
+        val TOTAL_SOURCES: Int = AutonomousFeedPolicy.all.size
         private const val MALWARE_BAZAAR_ANDROID = "https://bazaar.abuse.ch/browse/tag/Android/"
         private const val PRIMARY_PHISH = "https://api.destroy.tools/v1/feed/primary_active"
         private const val COMMUNITY_PHISH = "https://api.destroy.tools/v1/feed/community_active"

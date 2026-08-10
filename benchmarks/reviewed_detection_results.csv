@@ -1,1 +1,1 @@
-case_id,expected_malicious,score,scan_ms,peak_memory_mb,expected_family,predicted_family
+case_id,sample_sha256,review_status,source_group,expected_malicious,score,scan_ms,peak_memory_mb,expected_family,predicted_family

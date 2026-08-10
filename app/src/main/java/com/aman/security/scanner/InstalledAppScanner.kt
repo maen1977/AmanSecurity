@@ -49,8 +49,7 @@ class InstalledAppScanner(
     }
 
     private fun packageInfo(packageName: String): PackageInfo? {
-        val signingFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
-        val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or signingFlag
+        val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or signingInfoFlag()
         return runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
@@ -61,13 +60,20 @@ class InstalledAppScanner(
     }
 
     private fun installedPackages(): List<PackageInfo> {
-        val signingFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
-        val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or signingFlag
+        val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or signingInfoFlag()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.getInstalledPackages(PackageManager.PackageInfoFlags.of(flags.toLong()))
         } else {
             @Suppress("DEPRECATION") packageManager.getInstalledPackages(flags)
         }
+    }
+
+
+    @Suppress("DEPRECATION")
+    private fun signingInfoFlag(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        PackageManager.GET_SIGNING_CERTIFICATES
+    } else {
+        PackageManager.GET_SIGNATURES
     }
 
     private fun scanPackage(packageInfo: PackageInfo, deep: Boolean): InstalledAppScanResult {

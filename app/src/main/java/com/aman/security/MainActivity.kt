@@ -54,6 +54,11 @@ import com.aman.security.scanner.UrlRiskLevel
 import com.aman.security.scanner.UrlRiskSignal
 import com.aman.security.scanner.UrlScanResult
 import com.aman.security.scanner.UrlScanner
+import com.aman.security.security.AppIntegrityInspector
+import com.aman.security.security.AppIntegrityStatus
+import com.aman.security.security.ProtectionPostureEvaluator
+import com.aman.security.security.ProtectionPostureInput
+import com.aman.security.security.ProtectionPostureLevel
 import com.aman.security.security.ExclusionEntry
 import com.aman.security.security.QuarantineEntry
 import com.aman.security.security.QuarantineManager
@@ -83,6 +88,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var protectionEventStore: ProtectionEventStore
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
+    private var lastInstalledSummary: InstalledAppsScanSummary? = null
     private var pendingRestoreId: String? = null
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -163,6 +169,16 @@ class MainActivity : AppCompatActivity() {
             protectionEventStore.clear()
             renderProtectionStatus()
         }
+        binding.btnSmartScan.setOnClickListener { requestInstalledAppsScan() }
+        binding.btnQuickApps.setOnClickListener { requestInstalledAppsScan() }
+        binding.btnQuickFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
+        binding.btnQuickWeb.setOnClickListener {
+            scrollToSection(binding.webProtectionSection)
+            binding.edtUrl.requestFocus()
+        }
+        binding.btnQuickProtection.setOnClickListener { scrollToSection(binding.protectionSection) }
+        binding.btnQuickQuarantine.setOnClickListener { scrollToSection(binding.quarantineSection) }
+        binding.btnQuickUpdate.setOnClickListener { updateThreatDatabase() }
         handleIncomingIntent(intent)
     }
 
@@ -197,6 +213,7 @@ class MainActivity : AppCompatActivity() {
         val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
         binding.txtDatabaseFreshness.text = getString(R.string.database_baseline_date, formattedDate)
         renderAutonomousIntel()
+        renderProtectionPosture()
     }
 
     private fun updateThreatDatabase() {
@@ -206,6 +223,7 @@ class MainActivity : AppCompatActivity() {
             val result = withContext(Dispatchers.IO) { updater.update() }
             binding.btnUpdateDatabase.isEnabled = true
             renderAutonomousIntel()
+            renderProtectionPosture()
             when (result) {
                 is AutonomousUpdateResult.Success -> {
                     binding.txtUpdateStatus.text = if (result.changedSources == 0) {
@@ -238,6 +256,12 @@ class MainActivity : AppCompatActivity() {
             NumberFormat.getIntegerInstance().format(info.phishingHosts),
             NumberFormat.getIntegerInstance().format(info.c2Hosts),
             NumberFormat.getIntegerInstance().format(info.androidCveCount)
+        )
+        binding.txtSourceHealth.text = getString(
+            R.string.source_health_summary,
+            NumberFormat.getIntegerInstance().format(info.freshSources),
+            NumberFormat.getIntegerInstance().format(info.staleSources),
+            NumberFormat.getIntegerInstance().format(info.failedSourcesLastRun)
         )
         val devicePatch = Build.VERSION.SECURITY_PATCH.orEmpty()
         val latest = info.latestAndroidSecurityPatch
@@ -314,6 +338,26 @@ class MainActivity : AppCompatActivity() {
                 append(getString(R.string.url_threat_reference_line, result.threatReference))
             }
         }
+        val dashboardRiskRes = when (result.riskLevel) {
+            UrlRiskLevel.INVALID -> R.string.url_result_invalid
+            UrlRiskLevel.LOW -> R.string.url_result_low
+            UrlRiskLevel.REVIEW -> R.string.url_result_review
+            UrlRiskLevel.HIGH -> R.string.url_result_high
+            UrlRiskLevel.KNOWN_PHISHING -> R.string.url_result_phishing
+            UrlRiskLevel.KNOWN_MALICIOUS -> R.string.url_result_malware
+            UrlRiskLevel.TEST_SIGNATURE -> R.string.url_result_test
+        }
+        val dashboardColor = when (result.riskLevel) {
+            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.HIGH -> R.color.status_danger
+            UrlRiskLevel.REVIEW, UrlRiskLevel.INVALID -> R.color.status_warn
+            UrlRiskLevel.LOW, UrlRiskLevel.TEST_SIGNATURE -> R.color.status_ok
+        }
+        showSmartResult(
+            R.string.url_result_dashboard_title,
+            dashboardRiskRes,
+            getString(R.string.url_result_dashboard_summary, getString(dashboardRiskRes)),
+            dashboardColor
+        )
     }
 
     private fun formatUrlSignals(signals: Set<UrlRiskSignal>): String {
@@ -357,14 +401,57 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderWebGuardStatus() {
-        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) && roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)
-        } else {
-            false
-        }
+        val active = isWebGuardActive()
         binding.txtWebGuardStatus.setText(if (active) R.string.web_guard_status_active else R.string.web_guard_status_optional)
         binding.btnConfigureWebGuard.setText(if (active) R.string.web_guard_manage_action else R.string.web_guard_configure_action)
+        if (::protectionPreferences.isInitialized && ::database.isInitialized) renderProtectionPosture()
+    }
+
+    private fun isWebGuardActive(): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val roleManager = getSystemService(RoleManager::class.java)
+        roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) && roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)
+    } else {
+        false
+    }
+
+    private fun renderProtectionPosture() {
+        if (!::binding.isInitialized || !::database.isInitialized || !::protectionPreferences.isInitialized) return
+        val intel = database.autonomousStore.info()
+        val devicePatch = Build.VERSION.SECURITY_PATCH.orEmpty()
+        val latestPatch = intel.latestAndroidSecurityPatch.orEmpty()
+        val patchKnown = devicePatch.isNotBlank() && latestPatch.isNotBlank()
+        val integrity = AppIntegrityInspector.inspect(this)
+        val posture = ProtectionPostureEvaluator.evaluate(
+            ProtectionPostureInput(
+                databaseHealthy = database.canaryHealthy(),
+                freshSources = intel.freshSources,
+                totalSources = intel.totalSources,
+                backgroundProtectionEnabled = protectionPreferences.enabled,
+                webGuardActive = isWebGuardActive(),
+                devicePatchKnown = patchKnown,
+                devicePatchCurrent = patchKnown && devicePatch >= latestPatch,
+                integrityStatus = integrity.status
+            )
+        )
+        val scoreText = NumberFormat.getIntegerInstance().format(posture.score)
+        binding.txtProtectionPosture.text = getString(
+            when (posture.level) {
+                ProtectionPostureLevel.STRONG -> R.string.protection_posture_strong
+                ProtectionPostureLevel.ATTENTION -> R.string.protection_posture_attention
+                ProtectionPostureLevel.LIMITED -> R.string.protection_posture_limited
+            },
+            scoreText
+        )
+        binding.txtAppIntegrityStatus.setText(
+            when (integrity.status) {
+                AppIntegrityStatus.DEBUG_BUILD -> R.string.integrity_debug_build
+                AppIntegrityStatus.VERIFIED_RELEASE -> R.string.integrity_verified_release
+                AppIntegrityStatus.UNPINNED_RELEASE -> R.string.integrity_unpinned_release
+                AppIntegrityStatus.SIGNATURE_MISMATCH -> R.string.integrity_signature_mismatch
+                AppIntegrityStatus.UNKNOWN -> R.string.integrity_unknown
+            }
+        )
+        renderSmartDashboard(posture.score, posture.level)
     }
 
     private fun toggleBackgroundProtection() {
@@ -519,6 +606,7 @@ class MainActivity : AppCompatActivity() {
                 binding.protectionEventsContainer.addView(protectionEventText(formatProtectionEvent(event)))
             }
         }
+        renderProtectionPosture()
     }
 
     private fun formatProtectionEvent(event: ProtectionEvent): String {
@@ -567,19 +655,33 @@ class MainActivity : AppCompatActivity() {
 
     private fun scanInstalledApps() {
         binding.btnScanInstalledApps.isEnabled = false
+        binding.btnSmartScan.isEnabled = false
         binding.txtInstalledSummary.setText(R.string.scanning_installed_apps)
         binding.txtInstalledEmpty.visibility = View.GONE
         binding.installedResultsContainer.removeAllViews()
+        showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_detail)
 
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching { installedAppScanner.scanUserApps() }
             }
             binding.btnScanInstalledApps.isEnabled = true
-            result.onSuccess(::renderInstalledApps)
-                .onFailure {
-                    binding.txtInstalledSummary.setText(R.string.installed_scan_failed)
-                }
+            binding.btnSmartScan.isEnabled = true
+            result.onSuccess { summary ->
+                lastInstalledSummary = summary
+                renderInstalledApps(summary)
+                renderSmartInstalledResult(summary)
+                renderProtectionPosture()
+            }.onFailure {
+                hideSmartScan()
+                binding.txtInstalledSummary.setText(R.string.installed_scan_failed)
+                showSmartResult(
+                    R.string.smart_scan_failed_title,
+                    R.string.installed_scan_failed,
+                    getString(R.string.smart_scan_failed_detail),
+                    R.color.status_warn
+                )
+            }
         }
     }
 
@@ -696,6 +798,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanFile.isEnabled = false
         binding.btnChooseFile.isEnabled = false
         binding.txtClassification.setText(R.string.scanning)
+        showSmartScan(R.string.file_scan_running_title, R.string.file_scan_running_detail)
+        binding.btnSmartScan.isEnabled = false
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
         binding.txtApkAnalysis.text = ""
@@ -706,15 +810,26 @@ class MainActivity : AppCompatActivity() {
             val outcome = withContext(Dispatchers.IO) { runCatching { scanner.scan(uri) } }
             binding.btnScanFile.isEnabled = true
             binding.btnChooseFile.isEnabled = true
+            binding.btnSmartScan.isEnabled = true
             outcome.onSuccess { result ->
                 lastScanResult = result
                 withContext(Dispatchers.IO) { recordStore.recordScan(result) }
                 renderResult(result)
+                renderSmartFileResult(result)
+                renderProtectionPosture()
                 renderSecurityManagement()
             }.onFailure {
                 lastScanResult = null
+                hideSmartScan()
                 binding.txtClassification.setText(R.string.scan_failed)
                 binding.txtReason.setText(R.string.file_access_error)
+                showSmartResult(
+                    R.string.smart_scan_failed_title,
+                    R.string.scan_failed,
+                    getString(R.string.file_access_error),
+                    R.color.status_warn
+                )
+                renderProtectionPosture()
             }
         }
     }
@@ -1124,6 +1239,122 @@ class MainActivity : AppCompatActivity() {
         DateFormat.MEDIUM,
         DateFormat.SHORT
     ).format(Date(timestamp))
+
+    private fun renderSmartDashboard(baseScore: Int, level: ProtectionPostureLevel) {
+        val installed = lastInstalledSummary
+        val fileClassification = lastScanResult?.classification
+        val hasKnownThreat = (installed?.knownThreats ?: 0) > 0 || fileClassification == ScanClassification.KNOWN_THREAT
+        val hasHighRisk = (installed?.highRiskApps ?: 0) > 0 || fileClassification == ScanClassification.SUSPICIOUS
+        val hasReview = (installed?.reviewApps ?: 0) > 0 || fileClassification == ScanClassification.UNKNOWN_APK
+        val adjustedScore = when {
+            hasKnownThreat -> minOf(baseScore, 35)
+            hasHighRisk -> minOf(baseScore, 60)
+            hasReview -> minOf(baseScore, 82)
+            else -> baseScore
+        }
+        binding.txtSecurityScore.text = NumberFormat.getIntegerInstance().format(adjustedScore)
+        val colorRes: Int
+        val headlineRes: Int
+        val detailRes: Int
+        when {
+            hasKnownThreat -> {
+                colorRes = R.color.status_danger
+                headlineRes = R.string.dashboard_action_required
+                detailRes = R.string.dashboard_action_detail
+            }
+            hasHighRisk || hasReview || level == ProtectionPostureLevel.ATTENTION -> {
+                colorRes = R.color.status_warn
+                headlineRes = R.string.dashboard_attention
+                detailRes = R.string.dashboard_attention_detail
+            }
+            level == ProtectionPostureLevel.LIMITED -> {
+                colorRes = R.color.status_warn
+                headlineRes = R.string.dashboard_limited
+                detailRes = R.string.dashboard_limited_detail
+            }
+            else -> {
+                colorRes = R.color.status_ok
+                headlineRes = R.string.dashboard_protected
+                detailRes = R.string.dashboard_protected_detail
+            }
+        }
+        binding.txtSecurityScore.setTextColor(getColor(colorRes))
+        binding.txtDashboardHeadline.setText(headlineRes)
+        binding.txtDashboardSubtitle.setText(detailRes)
+    }
+
+    private fun showSmartScan(titleRes: Int, detailRes: Int) {
+        binding.smartResultCard.visibility = View.GONE
+        binding.smartScanCard.visibility = View.VISIBLE
+        binding.txtSmartScanState.setText(titleRes)
+        binding.txtSmartScanDetail.setText(detailRes)
+    }
+
+    private fun hideSmartScan() {
+        binding.smartScanCard.visibility = View.GONE
+    }
+
+    private fun showSmartResult(titleRes: Int, summaryRes: Int, details: String, colorRes: Int) {
+        hideSmartScan()
+        binding.smartResultCard.visibility = View.VISIBLE
+        binding.txtSmartResultTitle.setText(titleRes)
+        binding.txtSmartResultTitle.setTextColor(getColor(colorRes))
+        binding.txtSmartResultSummary.setText(summaryRes)
+        binding.txtSmartResultDetails.text = details
+    }
+
+    private fun renderSmartInstalledResult(summary: InstalledAppsScanSummary) {
+        val formatter = NumberFormat.getIntegerInstance()
+        val titleRes = when {
+            summary.knownThreats > 0 || summary.highRiskApps > 0 -> R.string.smart_scan_complete_danger
+            summary.reviewApps > 0 -> R.string.smart_scan_complete_attention
+            else -> R.string.smart_scan_complete_safe
+        }
+        val colorRes = when {
+            summary.knownThreats > 0 || summary.highRiskApps > 0 -> R.color.status_danger
+            summary.reviewApps > 0 -> R.color.status_warn
+            else -> R.color.status_ok
+        }
+        val details = getString(
+            R.string.smart_scan_result_summary,
+            formatter.format(summary.scannedApps),
+            formatter.format(summary.reviewApps),
+            formatter.format(summary.highRiskApps),
+            formatter.format(summary.knownThreats)
+        )
+        showSmartResult(
+            titleRes,
+            if (summary.knownThreats > 0 || summary.highRiskApps > 0 || summary.reviewApps > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail,
+            details,
+            colorRes
+        )
+    }
+
+    private fun renderSmartFileResult(result: ScanResult) {
+        val titleRes = when (result.classification) {
+            ScanClassification.KNOWN_THREAT -> R.string.file_result_danger
+            ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> R.string.file_result_attention
+            ScanClassification.NO_KNOWN_THREAT, ScanClassification.TEST_SIGNATURE -> R.string.file_result_safe
+        }
+        val colorRes = when (result.classification) {
+            ScanClassification.KNOWN_THREAT -> R.color.status_danger
+            ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> R.color.status_warn
+            ScanClassification.NO_KNOWN_THREAT, ScanClassification.TEST_SIGNATURE -> R.color.status_ok
+        }
+        val classification = getString(classificationString(result.classification))
+        showSmartResult(
+            titleRes,
+            classificationString(result.classification),
+            getString(R.string.file_result_summary, classification),
+            colorRes
+        )
+    }
+
+    private fun scrollToSection(section: View) {
+        binding.mainScroll.post {
+            binding.mainScroll.smoothScrollTo(0, section.top)
+        }
+    }
 
     private fun showInfo(messageRes: Int) {
         AlertDialog.Builder(this)

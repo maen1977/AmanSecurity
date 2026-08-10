@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainScroll"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -60,12 +61,245 @@
                 android:text="@string/change_language" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="252dp"
+                android:layout_height="252dp"
+                android:background="@drawable/bg_security_score"
+                android:padding="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txtSecurityScore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/dashboard_score_placeholder"
+                        android:textColor="@color/text_primary"
+                        android:textSize="64sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtDashboardHeadline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="@string/dashboard_checking"
+                        android:textColor="@color/text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtDashboardSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:text="@string/dashboard_subtitle"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSmartScan"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/smart_scan_action" />
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/smartScanCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="1dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:id="@+id/txtSmartScanState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/smart_scan_preparing"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtSmartScanDetail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="@string/smart_scan_detail"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <ProgressBar
+                    android:id="@+id/smartScanProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="14dp"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/brand_primary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/smartResultCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="1dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:id="@+id/txtSmartResultTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtSmartResultSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/txtSmartResultDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/quick_protection_title"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickApps"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_scan_apps" />
+
+            <Space android:layout_width="10dp" android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickFile"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_scan_file" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickWeb"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_web_guard" />
+
+            <Space android:layout_width="10dp" android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickProtection"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_background_protection" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickQuarantine"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_quarantine" />
+
+            <Space android:layout_width="10dp" android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickUpdate"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:text="@string/quick_update_protection" />
+        </LinearLayout>
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -157,6 +391,15 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/txtSourceHealth"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/source_health_waiting"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
                     android:id="@+id/txtDevicePatchStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -164,15 +407,36 @@
                     android:text="@string/device_patch_unknown"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/txtProtectionPosture"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/protection_posture_waiting"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtAppIntegrityStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/integrity_unknown"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/installedAppsSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -240,11 +504,13 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/protectionSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -364,11 +630,13 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/webProtectionSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -529,8 +797,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -624,11 +893,13 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/quarantineSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -681,8 +952,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -735,8 +1007,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardCornerRadius="18dp"
-            app:strokeWidth="1dp">
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="0dp"
+            app:cardElevation="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"

@@ -297,6 +297,56 @@
     <string name="device_patch_behind">تصحيح أمان الجهاز %1$s أقدم من أحدث مستوى منشور %2$s. افحص تحديثات النظام.</string>
     <string name="update_partial">اكتمل تحديث جزئي من %1$s من أصل %2$s مصادر، وتم الاحتفاظ بآخر بيانات سليمة للمصادر الأخرى.</string>
 
+    <string name="source_health_waiting">ستظهر حالة مصادر التهديدات بعد أول محاولة تحديث.</string>
+    <string name="source_health_summary">حالة مصادر التهديدات: %1$s حديثة • %2$s قديمة • الإخفاقات في آخر تشغيل: %3$s.</string>
+    <string name="protection_posture_waiting">يجري تقييم جاهزية الحماية.</string>
+    <string name="protection_posture_strong">جاهزية الحماية: قوية • %1$s من 100</string>
+    <string name="protection_posture_attention">جاهزية الحماية: تحتاج إلى انتباه • %1$s من 100</string>
+    <string name="protection_posture_limited">جاهزية الحماية: محدودة • %1$s من 100</string>
+    <string name="integrity_debug_build">سلامة التطبيق: هذه نسخة تطوير. استخدم إصدارًا موقعًا للتوزيع.</string>
+    <string name="integrity_verified_release">سلامة التطبيق: شهادة توقيع الإصدار تطابق البصمة المضبوطة.</string>
+    <string name="integrity_unpinned_release">سلامة التطبيق: تم اكتشاف إصدار موقع، لكن بصمة شهادة التوقيع المتوقعة غير مضبوطة.</string>
+    <string name="integrity_signature_mismatch">تحذير سلامة التطبيق: شهادة التوقيع لا تطابق بصمة الإصدار المضبوطة.</string>
+    <string name="integrity_unknown">سلامة التطبيق: تعذر التحقق من حالة التوقيع.</string>
+
     <string name="ok">حسنًا</string>
 
+    <string name="dashboard_score_placeholder">--</string>
+    <string name="dashboard_checking">جارٍ فحص حالة الحماية</string>
+    <string name="dashboard_subtitle">يجمع أمان بين حالة الجهاز وفحص التطبيقات وحماية الويب ومعلومات التهديد.</string>
+    <string name="smart_scan_action">فحص ذكي</string>
+    <string name="smart_scan_preparing">الفحص الذكي قيد التشغيل</string>
+    <string name="smart_scan_detail">جارٍ تحليل التطبيقات المثبتة والتواقيع والأذونات وحالة الحماية الحالية.</string>
+    <string name="quick_protection_title">وصول سريع للحماية</string>
+    <string name="quick_scan_apps">فحص الأمان</string>
+    <string name="quick_scan_file">فحص ملف</string>
+    <string name="quick_web_guard">حماية الويب</string>
+    <string name="quick_background_protection">الحماية في الخلفية</string>
+    <string name="quick_quarantine">الحجر</string>
+    <string name="quick_update_protection">تحديث الحماية</string>
+    <string name="dashboard_protected">جهازك محمي</string>
+    <string name="dashboard_attention">هناك عناصر تحتاج إلى انتباه</string>
+    <string name="dashboard_action_required">يلزم اتخاذ إجراء الآن</string>
+    <string name="dashboard_limited">الحماية محدودة</string>
+    <string name="dashboard_protected_detail">طبقات الحماية الأساسية بحالة جيدة. شغّل الفحص الذكي دوريًا لمراجعة التطبيقات المثبتة.</string>
+    <string name="dashboard_attention_detail">راجع نتائج الفحص أو إعدادات الحماية أدناه.</string>
+    <string name="dashboard_action_detail">هناك نتيجة مؤكدة أو مرتفعة الخطورة تحتاج إلى مراجعتك.</string>
+    <string name="dashboard_limited_detail">فعّل طبقات الحماية الموصى بها لتحسين التغطية.</string>
+    <string name="smart_scan_complete_safe">اكتمل الفحص الذكي</string>
+    <string name="smart_scan_complete_attention">وجد الفحص الذكي عناصر للمراجعة</string>
+    <string name="smart_scan_complete_danger">وجد الفحص الذكي عناصر مرتفعة الخطورة</string>
+    <string name="smart_scan_result_summary">تم فحص %1$s تطبيق • للمراجعة %2$s • مرتفعة الخطورة %3$s • تهديدات معروفة %4$s</string>
+    <string name="smart_scan_result_safe_detail">لم يظهر في هذا الفحص تطبيق مثبت مرتفع الخطورة أو معروف بأنه ضار.</string>
+    <string name="smart_scan_result_review_detail">راجع التطبيقات المعلّمة أدناه قبل اختيار أي إجراء.</string>
+    <string name="smart_scan_failed_title">تعذر إكمال الفحص الذكي</string>
+    <string name="smart_scan_failed_detail">تعذر على أمان إكمال فحص التطبيقات المثبتة. أعد المحاولة بعد التحقق من وصول النظام.</string>
+    <string name="file_scan_running_title">جارٍ فحص الملف المحدد</string>
+    <string name="file_scan_running_detail">جارٍ التحقق من بصمة الملف وهويته وتحليل التطبيق الثابت ومعلومات التهديد المحلية.</string>
+    <string name="file_result_safe">اكتمل فحص الملف</string>
+    <string name="file_result_attention">الملف يحتاج إلى مراجعة</string>
+    <string name="file_result_danger">تم اكتشاف تهديد في الملف</string>
+    <string name="file_result_summary">النتيجة: %1$s</string>
+    <string name="url_result_dashboard_title">اكتمل فحص الرابط</string>
+    <string name="url_result_dashboard_summary">نتيجة مخاطر الويب: %1$s</string>
+    <string name="quick_web_focus_hint">الصق الرابط أو اكتبه في قسم حماية الويب أدناه.</string>
 </resources>

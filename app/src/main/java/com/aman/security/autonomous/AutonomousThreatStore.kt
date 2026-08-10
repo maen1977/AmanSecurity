@@ -10,6 +10,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class AutonomousThreatStore(context: Context) {
     private val directory = File(context.filesDir, "autonomous-intel-v1").apply { mkdirs() }
@@ -25,9 +26,12 @@ class AutonomousThreatStore(context: Context) {
     @Volatile private var phishCommunityIndex = FixedSha256Index.load(phishCommunity)
     @Volatile private var c2Index = FixedSha256Index.load(c2Hosts)
     @Volatile private var sourceLastSuccess = readSourceSuccesses()
+    @Volatile private var sourceConsecutiveFailures = readSourceFailures()
 
     fun findFile(sha256: String): ThreatSignature? {
         val h = normalizeSha(sha256) ?: return null
+        // File SHA-256 indicators describe immutable file content, so a previously accepted
+        // malicious file hash remains useful even if the source is temporarily unavailable.
         return if (malwareIndex.contains(h)) ThreatSignature(h, "AUTO_MALWARE_HASH", ScanClassification.KNOWN_THREAT) else null
     }
 
@@ -36,11 +40,11 @@ class AutonomousThreatStore(context: Context) {
         val h = normalizeSha(sha256) ?: return null
         val now = System.currentTimeMillis()
         return when {
-            phishPrimaryIndex.contains(h) && sourceFresh(SOURCE_PHISH_PRIMARY, now, PHISHING_TTL_MS) ->
+            phishPrimaryIndex.contains(h) && sourceFresh(SOURCE_PHISH_PRIMARY, now, AutonomousFeedPolicy.phishingPrimary.lookupTtlMs) ->
                 UrlThreatIndicator(kind, h, "AUTO_PHISHING_PRIMARY", UrlThreatClassification.PHISHING)
-            c2Index.contains(h) && sourceFresh(SOURCE_C2, now, C2_TTL_MS) ->
+            c2Index.contains(h) && sourceFresh(SOURCE_C2, now, AutonomousFeedPolicy.c2.lookupTtlMs) ->
                 UrlThreatIndicator(kind, h, "AUTO_C2_HOST", UrlThreatClassification.MALWARE)
-            phishCommunityIndex.contains(h) && sourceFresh(SOURCE_PHISH_COMMUNITY, now, PHISHING_TTL_MS) ->
+            phishCommunityIndex.contains(h) && sourceFresh(SOURCE_PHISH_COMMUNITY, now, AutonomousFeedPolicy.phishingCommunity.lookupTtlMs) ->
                 UrlThreatIndicator(kind, h, "AUTO_PHISHING_COMMUNITY", UrlThreatClassification.SUSPICIOUS_SOURCE)
             else -> null
         }
@@ -52,29 +56,56 @@ class AutonomousThreatStore(context: Context) {
         phishCommunityIndex = FixedSha256Index.load(phishCommunity)
         c2Index = FixedSha256Index.load(c2Hosts)
         sourceLastSuccess = readSourceSuccesses()
+        sourceConsecutiveFailures = readSourceFailures()
     }
 
     fun info(): AutonomousIntelInfo {
         val state = readState()
         val now = System.currentTimeMillis()
+        val health = AutonomousFeedPolicy.all.map { descriptor ->
+            val last = sourceLastSuccess[descriptor.key] ?: 0L
+            val fresh = sourceFresh(descriptor.key, now, descriptor.statusFreshMs)
+            AutonomousSourceHealth(
+                key = descriptor.key,
+                trust = descriptor.trust,
+                lastSuccessEpochMs = last,
+                ageHours = if (last > 0L && now >= last) TimeUnit.MILLISECONDS.toHours(now - last) else null,
+                fresh = fresh,
+                itemCount = sourceItemCount(descriptor.key, state),
+                consecutiveFailures = sourceConsecutiveFailures[descriptor.key] ?: 0
+            )
+        }
         return AutonomousIntelInfo(
             lastSuccessfulUpdateEpochMs = state.optLong("lastSuccessfulUpdateEpochMs", 0L),
+            lastAttemptEpochMs = state.optLong("lastAttemptEpochMs", 0L),
             malwareFileHashes = malwareIndex.count,
             phishingHosts = phishPrimaryIndex.count + phishCommunityIndex.count,
             c2Hosts = c2Index.count,
             latestAndroidSecurityPatch = state.optString("latestAndroidSecurityPatch", "").takeIf { it.isNotBlank() },
             androidCveCount = state.optInt("androidCveCount", 0),
             successfulSourcesLastRun = state.optInt("successfulSourcesLastRun", 0),
-            freshSources = SOURCE_KEYS.count { sourceFresh(it, now, SOURCE_STATUS_FRESH_MS) },
-            totalSources = SOURCE_KEYS.size
+            failedSourcesLastRun = state.optInt("failedSourcesLastRun", 0),
+            freshSources = health.count { it.fresh },
+            staleSources = health.count { !it.fresh },
+            totalSources = health.size,
+            sourceHealth = health
         )
     }
 
     fun readHashes(kind: IndexKind): Set<String> = indexFile(kind).takeIf(File::isFile)?.readLines()
         ?.asSequence()?.map(String::trim)?.filter { HASH.matches(it) }?.toCollection(linkedSetOf()) ?: emptySet()
 
+    fun count(kind: IndexKind): Int = when (kind) {
+        IndexKind.MALWARE_FILES -> malwareIndex.count
+        IndexKind.PHISHING_PRIMARY -> phishPrimaryIndex.count
+        IndexKind.PHISHING_COMMUNITY -> phishCommunityIndex.count
+        IndexKind.C2_HOSTS -> c2Index.count
+    }
+
     @Synchronized fun replaceHashes(kind: IndexKind, hashes: Collection<String>, minCount: Int = 1, shrinkFloor: Double? = null): Boolean {
         val clean = hashes.asSequence().mapNotNull(::normalizeSha).distinct().sorted().toList()
+        val sourceKey = sourceKey(kind)
+        AutonomousFeedPolicy.validateCount(sourceKey, clean.size)
         require(clean.size >= minCount)
         val target = indexFile(kind)
         val oldCount = FixedSha256Index.load(target).count
@@ -88,34 +119,49 @@ class AutonomousThreatStore(context: Context) {
         return true
     }
 
-    @Synchronized fun mergeFileHashes(newHashes: Collection<String>, maxEntries: Int = 100_000): Boolean {
+    @Synchronized fun mergeFileHashes(newHashes: Collection<String>, maxEntries: Int = AutonomousFeedPolicy.malware.maxEntries): Boolean {
+        val cleanNew = newHashes.asSequence().mapNotNull(::normalizeSha).distinct().toList()
+        require(cleanNew.size >= AutonomousFeedPolicy.malware.minEntries)
+        require(cleanNew.size <= AutonomousFeedPolicy.malware.maxEntries)
         val merged = linkedSetOf<String>()
         merged += readHashes(IndexKind.MALWARE_FILES)
-        merged += newHashes.mapNotNull(::normalizeSha)
-        val bounded = if (merged.size <= maxEntries) merged else merged.toList().takeLast(maxEntries).toSet()
+        merged += cleanNew
+        val bounded = if (merged.size <= maxEntries) merged else merged.toList().takeLast(maxEntries).toCollection(linkedSetOf())
         return replaceHashes(IndexKind.MALWARE_FILES, bounded, minCount = 1)
     }
 
     @Synchronized fun replaceAndroidCves(cves: Collection<String>): Boolean {
         val clean = cves.asSequence().map { it.trim().uppercase(Locale.ROOT) }
             .filter(CVE::matches).distinct().sorted().toList()
+        AutonomousFeedPolicy.validateCount(SOURCE_ANDROID_BULLETIN, clean.size)
         val newText = if (clean.isEmpty()) "" else clean.joinToString(separator = "\n", postfix = "\n")
         if (androidCves.isFile && androidCves.readText() == newText) return false
         atomicWrite(androidCves, newText.toByteArray(Charsets.US_ASCII))
         return true
     }
 
-    @Synchronized fun updateState(
-        lastSuccess: Long,
-        successfulSources: Int,
+    /** Records both successes and failures without replacing last-known-good indicator files. */
+    @Synchronized fun recordRun(
+        attemptAt: Long,
         successfulSourceKeys: Set<String>,
+        failedSourceKeys: Set<String>,
         latestPatch: String? = null,
         cveCount: Int? = null
     ) {
         val state = readState()
-        state.put("lastSuccessfulUpdateEpochMs", lastSuccess)
-        state.put("successfulSourcesLastRun", successfulSources)
-        successfulSourceKeys.filter(SOURCE_KEYS::contains).forEach { key -> state.put("source_${key}_lastSuccessEpochMs", lastSuccess) }
+        state.put("lastAttemptEpochMs", attemptAt)
+        state.put("successfulSourcesLastRun", successfulSourceKeys.size)
+        state.put("failedSourcesLastRun", failedSourceKeys.size)
+        if (successfulSourceKeys.isNotEmpty()) state.put("lastSuccessfulUpdateEpochMs", attemptAt)
+
+        successfulSourceKeys.filter(SOURCE_KEYS::contains).forEach { key ->
+            state.put("source_${key}_lastSuccessEpochMs", attemptAt)
+            state.put("source_${key}_consecutiveFailures", 0)
+        }
+        failedSourceKeys.filter(SOURCE_KEYS::contains).forEach { key ->
+            val current = state.optInt("source_${key}_consecutiveFailures", 0)
+            state.put("source_${key}_consecutiveFailures", (current + 1).coerceAtMost(999))
+        }
         latestPatch?.let { current ->
             val old = state.optString("latestAndroidSecurityPatch", "")
             if (old.isBlank() || current >= old) state.put("latestAndroidSecurityPatch", current)
@@ -123,6 +169,7 @@ class AutonomousThreatStore(context: Context) {
         cveCount?.let { state.put("androidCveCount", it.coerceAtLeast(0)) }
         atomicWrite(stateFile, state.toString().toByteArray(Charsets.UTF_8))
         sourceLastSuccess = readSourceSuccesses()
+        sourceConsecutiveFailures = readSourceFailures()
     }
 
     private fun readSourceSuccesses(): Map<String, Long> {
@@ -130,9 +177,15 @@ class AutonomousThreatStore(context: Context) {
         return SOURCE_KEYS.associateWith { key -> state.optLong("source_${key}_lastSuccessEpochMs", 0L) }
     }
 
+    private fun readSourceFailures(): Map<String, Int> {
+        val state = readState()
+        return SOURCE_KEYS.associateWith { key -> state.optInt("source_${key}_consecutiveFailures", 0) }
+    }
+
     private fun sourceFresh(key: String, now: Long, ttlMs: Long): Boolean {
         val last = sourceLastSuccess[key] ?: 0L
-        return last > 0L && now >= last && now - last <= ttlMs
+        if (last <= 0L || now < last) return false
+        return ttlMs == Long.MAX_VALUE || now - last <= ttlMs
     }
 
     enum class IndexKind { MALWARE_FILES, PHISHING_PRIMARY, PHISHING_COMMUNITY, C2_HOSTS }
@@ -142,6 +195,22 @@ class AutonomousThreatStore(context: Context) {
         IndexKind.PHISHING_PRIMARY -> phishPrimary
         IndexKind.PHISHING_COMMUNITY -> phishCommunity
         IndexKind.C2_HOSTS -> c2Hosts
+    }
+
+    private fun sourceKey(kind: IndexKind): String = when (kind) {
+        IndexKind.MALWARE_FILES -> SOURCE_MALWARE
+        IndexKind.PHISHING_PRIMARY -> SOURCE_PHISH_PRIMARY
+        IndexKind.PHISHING_COMMUNITY -> SOURCE_PHISH_COMMUNITY
+        IndexKind.C2_HOSTS -> SOURCE_C2
+    }
+
+    private fun sourceItemCount(key: String, state: JSONObject): Int = when (key) {
+        SOURCE_MALWARE -> malwareIndex.count
+        SOURCE_PHISH_PRIMARY -> phishPrimaryIndex.count
+        SOURCE_PHISH_COMMUNITY -> phishCommunityIndex.count
+        SOURCE_C2 -> c2Index.count
+        SOURCE_ANDROID_BULLETIN -> state.optInt("androidCveCount", 0)
+        else -> 0
     }
 
     private fun readState(): JSONObject = runCatching { JSONObject(stateFile.readText()) }.getOrElse { JSONObject() }
@@ -198,10 +267,7 @@ class AutonomousThreatStore(context: Context) {
         const val SOURCE_PHISH_COMMUNITY = "phish_community"
         const val SOURCE_C2 = "c2"
         const val SOURCE_ANDROID_BULLETIN = "android_bulletin"
-        private val SOURCE_KEYS = listOf(SOURCE_MALWARE, SOURCE_PHISH_PRIMARY, SOURCE_PHISH_COMMUNITY, SOURCE_C2, SOURCE_ANDROID_BULLETIN)
-        private const val SOURCE_STATUS_FRESH_MS = 18L * 60L * 60L * 1000L
-        private const val PHISHING_TTL_MS = 7L * 24L * 60L * 60L * 1000L
-        private const val C2_TTL_MS = 36L * 60L * 60L * 1000L
+        val SOURCE_KEYS = listOf(SOURCE_MALWARE, SOURCE_PHISH_PRIMARY, SOURCE_PHISH_COMMUNITY, SOURCE_C2, SOURCE_ANDROID_BULLETIN)
         private val HASH = Regex("^[a-f0-9]{64}$")
         private val CVE = Regex("^CVE-20\\d{2}-\\d{4,8}$")
         fun sha256(text: String): String = MessageDigest.getInstance("SHA-256")

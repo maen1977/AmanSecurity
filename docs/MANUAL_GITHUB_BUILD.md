@@ -1,28 +1,17 @@
-# Aman 2.6 build workflow
+# GitHub build for Aman Security 2.7
 
-The single GitHub Actions workflow is **build-only**. It runs automatically on every push to `main` and can also be started manually with `workflow_dispatch`. It has no schedule, no threat-intelligence refresh job, and no API keys or signing secrets for threat updates. Threat intelligence updates remain inside the Android app.
+The repository contains exactly one GitHub Actions workflow: `.github/workflows/build.yml`. It is **build/verification only**. Threat intelligence is refreshed by the Android app itself, not by GitHub.
 
-# Manual GitHub build for Aman Security 2.6
+The workflow starts automatically on every push to `main` and can also be started manually with `workflow_dispatch`. It has no scheduled trigger, no threat-intelligence refresh job, no API keys, and no threat-update signing secrets.
 
-Aman 2.6 does not use GitHub Actions for threat-intelligence updates. Threat intelligence is refreshed by the Android app itself.
+## Automatic build
 
-The repository contains exactly one GitHub workflow:
+Commit and push the 2.7 project to `main`. GitHub starts **Build Aman Security** automatically. A successful run uploads:
 
-- `.github/workflows/build.yml`
-- trigger: `workflow_dispatch` only
-- purpose: test/lint/build the Android app
-- no schedule
-- no API keys
-- no threat-update secrets
-- read-only repository permission
+- `AmanSecurity-2.7.0-Debug-APK` — installable test APK.
+- `AmanSecurity-2.7.0-Unsigned-Release-AAB` — release bundle that still requires normal Android release signing/distribution configuration.
+- `AmanSecurity-2.7.0-Verification-Reports` — unit/lint/dependency reports and artifact SHA-256 checksums when available.
 
-## Run it
+## Manual build
 
-1. Commit and push `.github/workflows/build.yml` to the repository default branch (`main`).
-2. Open the repository on GitHub.
-3. Open **Actions**.
-4. Select **Build Aman Security**.
-5. Click **Run workflow**, select `main`, then **Run workflow**.
-6. After the build succeeds, open the run and download the artifact `AmanSecurity-2.6.0-Debug-APK`.
-
-The debug APK is signed with the normal debug signing identity produced by the Android build tools and is suitable for installing/testing. The release AAB artifact is intentionally unsigned because Aman does not store a release signing key in the repository or GitHub Secrets.
+Open **Actions → Build Aman Security → Run workflow**, choose `main`, and run it. Manual dispatch is optional; it is not required after a normal push to `main`.

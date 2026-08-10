@@ -293,15 +293,22 @@ class ApkStaticAnalyzer(
     private fun bool(value: Boolean): Double = if (value) 1.0 else 0.0
 
     private fun archivePackageInfo(file: File): PackageInfo? {
-        val signingFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
         val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_ACTIVITIES or PackageManager.GET_SERVICES or
-            PackageManager.GET_RECEIVERS or PackageManager.GET_PROVIDERS or signingFlag
+            PackageManager.GET_RECEIVERS or PackageManager.GET_PROVIDERS or signingInfoFlag()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.getPackageArchiveInfo(file.absolutePath, PackageManager.PackageInfoFlags.of(flags.toLong()))
         } else {
             @Suppress("DEPRECATION")
             packageManager.getPackageArchiveInfo(file.absolutePath, flags)
         }
+    }
+
+
+    @Suppress("DEPRECATION")
+    private fun signingInfoFlag(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        PackageManager.GET_SIGNING_CERTIFICATES
+    } else {
+        PackageManager.GET_SIGNATURES
     }
 
     private fun manifestSignals(packageInfo: PackageInfo): Set<ApkRiskSignal> {

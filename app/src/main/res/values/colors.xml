@@ -9,4 +9,7 @@
     <color name="status_ok">#15803D</color>
     <color name="status_warn">#B45309</color>
     <color name="status_danger">#B91C1C</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="dashboard_ring">#67E8F9</color>
+    <color name="dashboard_soft">#ECFEFF</color>
 </resources>
