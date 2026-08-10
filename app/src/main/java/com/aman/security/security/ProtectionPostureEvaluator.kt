@@ -43,10 +43,10 @@ object ProtectionPostureEvaluator {
         score = score.coerceIn(0, 100)
         val level = when {
             input.integrityStatus == AppIntegrityStatus.SIGNATURE_MISMATCH -> ProtectionPostureLevel.LIMITED
+            score < 55 -> ProtectionPostureLevel.LIMITED
             input.integrityStatus == AppIntegrityStatus.DEBUG_BUILD -> ProtectionPostureLevel.ATTENTION
             score >= 80 -> ProtectionPostureLevel.STRONG
-            score >= 55 -> ProtectionPostureLevel.ATTENTION
-            else -> ProtectionPostureLevel.LIMITED
+            else -> ProtectionPostureLevel.ATTENTION
         }
         return ProtectionPosture(score, level)
     }
