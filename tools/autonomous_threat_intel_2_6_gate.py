@@ -8,7 +8,19 @@ def need(text, items, label):
     if missing: raise SystemExit(f"{label}_FAILED missing={missing}")
 
 def main():
-    if (ROOT/'.github').exists(): raise SystemExit('AUTONOMOUS_2_6_GATE_FAILED github_automation_present')
+    workflows = sorted((ROOT/'.github/workflows').glob('*.y*ml')) if (ROOT/'.github/workflows').exists() else []
+    allowed = [ROOT/'.github/workflows/build.yml']
+    if workflows != allowed:
+        raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED unexpected_workflows={[str(p.relative_to(ROOT)) for p in workflows]}')
+    workflow = allowed[0].read_text(errors='ignore') if allowed[0].exists() else ''
+    required_workflow = ['workflow_dispatch:', 'gradle :app:assembleDebug', 'actions/upload-artifact@v4']
+    missing_workflow = [x for x in required_workflow if x not in workflow]
+    if missing_workflow:
+        raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED build_workflow_missing={missing_workflow}')
+    forbidden_workflow = ['schedule:', 'THREAT_DB_PRIVATE_KEY_BASE64', 'ABUSECH_AUTH_KEY', 'refresh_threat_intel.py', 'update_threat_intel.py']
+    bad_workflow = [x for x in forbidden_workflow if x in workflow]
+    if bad_workflow:
+        raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED build_workflow_forbidden={bad_workflow}')
     legacy = [
         'tools/threat_db_continuity_gate.py',
         'tools/reputation_gate.py',
@@ -50,5 +62,5 @@ def main():
     bad=[]
     for pat in key_ext: bad.extend(ROOT.rglob(pat))
     if bad: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED key_material={bad}')
-    print('AUTONOMOUS_THREAT_INTEL_2_6_GATE_OK github_actions=0 api_keys=0 schedule_hours=6 sources=5 executable_payloads=0 community_feed=review_only transient_ttl=1 android_cve_store=1')
+    print('AUTONOMOUS_THREAT_INTEL_2_6_GATE_OK threat_update_actions=0 build_workflows=1 manual_build_only=1 api_keys=0 schedule_hours=6 sources=5 executable_payloads=0 community_feed=review_only transient_ttl=1 android_cve_store=1')
 if __name__=='__main__': main()

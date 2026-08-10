@@ -15,5 +15,5 @@ def main():
     manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()
     if any(x in manifest for x in ['MANAGE_EXTERNAL_STORAGE','READ_EXTERNAL_STORAGE','WRITE_EXTERNAL_STORAGE']): raise SystemExit('PRIVACY_GATE_FAILED broad_storage')
     if 'android:usesCleartextTraffic="false"' not in manifest or 'android.permission.INTERNET' not in manifest: raise SystemExit('PRIVACY_GATE_FAILED transport')
-    print('QUALITY_GATE_OK version=2.6.0 autonomous_updates=1 github_actions=0 no_api_keys=1')
+    print('QUALITY_GATE_OK version=2.6.0 autonomous_updates=1 threat_update_actions=0 manual_build_workflow=1 no_api_keys=1')
 if __name__=='__main__': main()

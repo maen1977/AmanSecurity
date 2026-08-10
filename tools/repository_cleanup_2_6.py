@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Remove legacy GitHub-Actions threat-update files from an upgraded repo.
-
-Run from the Aman repository root:
-  python3 tools/repository_cleanup_2_6.py          # preview only
-  python3 tools/repository_cleanup_2_6.py --apply  # delete stale legacy files
-
-This does not touch application source, threat-db seed files, or Android data.
-"""
+"""Remove legacy threat-update GitHub Actions while preserving the manual build workflow."""
 from pathlib import Path
 import shutil, sys
 
@@ -14,7 +7,6 @@ ROOT = Path(__file__).resolve().parents[1]
 APPLY = '--apply' in sys.argv[1:]
 
 LEGACY_PATHS = [
-    '.github',
     'reputation',
     'tools/threat_db_continuity_gate.py',
     'tools/reviewed_reputation_gate.py',
@@ -31,28 +23,22 @@ LEGACY_PATHS = [
     'tools/sign_threat_db.py',
 ]
 
-
 def remove(path: Path):
-    if path.is_dir():
-        shutil.rmtree(path)
-    elif path.exists():
-        path.unlink()
-
+    if path.is_dir(): shutil.rmtree(path)
+    elif path.exists(): path.unlink()
 
 def main():
-    existing = [ROOT / rel for rel in LEGACY_PATHS if (ROOT / rel).exists()]
-    if not existing:
-        print('REPOSITORY_CLEANUP_2_6_OK stale_paths=0 apply=' + ('1' if APPLY else '0'))
-        return
+    stale=[]
+    wf_dir=ROOT/'.github/workflows'
+    if wf_dir.exists():
+        for p in wf_dir.iterdir():
+            if p.is_file() and p.name != 'build.yml' and p.suffix.lower() in {'.yml','.yaml'}:
+                stale.append(p)
+    stale += [ROOT/rel for rel in LEGACY_PATHS if (ROOT/rel).exists()]
+    for path in stale:
+        rel=path.relative_to(ROOT)
+        print(('DELETE ' if APPLY else 'WOULD_DELETE ')+str(rel))
+        if APPLY: remove(path)
+    print(f'REPOSITORY_CLEANUP_2_6_OK stale_paths={len(stale)} apply={1 if APPLY else 0} build_workflow_preserved=1')
 
-    for path in existing:
-        rel = path.relative_to(ROOT)
-        print(('DELETE ' if APPLY else 'WOULD_DELETE ') + str(rel))
-        if APPLY:
-            remove(path)
-
-    print(f'REPOSITORY_CLEANUP_2_6_OK stale_paths={len(existing)} apply={1 if APPLY else 0}')
-
-
-if __name__ == '__main__':
-    main()
+if __name__=='__main__': main()

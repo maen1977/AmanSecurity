@@ -4,7 +4,7 @@ Android antivirus / anti-malware project with Arabic and English UI, on-device A
 
 ## 2.6 autonomous intelligence
 
-The app itself refreshes public no-key threat intelligence about every six hours when Android permits background work and the network is connected. GitHub Actions are not used and the project contains no `.github` automation directory. No API keys or threat-update private keys are required.
+The app itself refreshes public no-key threat intelligence about every six hours when Android permits background work and the network is connected. GitHub Actions are not used for threat-intelligence updates. The project contains one manual `build.yml` workflow only for compiling/testing the Android app. No API keys or threat-update private keys are required.
 
 The updater downloads only text/JSON/HTML indicators from fixed HTTPS sources, rejects executable/archive payloads, validates and stages each source independently, keeps the last valid source data on failure, and triggers an installed-app rescan after a successful refresh when background protection is enabled.
 
@@ -16,13 +16,12 @@ See `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md` for the source and safety model
 python3 tools/quality_gate.py
 ```
 
-Full Android unit tests, lint, APK/AAB building and release signing should be run in Android Studio or a trusted build environment with Android SDK 36.
+Full Android unit tests, lint, APK/AAB building can be run with the manual GitHub build workflow or Android Studio. Release signing still requires a separate Android signing key; the manual workflow intentionally creates an installable debug APK and an unsigned release AAB without storing secrets.
 
 ## Upgrading an older GitHub repository to 2.6
 
 Do not only overlay the ZIP on top of old repository files: Git does not remove
-legacy files that are absent from the ZIP. Aman 2.6 has **no GitHub Actions
-threat-update pipeline**. If an older `.github/workflows/main.yml` or legacy
+legacy files that are absent from the ZIP. Aman 2.6 has **no GitHub Actions threat-update pipeline**. It keeps exactly one manual build-only workflow (`.github/workflows/build.yml`). If an older `.github/workflows/main.yml` or legacy
 reputation gates remain, remove them before committing 2.6. A cleanup helper is
 included:
 
@@ -45,7 +44,7 @@ or on Linux/macOS:
 ./MIGRATE_EXISTING_REPO_TO_2_6.sh
 ```
 
-These remove tracked legacy workflow/reputation files, run the autonomous 2.6 gates, and stop before commit/push so the deletions can be reviewed.
+These remove tracked legacy threat-update workflow/reputation files, preserve the manual build workflow, run the autonomous 2.6 gates, and stop before commit/push so the changes can be reviewed.
 
 
 ## If GitHub still reports `minimumSignedReputationEntries`
