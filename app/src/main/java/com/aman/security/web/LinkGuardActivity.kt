@@ -129,5 +129,6 @@ class LinkGuardActivity : AppCompatActivity() {
         UrlRiskSignal.MANY_SUBDOMAINS -> R.string.url_signal_subdomains
         UrlRiskSignal.LONG_URL -> R.string.url_signal_long
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
+        UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
     }
 }

@@ -12,6 +12,7 @@ def main():
     run('autonomous_threat_intel_2_6_gate.py')
     run('web_protection_2_4_gate.py')
     run('zero_day_2_5_gate.py')
+    run('android_kotlin_sanity_gate.py')
     manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()
     if any(x in manifest for x in ['MANAGE_EXTERNAL_STORAGE','READ_EXTERNAL_STORAGE','WRITE_EXTERNAL_STORAGE']): raise SystemExit('PRIVACY_GATE_FAILED broad_storage')
     if 'android:usesCleartextTraffic="false"' not in manifest or 'android.permission.INTERNET' not in manifest: raise SystemExit('PRIVACY_GATE_FAILED transport')
