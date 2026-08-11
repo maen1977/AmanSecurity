@@ -35,9 +35,11 @@ class PrivacyControlActivity : AppCompatActivity() {
         binding.btnRefreshPrivacyControl.isEnabled = false
         binding.txtPrivacyControlSummary.setText(R.string.privacy_control_loading)
         lifecycleScope.launch {
-            val apps = withContext(Dispatchers.IO) { auditor.appsForReview() }
+            val outcome = withContext(Dispatchers.IO) { runCatching { auditor.appsForReview() } }
             binding.btnRefreshPrivacyControl.isEnabled = true
-            renderApps(apps)
+            outcome.onSuccess(::renderApps).onFailure {
+                binding.txtPrivacyControlSummary.setText(R.string.operation_failed_try_again)
+            }
         }
     }
 

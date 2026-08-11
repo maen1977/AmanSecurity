@@ -448,4 +448,6 @@
     <string name="scan_stage_reputation">Checking threat reputation</string>
     <string name="scan_stage_apk_analysis">Analyzing APK structure and behavior indicators</string>
     <string name="scan_progress_zero">0%</string>
+    <string name="operation_failed_try_again">The operation could not be completed. Please try again.</string>
+    <string name="security_audit_unavailable">Security audit temporarily unavailable</string>
 </resources>

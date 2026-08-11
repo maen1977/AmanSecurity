@@ -8,6 +8,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -74,6 +76,7 @@ import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
 import com.aman.security.detection.ThreatFamily
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -103,6 +106,30 @@ class MainActivity : AppCompatActivity() {
     private var pendingRestoreId: String? = null
     @Volatile private var scanCancelRequested: Boolean = false
     private var activeScan: Boolean = false
+
+    /**
+     * Last-resort protection for unexpected exceptions in lifecycleScope jobs. A failed
+     * background audit/update must never take down the whole Activity. Individual scan
+     * operations still report their own detailed failure states when possible.
+     */
+    private val uiCoroutineErrorHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Unhandled UI coroutine failure", throwable)
+        runOnUiThread {
+            if (!::binding.isInitialized || isFinishing || isDestroyed) return@runOnUiThread
+            securityAuditRunning = false
+            activeScan = false
+            scanCancelRequested = false
+            binding.btnRunSecurityAudit.isEnabled = true
+            binding.btnStopScan.isEnabled = false
+            binding.btnSmartScan.isEnabled = true
+            binding.btnScanInstalledApps.isEnabled = true
+            binding.btnScanFile.isEnabled = selectedUri != null
+            binding.btnChooseFile.isEnabled = true
+            binding.btnUpdateDatabase.isEnabled = true
+            binding.btnCheckProtectionNow.isEnabled = true
+            Toast.makeText(this, R.string.operation_failed_try_again, Toast.LENGTH_LONG).show()
+        }
+    }
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -236,31 +263,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNavigation() {
+        // IMPORTANT: never change selectedItemId from inside the selection listener.
+        // Material NavigationBarView dispatches the listener before its checked state is
+        // fully committed on some versions. Re-selecting from inside the listener can
+        // recursively dispatch the same callback until StackOverflowError.
         binding.bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> showPage(PAGE_HOME)
-                R.id.nav_scan -> showPage(PAGE_SCAN)
-                R.id.nav_protection -> showPage(PAGE_PROTECTION)
-                R.id.nav_settings -> showPage(PAGE_SETTINGS)
-                else -> false
+            val page = when (item.itemId) {
+                R.id.nav_home -> PAGE_HOME
+                R.id.nav_scan -> PAGE_SCAN
+                R.id.nav_protection -> PAGE_PROTECTION
+                R.id.nav_settings -> PAGE_SETTINGS
+                else -> return@setOnItemSelectedListener false
             }
+            renderPage(page)
+            true
         }
-        binding.bottomNav.selectedItemId = R.id.nav_home
+        showPage(PAGE_HOME)
     }
 
     private fun showPage(page: Int): Boolean {
+        val expected = navItemForPage(page)
+        if (binding.bottomNav.selectedItemId == expected) {
+            // If the item is already selected no callback is guaranteed, so render now.
+            renderPage(page)
+        } else {
+            // This triggers the listener once; the listener only renders and never re-selects.
+            binding.bottomNav.selectedItemId = expected
+        }
+        return true
+    }
+
+    private fun navItemForPage(page: Int): Int = when (page) {
+        PAGE_SCAN -> R.id.nav_scan
+        PAGE_PROTECTION -> R.id.nav_protection
+        PAGE_SETTINGS -> R.id.nav_settings
+        else -> R.id.nav_home
+    }
+
+    private fun renderPage(page: Int) {
         binding.pageHome.visibility = if (page == PAGE_HOME) View.VISIBLE else View.GONE
         binding.mainScroll.visibility = if (page == PAGE_SCAN) View.VISIBLE else View.GONE
         binding.pageProtection.visibility = if (page == PAGE_PROTECTION) View.VISIBLE else View.GONE
         binding.pageSettings.visibility = if (page == PAGE_SETTINGS) View.VISIBLE else View.GONE
-        val expected = when (page) {
-            PAGE_SCAN -> R.id.nav_scan
-            PAGE_PROTECTION -> R.id.nav_protection
-            PAGE_SETTINGS -> R.id.nav_settings
-            else -> R.id.nav_home
-        }
-        if (binding.bottomNav.selectedItemId != expected) binding.bottomNav.selectedItemId = expected
-        return true
     }
 
     private fun openNotificationSettings() {
@@ -294,7 +338,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateThreatDatabase() {
         binding.btnUpdateDatabase.isEnabled = false
         binding.txtUpdateStatus.setText(R.string.update_checking)
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val result = withContext(Dispatchers.IO) { updater.update() }
             binding.btnUpdateDatabase.isEnabled = true
             renderAutonomousIntel()
@@ -598,7 +642,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnCheckProtectionNow.isEnabled = false
         binding.txtProtectionLastCheck.setText(R.string.protection_checking)
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
                     ProtectedFolderScanner(
@@ -744,7 +788,7 @@ class MainActivity : AppCompatActivity() {
         showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_full_detail)
         updateScanProgress(1, R.string.smart_scan_preparing, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
                     val installed = installedAppScanner.scanUserApps { completed, total, appName, packageName ->
@@ -910,7 +954,7 @@ class MainActivity : AppCompatActivity() {
         showSmartScan(R.string.scan_stage_apps, R.string.smart_scan_detail)
         updateScanProgress(1, R.string.scan_stage_apps, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     installedAppScanner.scanUserApps { completed, total, appName, packageName ->
@@ -1076,7 +1120,7 @@ class MainActivity : AppCompatActivity() {
         binding.txtApkAnalysis.visibility = View.GONE
         binding.resultActions.visibility = View.GONE
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
                     scanner.scan(uri) { progress ->
@@ -1350,7 +1394,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnChooseFile.isEnabled = false
         binding.btnScanFile.isEnabled = false
         binding.txtReason.setText(R.string.quarantine_progress)
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) { quarantineManager.quarantine(uri, result) }
             binding.btnChooseFile.isEnabled = true
             when (outcome) {
@@ -1424,7 +1468,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreQuarantinedFile(id: String, destination: Uri) {
-        lifecycleScope.launch {
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) { quarantineManager.restore(id, destination) }
             when (outcome) {
                 QuarantineManager.RestoreResult.Success -> {
@@ -1443,7 +1487,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_quarantine_confirm_body)
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.delete_action) { _, _ ->
-                lifecycleScope.launch {
+                lifecycleScope.launch(uiCoroutineErrorHandler) {
                     val deleted = withContext(Dispatchers.IO) { quarantineManager.deletePermanently(entry.id) }
                     renderSecurityManagement()
                     showInfo(if (deleted) R.string.delete_quarantine_success else R.string.delete_quarantine_failed)
@@ -1531,20 +1575,28 @@ class MainActivity : AppCompatActivity() {
         if (securityAuditRunning) return
         securityAuditRunning = true
         binding.btnRunSecurityAudit.isEnabled = false
-        lifecycleScope.launch {
-            val audit = withContext(Dispatchers.IO) {
-                SecurityAuditSummary(
-                    device = DeviceSecurityAuditor(applicationContext).audit(),
-                    network = NetworkSecurityAuditor(applicationContext).audit(),
-                    privacy = PrivacyPermissionAuditor(applicationContext).audit()
-                )
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    SecurityAuditSummary(
+                        device = DeviceSecurityAuditor(applicationContext).audit(),
+                        network = NetworkSecurityAuditor(applicationContext).audit(),
+                        privacy = PrivacyPermissionAuditor(applicationContext).audit()
+                    )
+                }
             }
-            lastSecurityAudit = audit
-            lastSecurityAuditAt = System.currentTimeMillis()
             securityAuditRunning = false
             binding.btnRunSecurityAudit.isEnabled = true
-            renderSecurityAudit()
-            renderProtectionPosture()
+            outcome.onSuccess { audit ->
+                lastSecurityAudit = audit
+                lastSecurityAuditAt = System.currentTimeMillis()
+                renderSecurityAudit()
+                renderProtectionPosture()
+            }.onFailure { error ->
+                Log.e(TAG, "Security audit failed", error)
+                binding.txtSecurityAuditStatus.setText(R.string.security_audit_unavailable)
+                binding.txtSecurityAuditCounts.text = getString(R.string.operation_failed_try_again)
+            }
         }
     }
 
@@ -1786,6 +1838,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val TAG = "AmanSecurity"
         private const val PRIVACY_PREFERENCES = "privacy_preferences"
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"
         private const val INSTALLED_SCAN_DISCLOSURE_VERSION = 1

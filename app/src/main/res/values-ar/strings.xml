@@ -448,4 +448,6 @@
     <string name="scan_stage_reputation">جارٍ فحص سمعة التهديد</string>
     <string name="scan_stage_apk_analysis">جارٍ تحليل بنية APK ومؤشرات السلوك</string>
     <string name="scan_progress_zero">0٪</string>
+    <string name="operation_failed_try_again">تعذر إكمال العملية. حاول مرة أخرى.</string>
+    <string name="security_audit_unavailable">تدقيق الأمان غير متاح مؤقتًا</string>
 </resources>
