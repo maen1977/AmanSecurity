@@ -70,7 +70,7 @@ class ImpersonationDetectorTest {
 
     @Test
     fun facebookSiblingPackageDoesNotTriggerBrandImpersonation() {
-        val profiles = listOf(ProtectedBrandProfile("BRAND_FACEBOOK", "com.facebook.katana", listOf("facebook")))
+        val profiles = listOf(ProtectedBrandProfile("BRAND_FACEBOOK", "com.facebook.katana", setOf("facebook")))
         val findings = ImpersonationDetector.evaluate(
             packageName = "com.facebook.orca",
             appLabel = "Messenger",
