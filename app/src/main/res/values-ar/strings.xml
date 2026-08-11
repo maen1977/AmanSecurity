@@ -404,4 +404,48 @@
     <string name="privacy_control_more">هناك %1$s تطبيقات إضافية غير معروضة في هذه الشاشة.</string>
     <string name="privacy_control_note">وجود الصلاحية لا يعني أن التطبيق ضار. راجع ما إذا كانت كل صلاحية مناسبة لوظيفة التطبيق.</string>
 
+
+    <string name="home_security_center">مركز الأمان</string>
+    <string name="quick_actions">إجراءات سريعة</string>
+    <string name="protection_snapshot">حالة الحماية</string>
+    <string name="open_protection_center">فتح مركز الحماية</string>
+    <string name="scan_center_title">الفحص</string>
+    <string name="scan_center_subtitle">شاهد بالضبط ما الذي يفحصه أمان، وأين يفحص، وإلى أي نسبة وصل.</string>
+    <string name="protection_center_title">الحماية</string>
+    <string name="protection_center_subtitle">تحكم بحماية التطبيقات والملفات والويب والجهاز والشبكة والخصوصية.</string>
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_subtitle">اللغة والإشعارات والتحديثات وسجلات الأمان ومعلومات البرنامج.</string>
+    <string name="general_settings">عام</string>
+    <string name="notification_settings">إعدادات الإشعارات</string>
+    <string name="protection_updates_title">تحديثات الحماية</string>
+    <string name="about_title">حول برنامج أمان</string>
+    <string name="security_records_title">سجلات الأمان</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_scan">الفحص</string>
+    <string name="nav_protection">الحماية</string>
+    <string name="nav_settings">الإعدادات</string>
+    <string name="stop_scan">إيقاف الفحص</string>
+    <string name="scan_cancel_requested">جارٍ الإيقاف بأمان…</string>
+    <string name="scan_cancelled_title">تم إيقاف الفحص</string>
+    <string name="scan_cancelled_detail">أوقفت الفحص. لم يتم تغيير أي ملف أو تطبيق.</string>
+    <string name="scan_target_preparing">جارٍ تجهيز هدف الفحص…</string>
+    <string name="scan_scope_preparing">جارٍ تحميل التطبيقات المثبتة والمواقع المحمية التي تم إعدادها.</string>
+    <string name="scan_stage_apps">جارٍ فحص التطبيقات المثبتة</string>
+    <string name="scan_stage_app_progress">التطبيق %1$s من %2$s</string>
+    <string name="scan_stage_device">جارٍ فحص أمان الجهاز</string>
+    <string name="scan_stage_network">جارٍ فحص الشبكة والخصوصية</string>
+    <string name="scan_stage_folder">جارٍ فحص المجلد المحمي</string>
+    <string name="scan_stage_folder_count">الملفات التي تم فحصها في المجلد المحمي: %1$s</string>
+    <string name="scan_stage_finishing">جارٍ إنهاء نتيجة الحماية</string>
+    <string name="scan_scope_package">الحزمة: %1$s</string>
+    <string name="scan_scope_file">الملف/الموقع: %1$s</string>
+    <string name="scan_scope_device">قفل الشاشة وخيارات المطور ومؤشرات الروت والشبكة وDNS والصلاحيات الحساسة</string>
+    <string name="scan_complete_percent">100%</string>
+    <string name="scan_progress_percent">%1$s%%</string>
+    <string name="file_scan_title">فحص ملف</string>
+
+    <string name="scan_stage_hashing">جارٍ قراءة الملف وحساب بصمته</string>
+    <string name="scan_stage_reputation">جارٍ فحص سمعة التهديد</string>
+    <string name="scan_stage_apk_analysis">جارٍ تحليل بنية APK ومؤشرات السلوك</string>
+    <string name="scan_progress_zero">0٪</string>
 </resources>

@@ -404,4 +404,48 @@
     <string name="privacy_control_more">%1$s additional apps are not shown in this view.</string>
     <string name="privacy_control_note">Permission presence is not evidence of malware. Review whether each permission is appropriate for the app’s purpose.</string>
 
+
+    <string name="home_security_center">Security Center</string>
+    <string name="quick_actions">Quick actions</string>
+    <string name="protection_snapshot">Protection status</string>
+    <string name="open_protection_center">Open Protection Center</string>
+    <string name="scan_center_title">Scan</string>
+    <string name="scan_center_subtitle">See exactly what Aman is scanning, where it is scanning, and how far it has progressed.</string>
+    <string name="protection_center_title">Protection</string>
+    <string name="protection_center_subtitle">Real-time app, file, web, device, network, and privacy protection controls.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Language, notifications, updates, security records, and app information.</string>
+    <string name="general_settings">General</string>
+    <string name="notification_settings">Notification settings</string>
+    <string name="protection_updates_title">Protection updates</string>
+    <string name="about_title">About Aman Security</string>
+    <string name="security_records_title">Security records</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_protection">Protection</string>
+    <string name="nav_settings">Settings</string>
+    <string name="stop_scan">Stop scan</string>
+    <string name="scan_cancel_requested">Stopping safely…</string>
+    <string name="scan_cancelled_title">Scan stopped</string>
+    <string name="scan_cancelled_detail">The scan was stopped by you. No file or app was changed.</string>
+    <string name="scan_target_preparing">Preparing scan target…</string>
+    <string name="scan_scope_preparing">Loading installed applications and configured protected locations.</string>
+    <string name="scan_stage_apps">Scanning installed apps</string>
+    <string name="scan_stage_app_progress">App %1$s of %2$s</string>
+    <string name="scan_stage_device">Checking device security</string>
+    <string name="scan_stage_network">Checking network and privacy</string>
+    <string name="scan_stage_folder">Scanning protected folder</string>
+    <string name="scan_stage_folder_count">Files checked in protected folder: %1$s</string>
+    <string name="scan_stage_finishing">Finalizing security verdict</string>
+    <string name="scan_scope_package">Package: %1$s</string>
+    <string name="scan_scope_file">File/location: %1$s</string>
+    <string name="scan_scope_device">Lock screen, developer settings, root indicators, network, DNS, and sensitive permissions</string>
+    <string name="scan_complete_percent">100%</string>
+    <string name="scan_progress_percent">%1$s%%</string>
+    <string name="file_scan_title">File scan</string>
+
+    <string name="scan_stage_hashing">Reading and hashing file</string>
+    <string name="scan_stage_reputation">Checking threat reputation</string>
+    <string name="scan_stage_apk_analysis">Analyzing APK structure and behavior indicators</string>
+    <string name="scan_progress_zero">0%</string>
 </resources>

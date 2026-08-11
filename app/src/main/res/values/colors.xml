@@ -12,4 +12,5 @@
     <color name="surface_card">#FFFFFF</color>
     <color name="dashboard_ring">#5EEAD4</color>
     <color name="dashboard_soft">#E6FFFB</color>
+    <color name="card_stroke">#DCE8E6</color>
 </resources>

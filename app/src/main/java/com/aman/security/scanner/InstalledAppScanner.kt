@@ -28,13 +28,27 @@ class InstalledAppScanner(
     private val packageManager: PackageManager = context.packageManager
     private val deepAnalyzer by lazy { ApkStaticAnalyzer(context, database) }
 
-    fun scanUserApps(deep: Boolean = true): InstalledAppsScanSummary {
-        val packages = installedPackages().asSequence()
+    fun scanUserApps(
+        deep: Boolean = true,
+        onProgress: ((completed: Int, total: Int, appName: String, packageName: String) -> Unit)? = null
+    ): InstalledAppsScanSummary {
+        val candidates = installedPackages()
             .filter { it.packageName != context.packageName }
             .filterNot(::isSystemPackage)
-            .map { scanPackage(it, deep = deep) }
-            .sortedWith(compareByDescending<InstalledAppScanResult> { it.riskScore }.thenBy { it.appName.lowercase() })
-            .toList()
+        val total = candidates.size
+        val scanned = ArrayList<InstalledAppScanResult>(total)
+        candidates.forEachIndexed { index, packageInfo ->
+            val appName = packageInfo.applicationInfo
+                ?.let { packageManager.getApplicationLabel(it).toString() }
+                ?.takeIf { it.isNotBlank() }
+                ?: packageInfo.packageName
+            onProgress?.invoke(index, total, appName, packageInfo.packageName)
+            scanned += scanPackage(packageInfo, deep = deep)
+            onProgress?.invoke(index + 1, total, appName, packageInfo.packageName)
+        }
+        val packages = scanned.sortedWith(
+            compareByDescending<InstalledAppScanResult> { it.riskScore }.thenBy { it.appName.lowercase() }
+        )
         val review = packages.count { it.riskLevel != AppRiskLevel.LOW }
         val high = packages.count { it.riskLevel == AppRiskLevel.HIGH }
         val known = packages.count { it.riskLevel == AppRiskLevel.KNOWN_THREAT }
@@ -194,7 +208,7 @@ class InstalledAppScanner(
         }
     }
 
-    private fun hashFile(file: File): String = FileInputStream(file).use(Sha256::fromStream)
+    private fun hashFile(file: File): String = FileInputStream(file).use { Sha256.fromStream(it) }
     private fun sha256Text(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 
     private fun signingCertificateSha256(packageInfo: PackageInfo): String? {

@@ -16,7 +16,10 @@ class ProtectedFolderScanner(
     private val recordStore: SecurityRecordStore,
     private val notifier: (ProtectionEvent) -> Unit
 ) {
-    fun scan(treeUri: Uri): ProtectedFolderScanSummary {
+    fun scan(
+        treeUri: Uri,
+        onProgress: ((scannedFiles: Int, fileName: String, documentId: String) -> Unit)? = null
+    ): ProtectedFolderScanSummary {
         if (!hasPersistedReadPermission(treeUri)) {
             preferences.folderPermissionLost = true
             preferences.lastCheckAt = System.currentTimeMillis()
@@ -98,6 +101,7 @@ class ProtectedFolderScanner(
                         continue
                     }
 
+                    onProgress?.invoke(scanned, fileName, documentId)
                     val resultOutcome = runCatching { fileScanner.scan(documentUri) }
                     if (resultOutcome.isFailure) {
                         inaccessible++
@@ -105,6 +109,7 @@ class ProtectedFolderScanner(
                     }
                     val result = resultOutcome.getOrThrow()
                     scanned++
+                    onProgress?.invoke(scanned, fileName, documentId)
                     ledger[ledgerKey] = fingerprint
 
                     if (result.classification == ScanClassification.KNOWN_THREAT ||

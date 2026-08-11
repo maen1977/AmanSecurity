@@ -43,6 +43,8 @@ import com.aman.security.scanner.ApkStaticAnalyzer
 import com.aman.security.scanner.AppRiskLevel
 import com.aman.security.scanner.AppRiskSignal
 import com.aman.security.scanner.FileScanner
+import com.aman.security.scanner.FileScanStage
+import java.util.concurrent.CancellationException
 import com.aman.security.scanner.InstalledAppScanResult
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
@@ -99,6 +101,8 @@ class MainActivity : AppCompatActivity() {
     private var lastSecurityAuditAt: Long = 0L
     private var securityAuditRunning: Boolean = false
     private var pendingRestoreId: String? = null
+    @Volatile private var scanCancelRequested: Boolean = false
+    private var activeScan: Boolean = false
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -160,6 +164,8 @@ class MainActivity : AppCompatActivity() {
         renderSecurityManagement()
         renderProtectionStatus()
         renderWebGuardStatus()
+        setupNavigation()
+        binding.txtHomeVersion.text = BuildConfig.VERSION_NAME
 
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
@@ -179,15 +185,24 @@ class MainActivity : AppCompatActivity() {
             renderProtectionStatus()
         }
         binding.btnSmartScan.setOnClickListener { requestSmartScan() }
-        binding.btnQuickApps.setOnClickListener { requestInstalledAppsScan() }
-        binding.btnQuickFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
+        binding.btnQuickApps.setOnClickListener { showPage(PAGE_SCAN); requestInstalledAppsScan() }
+        binding.btnQuickFile.setOnClickListener { showPage(PAGE_SCAN); filePicker.launch(arrayOf("*/*")) }
         binding.btnQuickWeb.setOnClickListener {
+            showPage(PAGE_SCAN)
             scrollToSection(binding.webProtectionSection)
             binding.edtUrl.requestFocus()
         }
-        binding.btnQuickProtection.setOnClickListener { scrollToSection(binding.protectionSection) }
-        binding.btnQuickQuarantine.setOnClickListener { scrollToSection(binding.quarantineSection) }
-        binding.btnQuickUpdate.setOnClickListener { updateThreatDatabase() }
+        binding.btnQuickProtection.setOnClickListener { showPage(PAGE_PROTECTION) }
+        binding.btnQuickQuarantine.setOnClickListener { showPage(PAGE_PROTECTION) }
+        binding.btnQuickUpdate.setOnClickListener { showPage(PAGE_SETTINGS); updateThreatDatabase() }
+        binding.btnStopScan.setOnClickListener {
+            if (activeScan) {
+                scanCancelRequested = true
+                binding.txtSmartScanState.setText(R.string.scan_cancel_requested)
+                binding.btnStopScan.isEnabled = false
+            }
+        }
+        binding.btnNotificationSettings.setOnClickListener { openNotificationSettings() }
         binding.btnRunSecurityAudit.setOnClickListener { runStandaloneSecurityAudit() }
         binding.btnPrivacyControl.setOnClickListener { startActivity(Intent(this, PrivacyControlActivity::class.java)) }
         binding.btnOpenSecuritySettings.setOnClickListener { openSecuritySettings() }
@@ -220,9 +235,47 @@ class MainActivity : AppCompatActivity() {
         handleIncomingIntent(intent)
     }
 
+    private fun setupNavigation() {
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> showPage(PAGE_HOME)
+                R.id.nav_scan -> showPage(PAGE_SCAN)
+                R.id.nav_protection -> showPage(PAGE_PROTECTION)
+                R.id.nav_settings -> showPage(PAGE_SETTINGS)
+                else -> false
+            }
+        }
+        binding.bottomNav.selectedItemId = R.id.nav_home
+    }
+
+    private fun showPage(page: Int): Boolean {
+        binding.pageHome.visibility = if (page == PAGE_HOME) View.VISIBLE else View.GONE
+        binding.mainScroll.visibility = if (page == PAGE_SCAN) View.VISIBLE else View.GONE
+        binding.pageProtection.visibility = if (page == PAGE_PROTECTION) View.VISIBLE else View.GONE
+        binding.pageSettings.visibility = if (page == PAGE_SETTINGS) View.VISIBLE else View.GONE
+        val expected = when (page) {
+            PAGE_SCAN -> R.id.nav_scan
+            PAGE_PROTECTION -> R.id.nav_protection
+            PAGE_SETTINGS -> R.id.nav_settings
+            else -> R.id.nav_home
+        }
+        if (binding.bottomNav.selectedItemId != expected) binding.bottomNav.selectedItemId = expected
+        return true
+    }
+
+    private fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+        runCatching { startActivity(intent) }.onFailure {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }
+    }
+
     private fun renderDatabaseInfo() {
         val info = database.info
         binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
+        binding.txtHomeVersion.text = BuildConfig.VERSION_NAME
         binding.txtDatabaseVersion.text = getString(R.string.database_version, info.version)
         binding.txtDatabaseEntries.text = getString(
             R.string.database_entries,
@@ -682,20 +735,45 @@ class MainActivity : AppCompatActivity() {
     )
 
     private fun runSmartScan() {
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        binding.btnStopScan.isEnabled = true
         binding.btnSmartScan.isEnabled = false
         binding.btnScanInstalledApps.isEnabled = false
         showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_full_detail)
+        updateScanProgress(1, R.string.smart_scan_preparing, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
 
         lifecycleScope.launch {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
-                    val installed = installedAppScanner.scanUserApps()
+                    val installed = installedAppScanner.scanUserApps { completed, total, appName, packageName ->
+                        if (scanCancelRequested) throw CancellationException("scan cancelled")
+                        val fraction = if (total <= 0) 0 else ((completed * 65) / total)
+                        val percent = (8 + fraction).coerceIn(8, 73)
+                        runOnUiThread {
+                            updateScanProgress(
+                                percent,
+                                R.string.scan_stage_apps,
+                                getString(R.string.scan_stage_app_progress, NumberFormat.getIntegerInstance().format(completed.coerceAtLeast(1)), NumberFormat.getIntegerInstance().format(total)),
+                                "$appName\n${getString(R.string.scan_scope_package, packageName)}"
+                            )
+                        }
+                    }
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    runOnUiThread { updateScanProgress(78, R.string.scan_stage_device, getString(R.string.scan_stage_device), getString(R.string.scan_scope_device)) }
+                    val device = DeviceSecurityAuditor(applicationContext).audit()
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    runOnUiThread { updateScanProgress(84, R.string.scan_stage_network, getString(R.string.scan_stage_network), getString(R.string.scan_scope_device)) }
                     val audit = SecurityAuditSummary(
-                        device = DeviceSecurityAuditor(applicationContext).audit(),
+                        device = device,
                         network = NetworkSecurityAuditor(applicationContext).audit(),
                         privacy = PrivacyPermissionAuditor(applicationContext).audit()
                     )
                     val folder = protectionPreferences.protectedTreeUri?.let { treeUri ->
+                        runOnUiThread {
+                            updateScanProgress(90, R.string.scan_stage_folder, getString(R.string.scan_stage_folder), treeUri.toString())
+                        }
                         ProtectedFolderScanner(
                             resolver = contentResolver,
                             fileScanner = scanner,
@@ -703,14 +781,29 @@ class MainActivity : AppCompatActivity() {
                             eventStore = protectionEventStore,
                             recordStore = recordStore,
                             notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
-                        ).scan(treeUri)
+                        ).scan(treeUri) { scanned, fileName, documentId ->
+                            if (scanCancelRequested) throw CancellationException("scan cancelled")
+                            runOnUiThread {
+                                updateScanProgress(
+                                    (90 + scanned.coerceAtMost(8)).coerceAtMost(98),
+                                    R.string.scan_stage_folder,
+                                    getString(R.string.scan_stage_folder_count, NumberFormat.getIntegerInstance().format(scanned)),
+                                    "$fileName\n${getString(R.string.scan_scope_file, documentId)}"
+                                )
+                            }
+                        }
                     }
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    runOnUiThread { updateScanProgress(99, R.string.scan_stage_finishing, getString(R.string.scan_stage_finishing), getString(R.string.scan_scope_device)) }
                     SmartScanBundle(installed, audit, folder)
                 }
             }
+            activeScan = false
+            binding.btnStopScan.isEnabled = false
             binding.btnSmartScan.isEnabled = true
             binding.btnScanInstalledApps.isEnabled = true
             outcome.onSuccess { bundle ->
+                updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = bundle.installedApps
                 lastSecurityAudit = bundle.securityAudit
                 lastSecurityAuditAt = System.currentTimeMillis()
@@ -721,12 +814,11 @@ class MainActivity : AppCompatActivity() {
                 renderProtectionPosture()
             }.onFailure {
                 hideSmartScan()
-                showSmartResult(
-                    R.string.smart_scan_failed_title,
-                    R.string.smart_scan_failed_title,
-                    getString(R.string.smart_scan_failed_full_detail),
-                    R.color.status_warn
-                )
+                if (scanCancelRequested || it is CancellationException) {
+                    showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                } else {
+                    showSmartResult(R.string.smart_scan_failed_title, R.string.smart_scan_failed_title, getString(R.string.smart_scan_failed_full_detail), R.color.status_warn)
+                }
             }
         }
     }
@@ -806,33 +898,54 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanInstalledApps() {
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        binding.btnStopScan.isEnabled = true
         binding.btnScanInstalledApps.isEnabled = false
         binding.btnSmartScan.isEnabled = false
         binding.txtInstalledSummary.setText(R.string.scanning_installed_apps)
         binding.txtInstalledEmpty.visibility = View.GONE
         binding.installedResultsContainer.removeAllViews()
-        showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_detail)
+        showSmartScan(R.string.scan_stage_apps, R.string.smart_scan_detail)
+        updateScanProgress(1, R.string.scan_stage_apps, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
 
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                runCatching { installedAppScanner.scanUserApps() }
+                runCatching {
+                    installedAppScanner.scanUserApps { completed, total, appName, packageName ->
+                        if (scanCancelRequested) throw CancellationException("scan cancelled")
+                        val percent = if (total <= 0) 0 else ((completed * 100) / total).coerceIn(1, 99)
+                        runOnUiThread {
+                            updateScanProgress(
+                                percent,
+                                R.string.scan_stage_apps,
+                                getString(R.string.scan_stage_app_progress, NumberFormat.getIntegerInstance().format(completed.coerceAtLeast(1)), NumberFormat.getIntegerInstance().format(total)),
+                                "$appName\n${getString(R.string.scan_scope_package, packageName)}"
+                            )
+                        }
+                    }
+                }
             }
+            activeScan = false
+            binding.btnStopScan.isEnabled = false
             binding.btnScanInstalledApps.isEnabled = true
             binding.btnSmartScan.isEnabled = true
             result.onSuccess { summary ->
+                updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = summary
                 renderInstalledApps(summary)
                 renderSmartInstalledResult(summary)
                 renderProtectionPosture()
             }.onFailure {
                 hideSmartScan()
-                binding.txtInstalledSummary.setText(R.string.installed_scan_failed)
-                showSmartResult(
-                    R.string.smart_scan_failed_title,
-                    R.string.installed_scan_failed,
-                    getString(R.string.smart_scan_failed_detail),
-                    R.color.status_warn
-                )
+                if (scanCancelRequested || it is CancellationException) {
+                    binding.txtInstalledSummary.setText(R.string.scan_cancelled_title)
+                    showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                } else {
+                    binding.txtInstalledSummary.setText(R.string.installed_scan_failed)
+                    showSmartResult(R.string.smart_scan_failed_title, R.string.installed_scan_failed, getString(R.string.smart_scan_failed_detail), R.color.status_warn)
+                }
             }
         }
     }
@@ -947,10 +1060,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun scanSelectedFile() {
         val uri = selectedUri ?: return
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        binding.btnStopScan.isEnabled = true
         binding.btnScanFile.isEnabled = false
         binding.btnChooseFile.isEnabled = false
         binding.txtClassification.setText(R.string.scanning)
         showSmartScan(R.string.file_scan_running_title, R.string.file_scan_running_detail)
+        updateScanProgress(1, R.string.file_scan_running_title, binding.txtSelectedFile.text.toString(), uri.toString())
         binding.btnSmartScan.isEnabled = false
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
@@ -959,29 +1077,46 @@ class MainActivity : AppCompatActivity() {
         binding.resultActions.visibility = View.GONE
 
         lifecycleScope.launch {
-            val outcome = withContext(Dispatchers.IO) { runCatching { scanner.scan(uri) } }
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    scanner.scan(uri) { progress ->
+                        if (scanCancelRequested) throw CancellationException("scan cancelled")
+                        runOnUiThread {
+                            val stage = when (progress.stage) {
+                                FileScanStage.HASHING -> R.string.scan_stage_hashing
+                                FileScanStage.REPUTATION -> R.string.scan_stage_reputation
+                                FileScanStage.APK_ANALYSIS -> R.string.scan_stage_apk_analysis
+                                FileScanStage.FINALIZING -> R.string.scan_stage_finishing
+                            }
+                            updateScanProgress(progress.percent, stage, progress.fileName, uri.toString())
+                        }
+                    }
+                }
+            }
+            activeScan = false
             binding.btnScanFile.isEnabled = true
             binding.btnChooseFile.isEnabled = true
             binding.btnSmartScan.isEnabled = true
+            binding.btnStopScan.isEnabled = false
             outcome.onSuccess { result ->
+                updateScanProgress(100, R.string.scan_stage_finishing, result.fileName, uri.toString())
                 lastScanResult = result
-                withContext(Dispatchers.IO) { recordStore.recordScan(result) }
+                recordStore.recordScan(result)
                 renderResult(result)
+                renderSecurityManagement()
                 renderSmartFileResult(result)
                 renderProtectionPosture()
-                renderSecurityManagement()
             }.onFailure {
-                lastScanResult = null
                 hideSmartScan()
-                binding.txtClassification.setText(R.string.scan_failed)
-                binding.txtReason.setText(R.string.file_access_error)
-                showSmartResult(
-                    R.string.smart_scan_failed_title,
-                    R.string.scan_failed,
-                    getString(R.string.file_access_error),
-                    R.color.status_warn
-                )
-                renderProtectionPosture()
+                if (scanCancelRequested || it is CancellationException) {
+                    binding.txtClassification.setText(R.string.scan_cancelled_title)
+                    binding.txtReason.setText(R.string.scan_cancelled_detail)
+                    showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                } else {
+                    binding.txtClassification.setText(R.string.scan_failed)
+                    binding.txtReason.setText(R.string.file_access_error)
+                    showSmartResult(R.string.smart_scan_failed_title, R.string.scan_failed, getString(R.string.file_access_error), R.color.status_warn)
+                }
             }
         }
     }
@@ -1527,16 +1662,39 @@ class MainActivity : AppCompatActivity() {
                 detailRes = R.string.dashboard_protected_detail
             }
         }
-        binding.txtSecurityScore.setTextColor(getColor(colorRes))
+        binding.txtSecurityScore.setTextColor(getColor(android.R.color.white))
+        binding.homeHeroCard.setCardBackgroundColor(
+            getColor(
+                when (colorRes) {
+                    R.color.status_danger -> R.color.status_danger
+                    R.color.status_warn -> R.color.status_warn
+                    else -> R.color.brand_primary
+                }
+            )
+        )
         binding.txtDashboardHeadline.setText(headlineRes)
         binding.txtDashboardSubtitle.setText(detailRes)
     }
 
     private fun showSmartScan(titleRes: Int, detailRes: Int) {
+        showPage(PAGE_SCAN)
         binding.smartResultCard.visibility = View.GONE
         binding.smartScanCard.visibility = View.VISIBLE
         binding.txtSmartScanState.setText(titleRes)
         binding.txtSmartScanDetail.setText(detailRes)
+        binding.smartScanProgress.isIndeterminate = false
+        binding.btnStopScan.visibility = if (activeScan) View.VISIBLE else View.GONE
+    }
+
+    private fun updateScanProgress(percent: Int, titleRes: Int, target: String, scope: String) {
+        val safePercent = percent.coerceIn(0, 100)
+        binding.smartScanProgress.isIndeterminate = false
+        binding.smartScanProgress.progress = safePercent
+        binding.txtSmartScanPercent.text = getString(R.string.scan_progress_percent, NumberFormat.getIntegerInstance().format(safePercent))
+        binding.txtSmartScanState.setText(titleRes)
+        binding.txtSmartScanTarget.text = target
+        binding.txtSmartScanScope.text = scope
+        binding.btnStopScan.visibility = if (activeScan) View.VISIBLE else View.GONE
     }
 
     private fun hideSmartScan() {
@@ -1638,5 +1796,9 @@ class MainActivity : AppCompatActivity() {
         private const val MAX_VISIBLE_APP_RESULTS = 20
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20
+        private const val PAGE_HOME = 0
+        private const val PAGE_SCAN = 1
+        private const val PAGE_PROTECTION = 2
+        private const val PAGE_SETTINGS = 3
     }
 }

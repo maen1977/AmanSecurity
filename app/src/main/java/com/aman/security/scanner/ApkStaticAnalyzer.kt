@@ -58,7 +58,7 @@ class ApkStaticAnalyzer(
     fun analyzeInstalledFile(file: File, expectedSha256: String): ApkStaticAnalysis {
         return try {
             if (!file.isFile || file.length() > MAX_APK_BYTES) return ApkStaticAnalysis(ApkAnalysisState.LIMIT_EXCEEDED)
-            val actual = FileInputStream(file).use(Sha256::fromStream)
+            val actual = FileInputStream(file).use { Sha256.fromStream(it) }
             if (!actual.equals(expectedSha256, ignoreCase = true)) return ApkStaticAnalysis(ApkAnalysisState.SOURCE_CHANGED)
             analyzeFile(file, actual)
         } catch (_: SizeLimitExceeded) {

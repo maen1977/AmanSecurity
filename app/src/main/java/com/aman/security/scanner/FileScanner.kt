@@ -6,19 +6,33 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
 
+enum class FileScanStage { HASHING, REPUTATION, APK_ANALYSIS, FINALIZING }
+
+data class FileScanProgress(val percent: Int, val stage: FileScanStage, val fileName: String)
+
 class FileScanner(
     private val resolver: ContentResolver,
     private val database: SignatureDatabase,
     private val apkStaticAnalyzer: ApkStaticAnalyzer? = null
 ) {
-    fun scan(uri: Uri): ScanResult {
+    fun scan(uri: Uri, onProgress: ((FileScanProgress) -> Unit)? = null): ScanResult {
         val meta = queryMetadata(uri)
-        val sha256 = resolver.openInputStream(uri)?.use(Sha256::fromStream)
-            ?: throw IllegalStateException()
+        onProgress?.invoke(FileScanProgress(2, FileScanStage.HASHING, meta.name))
+        val sha256 = resolver.openInputStream(uri)?.use { input ->
+            Sha256.fromStream(input) { bytesRead ->
+                val hashingPercent = if (meta.size > 0L) {
+                    (2 + ((bytesRead.coerceAtMost(meta.size) * 66L) / meta.size).toInt()).coerceIn(2, 68)
+                } else 35
+                onProgress?.invoke(FileScanProgress(hashingPercent, FileScanStage.HASHING, meta.name))
+            }
+        } ?: throw IllegalStateException()
 
+        onProgress?.invoke(FileScanProgress(72, FileScanStage.REPUTATION, meta.name))
         val signature = database.find(sha256)
         val looksLikeApk = meta.name.endsWith(".apk", ignoreCase = true)
+        if (looksLikeApk) onProgress?.invoke(FileScanProgress(78, FileScanStage.APK_ANALYSIS, meta.name))
         val apkAnalysis = if (looksLikeApk) apkStaticAnalyzer?.analyze(uri, sha256) else null
+        onProgress?.invoke(FileScanProgress(92, FileScanStage.FINALIZING, meta.name))
         val identityIndicator = apkAnalysis?.identityIndicator
         val doubleExtension = hasMisleadingDoubleExtension(meta.name)
 
@@ -78,6 +92,7 @@ class FileScanner(
             }
         }
 
+        onProgress?.invoke(FileScanProgress(100, FileScanStage.FINALIZING, meta.name))
         return ScanResult(
             fileName = meta.name,
             sizeBytes = meta.size,
