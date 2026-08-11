@@ -349,4 +349,59 @@
     <string name="url_result_dashboard_title">Link scan complete</string>
     <string name="url_result_dashboard_summary">Web risk result: %1$s</string>
     <string name="quick_web_focus_hint">Paste or type the link in Web protection below.</string>
+
+    <string name="smart_scan_disclosure_title">Smart Scan privacy</string>
+    <string name="smart_scan_disclosure_body">Smart Scan analyzes installed user apps locally, reviews device security settings, checks the active network security state, inventories granted privacy-sensitive permissions, and scans your protected folder when configured. App inventory, files, and permission data are not uploaded.</string>
+    <string name="smart_scan_full_detail">Checking installed apps, malware indicators, device hardening, network security, privacy exposure, and the configured protected folder.</string>
+    <string name="smart_scan_failed_full_detail">Aman could not complete every Smart Scan layer. Review protection permissions and try again.</string>
+    <string name="smart_scan_audit_summary">Security audit: %1$s high-priority findings • %2$s recommendations • %3$s apps with broad sensitive-permission access</string>
+    <string name="smart_scan_folder_summary">Protected folder: %1$s changed files scanned • %2$s alerts</string>
+    <string name="smart_scan_folder_not_configured">Protected folder: not configured; app, device, network, and privacy layers were still checked.</string>
+
+    <string name="security_audit_title">Security &amp; Privacy Audit</string>
+    <string name="security_audit_body">A Kaspersky-style protection center for Android hardening: screen lock, debugging exposure, root indicators, network validation, Private DNS state, and privacy-sensitive app permissions.</string>
+    <string name="security_audit_status_checking">Checking device protection…</string>
+    <string name="security_audit_status_good">Core device settings look good</string>
+    <string name="security_audit_status_review">Security recommendations are available</string>
+    <string name="security_audit_status_action">Security action is recommended</string>
+    <string name="security_audit_counts_placeholder">High-priority findings and recommendations will appear here.</string>
+    <string name="security_audit_counts">%1$s high-priority findings • %2$s recommendations</string>
+    <string name="security_audit_device_title">Device hardening</string>
+    <string name="security_audit_network_title">Network protection</string>
+    <string name="security_audit_privacy_title">Privacy permissions</string>
+    <string name="security_audit_waiting">Waiting for audit results.</string>
+    <string name="security_audit_device_summary">Screen lock: %1$s • root indicators: %2$s • USB debugging: %3$s</string>
+    <string name="security_audit_network_summary">Connection: %1$s • internet validation: %2$s • Private DNS: %3$s</string>
+    <string name="security_audit_privacy_summary">%1$s user apps reviewed • %2$s have sensitive permissions • %3$s have broad sensitive-permission access</string>
+    <string name="security_audit_run">Run security audit</string>
+    <string name="security_audit_security_settings">Security settings</string>
+    <string name="security_audit_privacy_settings">Privacy settings</string>
+    <string name="security_audit_network_settings">Network settings</string>
+    <string name="security_audit_disclaimer">Root detection is heuristic and may vary by device. Private DNS and VPN are optional privacy layers; their absence alone is not classified as malware or a critical threat.</string>
+    <string name="security_audit_enabled">enabled</string>
+    <string name="security_audit_disabled">disabled</string>
+    <string name="security_audit_active">active</string>
+    <string name="security_audit_optional">optional / inactive</string>
+    <string name="security_audit_validated">validated</string>
+    <string name="security_audit_unvalidated">not validated</string>
+    <string name="network_transport_none">offline</string>
+    <string name="network_transport_wifi">Wi‑Fi</string>
+    <string name="network_transport_cellular">mobile</string>
+    <string name="network_transport_ethernet">Ethernet</string>
+    <string name="network_transport_vpn">VPN</string>
+    <string name="network_transport_other">other</string>
+
+
+    <string name="privacy_control_open">Permissions Control</string>
+    <string name="privacy_control_title">Permissions Control</string>
+    <string name="privacy_control_body">Review user-installed apps that currently hold privacy-sensitive permissions. Aman does not revoke permissions automatically; use Android app settings to make the final decision.</string>
+    <string name="privacy_control_loading">Reviewing app permissions…</string>
+    <string name="privacy_control_refresh">Refresh permission inventory</string>
+    <string name="privacy_control_none">No user app currently has the sensitive permissions tracked by Aman.</string>
+    <string name="privacy_control_summary">%1$s apps currently have one or more sensitive permissions.</string>
+    <string name="privacy_control_permission_count">Granted sensitive permissions: %1$s</string>
+    <string name="privacy_control_manage">Manage app permissions</string>
+    <string name="privacy_control_more">%1$s additional apps are not shown in this view.</string>
+    <string name="privacy_control_note">Permission presence is not evidence of malware. Review whether each permission is appropriate for the app’s purpose.</string>
+
 </resources>

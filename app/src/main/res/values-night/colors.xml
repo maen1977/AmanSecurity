@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand_primary">#67E8F9</color>
-    <color name="brand_primary_dark">#22D3EE</color>
-    <color name="brand_secondary">#5EEAD4</color>
-    <color name="surface_soft">#0F172A</color>
-    <color name="text_primary">#F8FAFC</color>
-    <color name="text_secondary">#CBD5E1</color>
+    <color name="brand_primary">#5EEAD4</color>
+    <color name="brand_primary_dark">#2DD4BF</color>
+    <color name="brand_secondary">#67E8F9</color>
+    <color name="surface_soft">#0B1919</color>
+    <color name="text_primary">#F1FFFD</color>
+    <color name="text_secondary">#B8CFCC</color>
     <color name="status_ok">#4ADE80</color>
     <color name="status_warn">#FBBF24</color>
     <color name="status_danger">#F87171</color>
-    <color name="surface_card">#172033</color>
-    <color name="dashboard_ring">#22D3EE</color>
-    <color name="dashboard_soft">#0E2D38</color>
+    <color name="surface_card">#132525</color>
+    <color name="dashboard_ring">#2DD4BF</color>
+    <color name="dashboard_soft">#0D3230</color>
 </resources>

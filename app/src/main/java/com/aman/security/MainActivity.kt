@@ -25,6 +25,7 @@ import com.aman.security.autonomous.AutonomousThreatScheduler
 import com.aman.security.autonomous.AutonomousThreatUpdater
 import com.aman.security.autonomous.AutonomousUpdateResult
 import com.aman.security.protection.ProtectedFolderScanner
+import com.aman.security.protection.ProtectedFolderScanSummary
 import com.aman.security.protection.ProtectionEvent
 import com.aman.security.protection.ProtectionEventStore
 import com.aman.security.protection.ProtectionEventType
@@ -55,6 +56,11 @@ import com.aman.security.scanner.UrlRiskSignal
 import com.aman.security.scanner.UrlScanResult
 import com.aman.security.scanner.UrlScanner
 import com.aman.security.security.AppIntegrityInspector
+import com.aman.security.security.DeviceSecurityAuditor
+import com.aman.security.security.NetworkSecurityAuditor
+import com.aman.security.security.NetworkTransportType
+import com.aman.security.security.PrivacyPermissionAuditor
+import com.aman.security.security.SecurityAuditSummary
 import com.aman.security.security.AppIntegrityStatus
 import com.aman.security.security.ProtectionPostureEvaluator
 import com.aman.security.security.ProtectionPostureInput
@@ -89,6 +95,9 @@ class MainActivity : AppCompatActivity() {
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var lastInstalledSummary: InstalledAppsScanSummary? = null
+    private var lastSecurityAudit: SecurityAuditSummary? = null
+    private var lastSecurityAuditAt: Long = 0L
+    private var securityAuditRunning: Boolean = false
     private var pendingRestoreId: String? = null
 
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -169,7 +178,7 @@ class MainActivity : AppCompatActivity() {
             protectionEventStore.clear()
             renderProtectionStatus()
         }
-        binding.btnSmartScan.setOnClickListener { requestInstalledAppsScan() }
+        binding.btnSmartScan.setOnClickListener { requestSmartScan() }
         binding.btnQuickApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnQuickFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnQuickWeb.setOnClickListener {
@@ -179,6 +188,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnQuickProtection.setOnClickListener { scrollToSection(binding.protectionSection) }
         binding.btnQuickQuarantine.setOnClickListener { scrollToSection(binding.quarantineSection) }
         binding.btnQuickUpdate.setOnClickListener { updateThreatDatabase() }
+        binding.btnRunSecurityAudit.setOnClickListener { runStandaloneSecurityAudit() }
+        binding.btnPrivacyControl.setOnClickListener { startActivity(Intent(this, PrivacyControlActivity::class.java)) }
+        binding.btnOpenSecuritySettings.setOnClickListener { openSecuritySettings() }
+        binding.btnOpenPrivacySettings.setOnClickListener { openPrivacySettings() }
+        binding.btnOpenNetworkSettings.setOnClickListener { openNetworkSettings() }
+        runStandaloneSecurityAudit()
         handleIncomingIntent(intent)
     }
 
@@ -189,7 +204,14 @@ class MainActivity : AppCompatActivity() {
             renderDatabaseInfo()
         }
         if (::protectionPreferences.isInitialized) renderProtectionStatus()
-        if (::binding.isInitialized) renderWebGuardStatus()
+        if (::binding.isInitialized) {
+            renderWebGuardStatus()
+            if (lastSecurityAudit == null || System.currentTimeMillis() - lastSecurityAuditAt > SECURITY_AUDIT_REFRESH_MS) {
+                runStandaloneSecurityAudit()
+            } else {
+                renderSecurityAudit()
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -631,6 +653,136 @@ class MainActivity : AppCompatActivity() {
         textSize = 12f
         val padding = (6 * resources.displayMetrics.density).toInt()
         setPadding(0, padding, 0, padding)
+    }
+
+    private fun requestSmartScan() {
+        val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
+        if (preferences.getInt(INSTALLED_SCAN_DISCLOSURE_KEY, 0) >= INSTALLED_SCAN_DISCLOSURE_VERSION) {
+            runSmartScan()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.smart_scan_disclosure_title)
+            .setMessage(R.string.smart_scan_disclosure_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.continue_scan) { _, _ ->
+                preferences.edit()
+                    .putInt(INSTALLED_SCAN_DISCLOSURE_KEY, INSTALLED_SCAN_DISCLOSURE_VERSION)
+                    .apply()
+                runSmartScan()
+            }
+            .show()
+    }
+
+    private data class SmartScanBundle(
+        val installedApps: InstalledAppsScanSummary,
+        val securityAudit: SecurityAuditSummary,
+        val protectedFolder: ProtectedFolderScanSummary?
+    )
+
+    private fun runSmartScan() {
+        binding.btnSmartScan.isEnabled = false
+        binding.btnScanInstalledApps.isEnabled = false
+        showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_full_detail)
+
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    val installed = installedAppScanner.scanUserApps()
+                    val audit = SecurityAuditSummary(
+                        device = DeviceSecurityAuditor(applicationContext).audit(),
+                        network = NetworkSecurityAuditor(applicationContext).audit(),
+                        privacy = PrivacyPermissionAuditor(applicationContext).audit()
+                    )
+                    val folder = protectionPreferences.protectedTreeUri?.let { treeUri ->
+                        ProtectedFolderScanner(
+                            resolver = contentResolver,
+                            fileScanner = scanner,
+                            preferences = protectionPreferences,
+                            eventStore = protectionEventStore,
+                            recordStore = recordStore,
+                            notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                        ).scan(treeUri)
+                    }
+                    SmartScanBundle(installed, audit, folder)
+                }
+            }
+            binding.btnSmartScan.isEnabled = true
+            binding.btnScanInstalledApps.isEnabled = true
+            outcome.onSuccess { bundle ->
+                lastInstalledSummary = bundle.installedApps
+                lastSecurityAudit = bundle.securityAudit
+                lastSecurityAuditAt = System.currentTimeMillis()
+                renderInstalledApps(bundle.installedApps)
+                renderSecurityAudit()
+                renderProtectionStatus()
+                renderSmartFullResult(bundle)
+                renderProtectionPosture()
+            }.onFailure {
+                hideSmartScan()
+                showSmartResult(
+                    R.string.smart_scan_failed_title,
+                    R.string.smart_scan_failed_title,
+                    getString(R.string.smart_scan_failed_full_detail),
+                    R.color.status_warn
+                )
+            }
+        }
+    }
+
+    private fun renderSmartFullResult(bundle: SmartScanBundle) {
+        val apps = bundle.installedApps
+        val audit = bundle.securityAudit
+        val folder = bundle.protectedFolder
+        val knownThreats = apps.knownThreats + (folder?.knownThreats ?: 0)
+        val highRisk = apps.highRiskApps + (folder?.highRisk ?: 0)
+        val warnings = audit.warningFindings
+        val highs = audit.highFindings
+        val titleRes = when {
+            knownThreats > 0 || highRisk > 0 || highs > 0 -> R.string.smart_scan_complete_danger
+            apps.reviewApps > 0 || warnings > 0 -> R.string.smart_scan_complete_attention
+            else -> R.string.smart_scan_complete_safe
+        }
+        val colorRes = when {
+            knownThreats > 0 || highRisk > 0 || highs > 0 -> R.color.status_danger
+            apps.reviewApps > 0 || warnings > 0 -> R.color.status_warn
+            else -> R.color.status_ok
+        }
+        val formatter = NumberFormat.getIntegerInstance()
+        val details = buildString {
+            append(getString(
+                R.string.smart_scan_result_summary,
+                formatter.format(apps.scannedApps),
+                formatter.format(apps.reviewApps),
+                formatter.format(apps.highRiskApps),
+                formatter.format(apps.knownThreats)
+            ))
+            append('\n')
+            append(getString(
+                R.string.smart_scan_audit_summary,
+                formatter.format(highs),
+                formatter.format(warnings),
+                formatter.format(audit.privacy.elevatedPermissionApps)
+            ))
+            if (folder != null) {
+                append('\n')
+                append(getString(
+                    R.string.smart_scan_folder_summary,
+                    formatter.format(folder.scannedFiles),
+                    formatter.format(folder.alerts)
+                ))
+            } else {
+                append('\n')
+                append(getString(R.string.smart_scan_folder_not_configured))
+            }
+        }
+        val summaryRes = if (knownThreats > 0 || highRisk > 0 || highs > 0 || apps.reviewApps > 0 || warnings > 0) {
+            R.string.smart_scan_result_review_detail
+        } else {
+            R.string.smart_scan_result_safe_detail
+        }
+        showSmartResult(titleRes, summaryRes, details, colorRes)
     }
 
     private fun requestInstalledAppsScan() {
@@ -1240,17 +1392,114 @@ class MainActivity : AppCompatActivity() {
         DateFormat.SHORT
     ).format(Date(timestamp))
 
+    private fun runStandaloneSecurityAudit() {
+        if (securityAuditRunning) return
+        securityAuditRunning = true
+        binding.btnRunSecurityAudit.isEnabled = false
+        lifecycleScope.launch {
+            val audit = withContext(Dispatchers.IO) {
+                SecurityAuditSummary(
+                    device = DeviceSecurityAuditor(applicationContext).audit(),
+                    network = NetworkSecurityAuditor(applicationContext).audit(),
+                    privacy = PrivacyPermissionAuditor(applicationContext).audit()
+                )
+            }
+            lastSecurityAudit = audit
+            lastSecurityAuditAt = System.currentTimeMillis()
+            securityAuditRunning = false
+            binding.btnRunSecurityAudit.isEnabled = true
+            renderSecurityAudit()
+            renderProtectionPosture()
+        }
+    }
+
+    private fun renderSecurityAudit() {
+        val audit = lastSecurityAudit ?: return
+        val device = audit.device
+        binding.txtDeviceAudit.text = getString(
+            R.string.security_audit_device_summary,
+            getString(if (device.screenLockSecure) R.string.security_audit_enabled else R.string.security_audit_disabled),
+            NumberFormat.getIntegerInstance().format(device.rootSignals),
+            getString(if (device.adbEnabled) R.string.security_audit_enabled else R.string.security_audit_disabled)
+        )
+
+        val network = audit.network
+        val transport = getString(when (network.transport) {
+            NetworkTransportType.NONE -> R.string.network_transport_none
+            NetworkTransportType.WIFI -> R.string.network_transport_wifi
+            NetworkTransportType.CELLULAR -> R.string.network_transport_cellular
+            NetworkTransportType.ETHERNET -> R.string.network_transport_ethernet
+            NetworkTransportType.VPN -> R.string.network_transport_vpn
+            NetworkTransportType.OTHER -> R.string.network_transport_other
+        })
+        binding.txtNetworkAudit.text = getString(
+            R.string.security_audit_network_summary,
+            transport,
+            getString(if (network.validated) R.string.security_audit_validated else R.string.security_audit_unvalidated),
+            getString(if (network.privateDnsActive) R.string.security_audit_active else R.string.security_audit_optional)
+        )
+
+        val privacy = audit.privacy
+        binding.txtPrivacyAudit.text = getString(
+            R.string.security_audit_privacy_summary,
+            NumberFormat.getIntegerInstance().format(privacy.scannedApps),
+            NumberFormat.getIntegerInstance().format(privacy.appsWithSensitivePermissions),
+            NumberFormat.getIntegerInstance().format(privacy.elevatedPermissionApps)
+        )
+        val statusRes = when {
+            audit.highFindings > 0 -> R.string.security_audit_status_action
+            audit.warningFindings > 0 -> R.string.security_audit_status_review
+            else -> R.string.security_audit_status_good
+        }
+        val colorRes = when {
+            audit.highFindings > 0 -> R.color.status_danger
+            audit.warningFindings > 0 -> R.color.status_warn
+            else -> R.color.status_ok
+        }
+        binding.txtSecurityAuditStatus.setText(statusRes)
+        binding.txtSecurityAuditStatus.setTextColor(getColor(colorRes))
+        binding.txtSecurityAuditCounts.text = getString(
+            R.string.security_audit_counts,
+            NumberFormat.getIntegerInstance().format(audit.highFindings),
+            NumberFormat.getIntegerInstance().format(audit.warningFindings)
+        )
+    }
+
+    private fun openSecuritySettings() {
+        runCatching { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun openPrivacySettings() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Intent(Settings.ACTION_PRIVACY_SETTINGS)
+        } else {
+            Intent(Settings.ACTION_SETTINGS)
+        }
+        runCatching { startActivity(intent) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun openNetworkSettings() {
+        runCatching { startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
     private fun renderSmartDashboard(baseScore: Int, level: ProtectionPostureLevel) {
         val installed = lastInstalledSummary
         val fileClassification = lastScanResult?.classification
         val hasKnownThreat = (installed?.knownThreats ?: 0) > 0 || fileClassification == ScanClassification.KNOWN_THREAT
         val hasHighRisk = (installed?.highRiskApps ?: 0) > 0 || fileClassification == ScanClassification.SUSPICIOUS
         val hasReview = (installed?.reviewApps ?: 0) > 0 || fileClassification == ScanClassification.UNKNOWN_APK
+        val audit = lastSecurityAudit
+        val auditHigh = (audit?.highFindings ?: 0) > 0
+        val auditWarnings = (audit?.warningFindings ?: 0) > 0
+        val auditedBaseScore = (baseScore - (audit?.posturePenalty ?: 0)).coerceAtLeast(0)
         val adjustedScore = when {
-            hasKnownThreat -> minOf(baseScore, 35)
-            hasHighRisk -> minOf(baseScore, 60)
-            hasReview -> minOf(baseScore, 82)
-            else -> baseScore
+            hasKnownThreat -> minOf(auditedBaseScore, 35)
+            hasHighRisk || auditHigh -> minOf(auditedBaseScore, 60)
+            hasReview || auditWarnings -> minOf(auditedBaseScore, 82)
+            else -> auditedBaseScore
         }
         binding.txtSecurityScore.text = NumberFormat.getIntegerInstance().format(adjustedScore)
         val colorRes: Int
@@ -1262,7 +1511,7 @@ class MainActivity : AppCompatActivity() {
                 headlineRes = R.string.dashboard_action_required
                 detailRes = R.string.dashboard_action_detail
             }
-            hasHighRisk || hasReview || level == ProtectionPostureLevel.ATTENTION -> {
+            hasHighRisk || hasReview || auditHigh || auditWarnings || level == ProtectionPostureLevel.ATTENTION -> {
                 colorRes = R.color.status_warn
                 headlineRes = R.string.dashboard_attention
                 detailRes = R.string.dashboard_attention_detail
@@ -1385,6 +1634,7 @@ class MainActivity : AppCompatActivity() {
         private const val PROTECTION_DISCLOSURE_KEY = "background_protection_disclosure_version"
         private const val PROTECTION_DISCLOSURE_VERSION = 1
         private const val MAX_VISIBLE_PROTECTION_EVENTS = 8
+        private const val SECURITY_AUDIT_REFRESH_MS = 60_000L
         private const val MAX_VISIBLE_APP_RESULTS = 20
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20

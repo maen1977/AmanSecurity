@@ -9,7 +9,8 @@ required_layout=[
  'smartScanCard','smartScanProgress','smartResultCard','txtSmartResultTitle',
  'txtSmartResultSummary','txtSmartResultDetails','btnQuickApps','btnQuickFile',
  'btnQuickWeb','btnQuickProtection','btnQuickQuarantine','btnQuickUpdate',
- 'installedAppsSection','protectionSection','webProtectionSection','quarantineSection'
+ 'installedAppsSection','protectionSection','webProtectionSection','quarantineSection',
+ 'securityAuditSection','txtSecurityAuditStatus','txtDeviceAudit','txtNetworkAudit','txtPrivacyAudit','btnRunSecurityAudit','btnPrivacyControl'
 ]
 missing=[x for x in required_layout if f'@+id/{x}' not in layout]
 checks={
@@ -17,10 +18,12 @@ checks={
  'scan_state':'showSmartScan' in activity and 'renderSmartInstalledResult' in activity,
  'results_state':'renderSmartFileResult' in activity and 'showSmartResult' in activity,
  'quick_actions':'btnQuickApps.setOnClickListener' in activity and 'btnQuickQuarantine.setOnClickListener' in activity,
+ 'full_smart_scan':'requestSmartScan' in activity and 'renderSmartFullResult' in activity and 'SecurityAuditSummary' in activity,
+ 'security_audit':'runStandaloneSecurityAudit' in activity and 'renderSecurityAudit' in activity and 'PrivacyControlActivity::class.java' in activity,
  'auto_build':'push:' in workflow and 'branches: [ "main" ]' in workflow and 'workflow_dispatch:' in workflow,
  'no_schedule':'schedule:' not in workflow,
 }
 failed=[k for k,v in checks.items() if not v]
 if missing or failed:
     raise SystemExit(f'SMART_UI_GATE_FAILED missing={missing} failed={failed}')
-print('SMART_UI_GATE_OK dashboard=1 scan_state=1 results=1 protection_center=1 quick_actions=6 auto_build=1 schedule=0')
+print('SMART_UI_GATE_OK dashboard=1 scan_state=1 results=1 protection_center=1 quick_actions=6 smart_scan_layers=5 security_audit=1 auto_build=1 schedule=0')

@@ -18,8 +18,14 @@ def main():
  file_rows=rows(DB/'signatures.csv')
  if not any('TEST_SIGNATURE' in r for r in file_rows): raise SystemExit('THREAT_DB_GATE_FAILED canary')
  key_files=sorted({*ROOT.rglob('*.pem'),*ROOT.rglob('*.key')})
- if key_files:
-  rel=','.join(str(x.relative_to(ROOT)) for x in key_files)
-  raise SystemExit(f'THREAT_DB_GATE_FAILED key_material paths={rel}')
+ private_material=[]
+ for path in key_files:
+  raw=path.read_text(errors='ignore').upper()
+  # Public verification keys are safe and required in the APK. Reject private/secret key material only.
+  if path.suffix.lower()=='.key' or 'PRIVATE KEY' in raw or 'BEGIN OPENSSH PRIVATE KEY' in raw:
+   private_material.append(path)
+ if private_material:
+  rel=','.join(str(x.relative_to(ROOT)) for x in private_material)
+  raise SystemExit(f'THREAT_DB_GATE_FAILED private_key_material paths={rel}')
  print(f"THREAT_DB_GATE_OK serial={m['serial']} version={m['version']} file_entries={m['entries']} url_entries={m['urlEntries']} apk_identity_entries={m['apkIdentityEntries']} detection_entries={m['detectionEntries']} bundled_hash_integrity=1")
 if __name__=='__main__': main()

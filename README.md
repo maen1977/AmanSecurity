@@ -12,6 +12,12 @@ The updater downloads only bounded text/JSON/HTML indicator data from fixed HTTP
 
 See `docs/PRODUCTION_ANTIVIRUS_2_7.md` and `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md`.
 
+## Protection Center upgrade
+
+The main dashboard now includes a multi-layer Smart Scan and a local Security & Privacy Audit. Smart Scan combines deep user-app analysis, device hardening checks, network validation/Private DNS visibility, privacy-sensitive permission review, and the selected protected-folder scan. Permissions Control lists user apps with granted sensitive permissions and links directly to Android app settings for user-controlled remediation.
+
+Aman intentionally does not claim a VPN, cloud password vault, data-breach account service, call-filter backend, or remote anti-theft service unless the required product infrastructure is actually present. These are separate service architectures, not UI switches. See `docs/PROTECTION_CENTER_2_7.md`.
+
 ## Development and release checks
 
 ```bash

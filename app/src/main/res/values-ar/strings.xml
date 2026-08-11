@@ -349,4 +349,59 @@
     <string name="url_result_dashboard_title">اكتمل فحص الرابط</string>
     <string name="url_result_dashboard_summary">نتيجة مخاطر الويب: %1$s</string>
     <string name="quick_web_focus_hint">الصق الرابط أو اكتبه في قسم حماية الويب أدناه.</string>
+
+    <string name="smart_scan_disclosure_title">خصوصية الفحص الذكي</string>
+    <string name="smart_scan_disclosure_body">يحلل الفحص الذكي تطبيقات المستخدم المثبتة محليًا، ويراجع إعدادات أمان الجهاز، ويفحص حالة أمان الشبكة النشطة، ويجرد الصلاحيات الحساسة للخصوصية، ويفحص المجلد المحمي عند ضبطه. لا يتم رفع قائمة التطبيقات أو الملفات أو بيانات الصلاحيات.</string>
+    <string name="smart_scan_full_detail">يتم فحص التطبيقات المثبتة ومؤشرات البرمجيات الضارة وتقوية الجهاز وأمان الشبكة والخصوصية والمجلد المحمي المضبوط.</string>
+    <string name="smart_scan_failed_full_detail">تعذر على أمان إكمال جميع طبقات الفحص الذكي. راجع صلاحيات الحماية ثم حاول مرة أخرى.</string>
+    <string name="smart_scan_audit_summary">تدقيق الأمان: %1$s نتائج عالية الأولوية • %2$s توصيات • %3$s تطبيقات ذات وصول واسع لصلاحيات حساسة</string>
+    <string name="smart_scan_folder_summary">المجلد المحمي: تم فحص %1$s ملفات متغيرة • %2$s تنبيهات</string>
+    <string name="smart_scan_folder_not_configured">المجلد المحمي: غير مضبوط؛ تم مع ذلك فحص التطبيقات والجهاز والشبكة والخصوصية.</string>
+
+    <string name="security_audit_title">تدقيق الأمان والخصوصية</string>
+    <string name="security_audit_body">مركز حماية متقدم على نمط برامج الحماية الاحترافية: قفل الشاشة، التعرض للتصحيح، مؤشرات الروت، صلاحية الشبكة، حالة نظام أسماء النطاقات الخاص، وصلاحيات التطبيقات الحساسة للخصوصية.</string>
+    <string name="security_audit_status_checking">جارٍ فحص حماية الجهاز…</string>
+    <string name="security_audit_status_good">إعدادات الأمان الأساسية بحالة جيدة</string>
+    <string name="security_audit_status_review">توجد توصيات أمنية للمراجعة</string>
+    <string name="security_audit_status_action">يوصى بإجراء أمني</string>
+    <string name="security_audit_counts_placeholder">ستظهر هنا النتائج عالية الأولوية والتوصيات.</string>
+    <string name="security_audit_counts">%1$s نتائج عالية الأولوية • %2$s توصيات</string>
+    <string name="security_audit_device_title">تقوية أمان الجهاز</string>
+    <string name="security_audit_network_title">حماية الشبكة</string>
+    <string name="security_audit_privacy_title">صلاحيات الخصوصية</string>
+    <string name="security_audit_waiting">بانتظار نتائج التدقيق.</string>
+    <string name="security_audit_device_summary">قفل الشاشة: %1$s • مؤشرات الروت: %2$s • تصحيح يو إس بي: %3$s</string>
+    <string name="security_audit_network_summary">الاتصال: %1$s • التحقق من الإنترنت: %2$s • نظام أسماء النطاقات الخاص: %3$s</string>
+    <string name="security_audit_privacy_summary">تمت مراجعة %1$s تطبيقات مستخدم • %2$s لديها صلاحيات حساسة • %3$s لديها وصول واسع لصلاحيات حساسة</string>
+    <string name="security_audit_run">تشغيل تدقيق الأمان</string>
+    <string name="security_audit_security_settings">إعدادات الأمان</string>
+    <string name="security_audit_privacy_settings">إعدادات الخصوصية</string>
+    <string name="security_audit_network_settings">إعدادات الشبكة</string>
+    <string name="security_audit_disclaimer">اكتشاف الروت استدلالي وقد يختلف حسب الجهاز. نظام أسماء النطاقات الخاص وVPN طبقات خصوصية اختيارية؛ غيابهما وحده لا يصنف كبرمجية ضارة أو تهديد حرج.</string>
+    <string name="security_audit_enabled">مفعّل</string>
+    <string name="security_audit_disabled">معطّل</string>
+    <string name="security_audit_active">نشط</string>
+    <string name="security_audit_optional">اختياري / غير نشط</string>
+    <string name="security_audit_validated">متحقق</string>
+    <string name="security_audit_unvalidated">غير متحقق</string>
+    <string name="network_transport_none">غير متصل</string>
+    <string name="network_transport_wifi">شبكة لاسلكية</string>
+    <string name="network_transport_cellular">بيانات الهاتف</string>
+    <string name="network_transport_ethernet">شبكة سلكية</string>
+    <string name="network_transport_vpn">شبكة خاصة افتراضية</string>
+    <string name="network_transport_other">أخرى</string>
+
+
+    <string name="privacy_control_open">التحكم في الصلاحيات</string>
+    <string name="privacy_control_title">التحكم في الصلاحيات</string>
+    <string name="privacy_control_body">راجع تطبيقات المستخدم التي تمتلك حاليًا صلاحيات حساسة للخصوصية. لا يسحب أمان الصلاحيات تلقائيًا؛ استخدم إعدادات التطبيق في أندرويد لاتخاذ القرار النهائي.</string>
+    <string name="privacy_control_loading">جارٍ مراجعة صلاحيات التطبيقات…</string>
+    <string name="privacy_control_refresh">تحديث قائمة الصلاحيات</string>
+    <string name="privacy_control_none">لا يوجد حاليًا تطبيق مستخدم يمتلك الصلاحيات الحساسة التي يتابعها أمان.</string>
+    <string name="privacy_control_summary">يوجد %1$s تطبيقات تمتلك حاليًا صلاحية حساسة واحدة أو أكثر.</string>
+    <string name="privacy_control_permission_count">الصلاحيات الحساسة الممنوحة: %1$s</string>
+    <string name="privacy_control_manage">إدارة صلاحيات التطبيق</string>
+    <string name="privacy_control_more">هناك %1$s تطبيقات إضافية غير معروضة في هذه الشاشة.</string>
+    <string name="privacy_control_note">وجود الصلاحية لا يعني أن التطبيق ضار. راجع ما إذا كانت كل صلاحية مناسبة لوظيفة التطبيق.</string>
+
 </resources>
