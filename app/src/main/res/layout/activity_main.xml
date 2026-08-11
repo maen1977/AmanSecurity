@@ -55,9 +55,9 @@
                     <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickFile" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_file" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal">
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickWeb" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_web" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickWeb" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_web_guard" />
                     <Space android:layout_width="10dp" android:layout_height="1dp" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickUpdate" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_update" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickUpdate" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_update_protection" />
                 </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">
@@ -170,7 +170,7 @@
                             <com.google.android.material.button.MaterialButton android:id="@+id/btnCheckProtectionNow" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/check_protected_folder_action" />
                         </LinearLayout>
                         <LinearLayout android:id="@+id/protectionEventsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="vertical" />
-                        <com.google.android.material.button.MaterialButton android:id="@+id/btnClearProtectionEvents" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="@string/clear_protection_events_action" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnClearProtectionEvents" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="@string/clear_protection_alerts_action" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -191,11 +191,11 @@
                         <TextView android:id="@+id/txtNetworkAudit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
                         <TextView android:id="@+id/txtPrivacyAudit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
                         <com.google.android.material.button.MaterialButton android:id="@+id/btnRunSecurityAudit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="@string/security_audit_run" />
-                        <com.google.android.material.button.MaterialButton android:id="@+id/btnPrivacyControl" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/privacy_control_action" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnPrivacyControl" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/privacy_control_open" />
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal">
-                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenSecuritySettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/open_security_settings" />
-                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenPrivacySettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/open_privacy_settings" />
-                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenNetworkSettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/open_network_settings" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenSecuritySettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/security_audit_security_settings" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenPrivacySettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/security_audit_privacy_settings" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnOpenNetworkSettings" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/security_audit_network_settings" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
