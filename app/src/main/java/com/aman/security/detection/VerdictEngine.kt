@@ -87,6 +87,26 @@ object VerdictEngine {
         if (highestConfidence == FindingConfidence.LOW) score = score.coerceAtMost(34)
         if (domains < 2) score = score.coerceAtMost(49)
 
+        // Permission/capability-derived static behavior and a local statistical model are review
+        // hints, not malware evidence on their own. Without at least one malware-specific source,
+        // keep the antivirus verdict LOW and surface permissions in Privacy Control instead.
+        val hasMalwareSpecificEvidence = normalized.any { finding ->
+            finding.source in setOf(
+                DetectionSource.FILE_HASH,
+                DetectionSource.SIGNER_IDENTITY,
+                DetectionSource.PACKAGE_IDENTITY,
+                DetectionSource.SIGNATURE_RULE,
+                DetectionSource.DEX,
+                DetectionSource.ZERO_DAY_HEURISTIC,
+                DetectionSource.NETWORK,
+                DetectionSource.REPUTATION,
+                DetectionSource.CLOUD_REPUTATION,
+                DetectionSource.IMPERSONATION,
+                DetectionSource.THREAT_GRAPH
+            )
+        }
+        if (!hasMalwareSpecificEvidence) score = score.coerceAtMost(19)
+
         if (allowlisted) score = score.coerceAtMost(19)
         score = score.coerceIn(0, 99)
 

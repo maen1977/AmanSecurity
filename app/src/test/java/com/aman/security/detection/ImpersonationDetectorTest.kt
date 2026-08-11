@@ -17,10 +17,21 @@ class ImpersonationDetectorTest {
     }
 
     @Test
-    fun unrelatedPackageUsingProtectedBrandLabelIsLowConfidenceSignal() {
+    fun unrelatedStorePackageUsingProtectedBrandLabelIsNotEnoughByItself() {
         val result = ImpersonationDetector.evaluate("com.example.update", "WhatsApp Security Update", listOf(profile))
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun sideloadedBrandLabelCanBeReviewedAsImpersonation() {
+        val result = ImpersonationDetector.evaluate(
+            "com.example.update",
+            "WhatsApp Security Update",
+            listOf(profile),
+            isSideloaded = true
+        )
         assertTrue(result.isNotEmpty())
-        assertEquals(FindingConfidence.LOW, result.first().confidence)
+        assertEquals(FindingConfidence.MEDIUM, result.first().confidence)
     }
 
     @Test
@@ -56,4 +67,17 @@ class ImpersonationDetectorTest {
         assertTrue(result.first().score < 55)
     }
 
+
+    @Test
+    fun facebookSiblingPackageDoesNotTriggerBrandImpersonation() {
+        val profiles = listOf(ProtectedBrandProfile("BRAND_FACEBOOK", "com.facebook.katana", listOf("facebook")))
+        val findings = ImpersonationDetector.evaluate(
+            packageName = "com.facebook.orca",
+            appLabel = "Messenger",
+            profiles = profiles,
+            signerSha256 = null,
+            isSideloaded = false
+        )
+        assertTrue(findings.isEmpty())
+    }
 }

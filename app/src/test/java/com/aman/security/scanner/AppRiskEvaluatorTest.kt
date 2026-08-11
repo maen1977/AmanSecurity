@@ -63,6 +63,20 @@ class AppRiskEvaluatorTest {
     }
 
     @Test
+    fun unknownInstallerSourceIsNotTreatedAsSideloading() {
+        val result = AppRiskEvaluator.evaluate(
+            AppRiskInput(
+                requestedPermissions = emptySet(),
+                hasAccessibilityService = false,
+                installSource = AppInstallSource.UNKNOWN
+            )
+        )
+        assertEquals(AppRiskLevel.LOW, result.level)
+        assertEquals(0, result.score)
+        assertTrue(AppRiskSignal.NON_STORE_INSTALL !in result.signals)
+    }
+
+    @Test
     fun knownThreatAlwaysWinsOverHeuristics() {
         val result = AppRiskEvaluator.evaluate(
             AppRiskInput(

@@ -7,7 +7,7 @@ import org.junit.Test
 /** Regression coverage for false positives seen on feature-rich legitimate apps. */
 class BenignCapabilityRegressionTest {
     @Test
-    fun stackedStaticCapabilitiesAloneCannotBecomeHighThreat() {
+    fun stackedCapabilitiesAndLocalModelStayLowWithoutMalwareSpecificEvidence() {
         val verdict = VerdictEngine.evaluate(
             listOf(
                 DetectionFinding("CHAT_PERMISSIONS", DetectionSource.MANIFEST, 26, FindingConfidence.MEDIUM, ThreatFamily.RISKWARE),
@@ -17,15 +17,15 @@ class BenignCapabilityRegressionTest {
             )
         )
 
-        assertTrue("single-domain benign capability stack reached ${verdict.level} (${verdict.score})", verdict.score < 55)
-        assertEquals(DetectionVerdictLevel.REVIEW, verdict.level)
+        assertTrue("benign capability stack reached ${verdict.level} (${verdict.score})", verdict.score < 20)
+        assertEquals(DetectionVerdictLevel.LOW, verdict.level)
     }
 
     @Test
-    fun independentCorroborationCanStillReachHigh() {
+    fun independentMalwareSpecificCorroborationCanStillReachHigh() {
         val verdict = VerdictEngine.evaluate(
             listOf(
-                DetectionFinding("STATIC_CHAIN", DetectionSource.ZERO_DAY_HEURISTIC, 32, FindingConfidence.HIGH, ThreatFamily.DROPPER),
+                DetectionFinding("ZERO_DAY_CHAIN", DetectionSource.ZERO_DAY_HEURISTIC, 32, FindingConfidence.HIGH, ThreatFamily.DROPPER),
                 DetectionFinding("IMPERSONATION", DetectionSource.IMPERSONATION, 28, FindingConfidence.HIGH, ThreatFamily.DROPPER)
             )
         )

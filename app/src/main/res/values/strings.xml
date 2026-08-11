@@ -59,7 +59,7 @@
     <string name="app_risk_medium">Capability review — not detected as malware</string>
     <string name="app_risk_high">Suspicious behavior — verification required</string>
     <string name="app_risk_known">Confirmed known threat</string>
-    <string name="risk_score_line">Indicator score: %1$s/100</string>
+    <string name="risk_score_line">Malware evidence score: %1$s/100</string>
     <string name="package_name_line">Package: %1$s</string>
     <string name="version_name_line">Version: %1$s</string>
     <string name="install_source_line">Install source: %1$s</string>
@@ -67,7 +67,7 @@
     <string name="source_local_file">Local file</string>
     <string name="source_downloaded_file">Downloaded file</string>
     <string name="source_other">Other source</string>
-    <string name="source_unknown">Unknown source</string>
+    <string name="source_unknown">Source not reported by Android</string>
     <string name="indicators_title">Indicators</string>
     <string name="indicator_accessibility">Declares an accessibility service</string>
     <string name="indicator_overlay">Can appear over other apps</string>
@@ -79,7 +79,7 @@
     <string name="indicator_camera">Requests camera access</string>
     <string name="indicator_location">Requests precise location</string>
     <string name="indicator_boot">Can start after device boot</string>
-    <string name="indicator_non_store">Installed outside a recognized app store or source could not be verified</string>
+    <string name="indicator_non_store">Installed from a local or downloaded package</string>
     <string name="apk_hash_line">Installed package SHA-256: %1$s</string>
     <string name="certificate_hash_line">Signing certificate SHA-256: %1$s</string>
     <string name="threat_reference_line">Threat reference: %1$s</string>

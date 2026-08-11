@@ -128,7 +128,7 @@ class InstalledAppScanner(
             appName,
             database.detectionRuleset.brands,
             signerSha256 = signerHash,
-            isSideloaded = source != AppInstallSource.STORE
+            isSideloaded = source == AppInstallSource.LOCAL_FILE || source == AppInstallSource.DOWNLOADED_FILE
         )
         findings += impersonationFindings
         if (impersonationFindings.isNotEmpty() && AppRiskSignal.NON_STORE_INSTALL in basic.signals) {
@@ -148,16 +148,15 @@ class InstalledAppScanner(
         findings += ThreatGraphEngine.correlate(findings, database.detectionRuleset.graphLinks)
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
 
-        // Permission breadth is a privacy/capability signal, not a malware verdict. Previously the
-        // raw permission score participated in maxOf(...), so legitimate apps with camera, mic,
-        // contacts, location, boot, etc. could be promoted to HIGH without independent threat
-        // evidence. Bound capability-only evidence and let the multi-engine verdict decide HIGH.
-        val capabilityReviewScore = basic.score.coerceAtMost(34)
-        val finalScore = maxOf(capabilityReviewScore, deepAnalysis?.riskScore ?: 0, verdict.score).coerceIn(0, 100)
+        // Malware detection and privacy/capability review are deliberately separate. Camera,
+        // microphone, contacts, boot, overlay, etc. belong in Permissions Control; they do not
+        // increase the antivirus verdict shown on the Scan page. The installed-app malware score
+        // is therefore the multi-engine verdict only.
+        val finalScore = verdict.score.coerceIn(0, 100)
         val finalLevel = when {
             verdict.level == DetectionVerdictLevel.KNOWN_THREAT -> AppRiskLevel.KNOWN_THREAT
             verdict.level == DetectionVerdictLevel.VERY_HIGH || verdict.level == DetectionVerdictLevel.HIGH -> AppRiskLevel.HIGH
-            finalScore >= 20 -> AppRiskLevel.MEDIUM
+            verdict.level == DetectionVerdictLevel.REVIEW -> AppRiskLevel.MEDIUM
             else -> AppRiskLevel.LOW
         }
         val threatReference = verdict.confirmedReference ?: legacyThreatReference

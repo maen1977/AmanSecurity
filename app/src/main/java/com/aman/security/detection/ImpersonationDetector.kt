@@ -33,16 +33,19 @@ object ImpersonationDetector {
             }
 
             val closePackage = editDistance(normalizedPackage, official) <= 3
-            val packageTokenHit = profile.tokens.any { token -> normalizedPackage.contains(token.lowercase()) }
             val labelTokenHit = normalizedLabel.isNotBlank() && profile.tokens.any { token ->
                 normalizedLabel.contains(token.lowercase())
             }
-            if (!closePackage && !packageTokenHit && !labelTokenHit) return@mapNotNull null
+
+            // A package merely containing a brand token is not impersonation. Vendors commonly
+            // publish multiple legitimate sibling packages (for example a main app and a messenger).
+            // Require a typo-close package name, or a brand-like label on an explicitly sideloaded
+            // package. Signer mismatch for the exact official package is handled above.
+            if (!closePackage && !(labelTokenHit && isSideloaded)) return@mapNotNull null
 
             var score = when {
                 closePackage -> 18
-                labelTokenHit -> 14
-                else -> 10
+                else -> 14
             }
             if (isSideloaded) score += 8
             if (signerMismatch) score += 14

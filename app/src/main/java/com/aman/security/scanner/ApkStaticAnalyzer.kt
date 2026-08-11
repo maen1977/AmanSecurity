@@ -222,19 +222,16 @@ class ApkStaticAnalyzer(
 
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
 
-        // Manifest permissions and ordinary app capabilities are useful for privacy review, but
-        // they are not proof of malware. Keep their contribution bounded so a legitimate chat,
-        // social, navigation, backup, VPN, or accessibility app cannot become HIGH solely by
-        // accumulating expected permissions. HIGH is reserved for the multi-engine verdict.
-        val capabilityReviewScore = basicEvaluation.score.coerceAtMost(34)
-        val combinedScore = maxOf(capabilityReviewScore, verdict.score)
+        // Keep the antivirus score separate from the capability/permission inventory. Ordinary
+        // permissions remain visible in the APK details but do not inflate the malware score.
+        val combinedScore = verdict.score
         val combinedLevel = when {
             verdict.level in setOf(
                 DetectionVerdictLevel.KNOWN_THREAT,
                 DetectionVerdictLevel.VERY_HIGH,
                 DetectionVerdictLevel.HIGH
             ) -> ApkRiskLevel.HIGH
-            combinedScore >= 20 -> ApkRiskLevel.REVIEW
+            verdict.level == DetectionVerdictLevel.REVIEW -> ApkRiskLevel.REVIEW
             else -> ApkRiskLevel.LOW
         }
         val components = (packageInfo.activities?.size ?: 0) + (packageInfo.services?.size ?: 0) +

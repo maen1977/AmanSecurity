@@ -69,7 +69,10 @@ object AppRiskEvaluator {
         if (CAMERA in permissions) signals += AppRiskSignal.CAMERA
         if (ACCESS_FINE_LOCATION in permissions) signals += AppRiskSignal.PRECISE_LOCATION
         if (RECEIVE_BOOT_COMPLETED in permissions) signals += AppRiskSignal.BOOT_START
-        if (input.installSource == AppInstallSource.LOCAL_FILE || input.installSource == AppInstallSource.DOWNLOADED_FILE || input.installSource == AppInstallSource.UNKNOWN) {
+        // UNKNOWN means Android did not report the installer/source. It is not evidence of
+        // sideloading and must never increase malware risk. Only explicit local/downloaded
+        // package sources count as non-store installation.
+        if (input.installSource == AppInstallSource.LOCAL_FILE || input.installSource == AppInstallSource.DOWNLOADED_FILE) {
             signals += AppRiskSignal.NON_STORE_INSTALL
         }
         return signals

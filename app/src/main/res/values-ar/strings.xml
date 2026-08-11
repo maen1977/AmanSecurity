@@ -59,7 +59,7 @@
     <string name="app_risk_medium">مراجعة صلاحيات/سلوك — ليس تهديدًا مكتشفًا</string>
     <string name="app_risk_high">سلوك مريب — يحتاج تحققًا إضافيًا</string>
     <string name="app_risk_known">تهديد معروف مؤكّد</string>
-    <string name="risk_score_line">درجة المؤشرات: %1$s من 100</string>
+    <string name="risk_score_line">درجة أدلة البرمجيات الخبيثة: %1$s/100</string>
     <string name="package_name_line">اسم الحزمة: %1$s</string>
     <string name="version_name_line">الإصدار: %1$s</string>
     <string name="install_source_line">مصدر التثبيت: %1$s</string>
@@ -67,7 +67,7 @@
     <string name="source_local_file">ملف محلي</string>
     <string name="source_downloaded_file">ملف تم تنزيله</string>
     <string name="source_other">مصدر آخر</string>
-    <string name="source_unknown">مصدر غير معروف</string>
+    <string name="source_unknown">لم يبلّغ أندرويد عن مصدر التثبيت</string>
     <string name="indicators_title">المؤشرات</string>
     <string name="indicator_accessibility">يعرّف خدمة لإمكانية الوصول</string>
     <string name="indicator_overlay">يمكنه الظهور فوق التطبيقات الأخرى</string>
@@ -79,7 +79,7 @@
     <string name="indicator_camera">يطلب الوصول إلى الكاميرا</string>
     <string name="indicator_location">يطلب الموقع الدقيق</string>
     <string name="indicator_boot">يمكنه البدء بعد تشغيل الجهاز</string>
-    <string name="indicator_non_store">تم تثبيته خارج متجر تطبيقات معروف أو تعذر التحقق من مصدره</string>
+    <string name="indicator_non_store">تم التثبيت من حزمة محلية أو ملف تم تنزيله</string>
     <string name="apk_hash_line">بصمة الحزمة المثبتة SHA-256: %1$s</string>
     <string name="certificate_hash_line">بصمة شهادة التوقيع SHA-256: %1$s</string>
     <string name="threat_reference_line">الرقم المرجعي للتهديد: %1$s</string>
