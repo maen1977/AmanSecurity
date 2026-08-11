@@ -99,9 +99,10 @@ object ProtectionNotifier {
 
     fun updateProtectionStatus(context: Context) {
         if (!ProtectionPreferences(context).enabled) return
-        NotificationManagerCompat.from(context).notify(
-            STATUS_NOTIFICATION_ID,
-            buildProtectionStatusNotification(context)
+        postNotificationSafely(
+            context = context,
+            notificationId = STATUS_NOTIFICATION_ID,
+            notification = buildProtectionStatusNotification(context)
         )
     }
 
@@ -143,6 +144,29 @@ object ProtectionNotifier {
             .setContentIntent(pendingIntent)
             .build()
 
-        NotificationManagerCompat.from(context).notify(event.id.hashCode(), notification)
+        postNotificationSafely(
+            context = context,
+            notificationId = event.id.hashCode(),
+            notification = notification
+        )
+    }
+
+    private fun postNotificationSafely(
+        context: Context,
+        notificationId: Int,
+        notification: Notification
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        } catch (_: SecurityException) {
+            // Notification permission can be revoked between the explicit check and notify().
+            // Protection must continue running; the UI reports notification permission state.
+        }
     }
 }
