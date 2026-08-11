@@ -19,7 +19,7 @@ class InstalledAppsRescanWorker(
 ) : Worker(appContext, workerParams) {
     override fun doWork(): Result {
         val preferences = ProtectionPreferences(applicationContext)
-        if (!preferences.enabled) return Result.success()
+        if (!preferences.enabled || !preferences.periodicAppRescanEnabled) return Result.success()
 
         return runCatching {
             val database = SignatureDatabase(applicationContext)
@@ -49,6 +49,16 @@ class InstalledAppsRescanWorker(
             preferences.lastAppRescanAt = System.currentTimeMillis()
             preferences.lastAppRescanCount = summary.scannedApps
             preferences.lastAppAlertCount = alerts
+            preferences.totalAppsChecked += summary.scannedApps.toLong()
+            preferences.markActivity(applicationContext.getString(com.aman.security.R.string.activity_apps_rescan_complete, summary.scannedApps))
+            ProtectionActivityStore(applicationContext).add(
+                kind = ProtectionActivityKind.APP_SCAN,
+                state = if (alerts > 0) ProtectionActivityState.THREAT else ProtectionActivityState.SAFE,
+                title = applicationContext.getString(com.aman.security.R.string.timeline_apps_rescan_complete, summary.scannedApps),
+                detail = applicationContext.getString(com.aman.security.R.string.timeline_apps_rescan_detail, alerts)
+            )
+            if (alerts > 0) preferences.totalThreatsDetected += alerts.toLong()
+            ProtectionServiceController.refresh(applicationContext)
             Result.success()
         }.getOrElse { Result.retry() }
     }

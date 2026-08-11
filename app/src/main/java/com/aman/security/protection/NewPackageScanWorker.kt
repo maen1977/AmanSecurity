@@ -12,7 +12,7 @@ class NewPackageScanWorker(
 ) : Worker(appContext, workerParams) {
     override fun doWork(): Result {
         val preferences = ProtectionPreferences(applicationContext)
-        if (!preferences.enabled) return Result.success()
+        if (!preferences.enabled || !preferences.appInstallMonitorEnabled) return Result.success()
         val packageName = inputData.getString(KEY_PACKAGE_NAME)?.takeIf { it.isNotBlank() }
             ?: return Result.failure()
         if (packageName == applicationContext.packageName) return Result.success()
@@ -21,21 +21,43 @@ class NewPackageScanWorker(
             val database = SignatureDatabase(applicationContext)
             val result = InstalledAppScanner(applicationContext, database).scanPackageByName(packageName)
                 ?: return Result.success()
-            if (!ProtectionPolicy.shouldNotifyApp(result.riskLevel)) {
-                preferences.replaceAppFingerprint(packageName, AppRescanPolicy.fingerprint(result))
-                return Result.success()
-            }
+            preferences.totalAppsChecked += 1L
+            preferences.markActivity(applicationContext.getString(com.aman.security.R.string.activity_app_checked, result.appName))
+            val timeline = ProtectionActivityStore(applicationContext)
             val fingerprint = AppRescanPolicy.fingerprint(result)
             val previous = preferences.replaceAppFingerprint(packageName, fingerprint)
-            if (!AppRescanPolicy.shouldNotify(previous, result)) return Result.success()
-            val severity = ProtectionPolicy.severityForApp(result.riskLevel) ?: return Result.success()
-            val event = ProtectionEventStore(applicationContext).add(
-                type = ProtectionEventType.APP,
-                displayName = result.appName,
-                detail = result.packageName,
-                severity = severity
-            )
-            ProtectionNotifier.notifyEvent(applicationContext, event)
+            val severity = ProtectionPolicy.severityForApp(result.riskLevel)
+            if (severity != null && AppRescanPolicy.shouldNotify(previous, result)) {
+                val event = ProtectionEventStore(applicationContext).add(
+                    type = ProtectionEventType.APP,
+                    displayName = result.appName,
+                    detail = result.packageName,
+                    severity = severity
+                )
+                ProtectionNotifier.notifyEvent(applicationContext, event)
+                preferences.totalThreatsDetected += 1L
+                timeline.add(
+                    kind = ProtectionActivityKind.APP_SCAN,
+                    state = ProtectionActivityState.THREAT,
+                    title = applicationContext.getString(com.aman.security.R.string.timeline_app_threat, result.appName),
+                    detail = result.packageName
+                )
+            } else {
+                val state = when (result.riskLevel) {
+                    com.aman.security.scanner.AppRiskLevel.HIGH,
+                    com.aman.security.scanner.AppRiskLevel.KNOWN_THREAT -> ProtectionActivityState.ATTENTION
+                    com.aman.security.scanner.AppRiskLevel.MEDIUM -> ProtectionActivityState.ATTENTION
+                    else -> ProtectionActivityState.SAFE
+                }
+                timeline.add(
+                    kind = ProtectionActivityKind.APP_SCAN,
+                    state = state,
+                    title = applicationContext.getString(com.aman.security.R.string.timeline_app_checked, result.appName),
+                    detail = result.packageName,
+                    dedupeKey = "${ProtectionActivityKind.APP_SCAN}:${applicationContext.getString(com.aman.security.R.string.timeline_app_checked, result.appName)}:${result.packageName}"
+                )
+            }
+            ProtectionServiceController.refresh(applicationContext)
             Result.success()
         }.getOrElse { Result.retry() }
     }

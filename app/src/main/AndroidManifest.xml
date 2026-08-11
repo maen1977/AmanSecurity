@@ -5,6 +5,13 @@
     <!-- Internet is used only to download public threat-intelligence data and Android security bulletins. No file, installed-app inventory, or API secret is uploaded. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Antivirus file protection. The user must explicitly grant "All files access" in Android settings. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
     <!-- Core antivirus functionality: inspect the user-installed app inventory locally on-device. -->
     <uses-permission
@@ -37,6 +44,26 @@
                 android:value="true" />
         </service>
 
+
+        <service
+            android:name=".protection.ProtectionService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled real-time antivirus coordination: persistent protection status, installed-app monitoring, Downloads malware monitoring, and local threat scan scheduling." />
+        </service>
+
+        <receiver
+            android:name=".protection.ProtectionBootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".protection.PackageAddedReceiver"

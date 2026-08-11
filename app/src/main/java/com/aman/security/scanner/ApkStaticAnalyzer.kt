@@ -221,13 +221,19 @@ class ApkStaticAnalyzer(
         findings += ThreatGraphEngine.correlate(findings, ruleset.graphLinks)
 
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
-        val combinedScore = maxOf(basicEvaluation.score, verdict.score)
+
+        // Manifest permissions and ordinary app capabilities are useful for privacy review, but
+        // they are not proof of malware. Keep their contribution bounded so a legitimate chat,
+        // social, navigation, backup, VPN, or accessibility app cannot become HIGH solely by
+        // accumulating expected permissions. HIGH is reserved for the multi-engine verdict.
+        val capabilityReviewScore = basicEvaluation.score.coerceAtMost(34)
+        val combinedScore = maxOf(capabilityReviewScore, verdict.score)
         val combinedLevel = when {
             verdict.level in setOf(
                 DetectionVerdictLevel.KNOWN_THREAT,
                 DetectionVerdictLevel.VERY_HIGH,
                 DetectionVerdictLevel.HIGH
-            ) || combinedScore >= 55 -> ApkRiskLevel.HIGH
+            ) -> ApkRiskLevel.HIGH
             combinedScore >= 20 -> ApkRiskLevel.REVIEW
             else -> ApkRiskLevel.LOW
         }

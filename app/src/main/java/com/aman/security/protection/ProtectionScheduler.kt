@@ -17,6 +17,8 @@ object ProtectionScheduler {
     private const val IMMEDIATE_WORK_NAME = "aman_protected_folder_immediate"
     private const val APP_RESCAN_WORK_NAME = "aman_installed_apps_reputation_rescan"
     private const val APP_RESCAN_NOW_WORK_NAME = "aman_installed_apps_reputation_rescan_now"
+    private const val DOWNLOAD_RESCAN_WORK_NAME = "aman_downloads_realtime_catchup"
+    private const val DOWNLOAD_RESCAN_NOW_WORK_NAME = "aman_downloads_realtime_now"
 
     fun enable(context: Context) {
         val constraints = Constraints.Builder()
@@ -46,7 +48,23 @@ object ProtectionScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             appRescan
         )
+
+        val downloadsRescan = PeriodicWorkRequestBuilder<DownloadProtectionWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresStorageNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            DOWNLOAD_RESCAN_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            downloadsRescan
+        )
         checkNow(context)
+        scanDownloadsNow(context)
     }
 
     fun disable(context: Context) {
@@ -55,7 +73,10 @@ object ProtectionScheduler {
         workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
         workManager.cancelUniqueWork(APP_RESCAN_WORK_NAME)
         workManager.cancelUniqueWork(APP_RESCAN_NOW_WORK_NAME)
+        workManager.cancelUniqueWork(DOWNLOAD_RESCAN_WORK_NAME)
+        workManager.cancelUniqueWork(DOWNLOAD_RESCAN_NOW_WORK_NAME)
         workManager.cancelAllWorkByTag(PACKAGE_SCAN_TAG)
+        workManager.cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
     }
 
     fun checkNow(context: Context) {
@@ -87,6 +108,40 @@ object ProtectionScheduler {
         )
     }
 
+
+    fun scanDownloadsNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<DownloadProtectionWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresStorageNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .addTag(DOWNLOAD_SCAN_TAG)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            DOWNLOAD_RESCAN_NOW_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
+    fun scanDownloadedFile(context: Context, absolutePath: String) {
+        if (absolutePath.isBlank()) return
+        val request = OneTimeWorkRequestBuilder<DownloadProtectionWorker>()
+            .setInputData(workDataOf(DownloadProtectionWorker.KEY_FILE_PATH to absolutePath))
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+            .addTag(DOWNLOAD_SCAN_TAG)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "aman_download_file_${absolutePath.hashCode()}",
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
     fun scanNewPackage(context: Context, packageName: String) {
         val request = OneTimeWorkRequestBuilder<NewPackageScanWorker>()
             .setInputData(workDataOf(NewPackageScanWorker.KEY_PACKAGE_NAME to packageName))
@@ -102,4 +157,5 @@ object ProtectionScheduler {
     }
 
     private const val PACKAGE_SCAN_TAG = "aman_package_scan"
+    private const val DOWNLOAD_SCAN_TAG = "aman_download_scan"
 }

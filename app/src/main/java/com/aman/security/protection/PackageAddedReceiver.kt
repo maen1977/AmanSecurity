@@ -9,7 +9,9 @@ class PackageAddedReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_PACKAGE_ADDED && intent.action != Intent.ACTION_PACKAGE_REPLACED) return
         val packageName = intent.data?.schemeSpecificPart?.takeIf { it.isNotBlank() } ?: return
         if (packageName == context.packageName) return
-        if (!ProtectionPreferences(context).enabled) return
+        val preferences = ProtectionPreferences(context)
+        if (!preferences.enabled || !preferences.appInstallMonitorEnabled) return
+        preferences.markActivity(context.getString(com.aman.security.R.string.activity_app_install_detected, packageName))
         ProtectionScheduler.scanNewPackage(context.applicationContext, packageName)
     }
 }

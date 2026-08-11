@@ -147,10 +147,16 @@ class InstalledAppScanner(
         deepAnalysis?.advancedVerdict?.findings?.let(findings::addAll)
         findings += ThreatGraphEngine.correlate(findings, database.detectionRuleset.graphLinks)
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
-        val finalScore = maxOf(basic.score, deepAnalysis?.riskScore ?: 0, verdict.score).coerceIn(0, 100)
+
+        // Permission breadth is a privacy/capability signal, not a malware verdict. Previously the
+        // raw permission score participated in maxOf(...), so legitimate apps with camera, mic,
+        // contacts, location, boot, etc. could be promoted to HIGH without independent threat
+        // evidence. Bound capability-only evidence and let the multi-engine verdict decide HIGH.
+        val capabilityReviewScore = basic.score.coerceAtMost(34)
+        val finalScore = maxOf(capabilityReviewScore, deepAnalysis?.riskScore ?: 0, verdict.score).coerceIn(0, 100)
         val finalLevel = when {
             verdict.level == DetectionVerdictLevel.KNOWN_THREAT -> AppRiskLevel.KNOWN_THREAT
-            finalScore >= 55 -> AppRiskLevel.HIGH
+            verdict.level == DetectionVerdictLevel.VERY_HIGH || verdict.level == DetectionVerdictLevel.HIGH -> AppRiskLevel.HIGH
             finalScore >= 20 -> AppRiskLevel.MEDIUM
             else -> AppRiskLevel.LOW
         }

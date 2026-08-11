@@ -79,10 +79,13 @@ object VerdictEngine {
             .mapValues { (_, values) -> values.map { evidenceDomain(it.source) }.distinct().size }
         if ((familyDomainCounts.values.maxOrNull() ?: 0) >= 3) score += 4
 
-        // Low-confidence heuristics alone cannot escalate to a high verdict.
+        // Correlated heuristics from a single evidence domain must never become a HIGH malware
+        // verdict just by stacking. This is the main false-positive guard for feature-rich benign
+        // apps. Known threats were already handled above; heuristic HIGH requires corroboration
+        // from at least two genuinely different evidence domains.
         val highestConfidence = normalized.maxByOrNull { it.confidence.rank }?.confidence ?: FindingConfidence.LOW
         if (highestConfidence == FindingConfidence.LOW) score = score.coerceAtMost(34)
-        if (highestConfidence == FindingConfidence.MEDIUM && domains < 2) score = score.coerceAtMost(49)
+        if (domains < 2) score = score.coerceAtMost(49)
 
         if (allowlisted) score = score.coerceAtMost(19)
         score = score.coerceIn(0, 99)

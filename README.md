@@ -1,6 +1,14 @@
-# Aman Security 2.7.0
+# Aman Security 2.8.0
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+## 2.8 real-time antivirus core
+
+Aman 2.8 adds a user-visible foreground Automatic Anti-Virus service instead of treating a stored toggle as proof of protection. When the user enables protection, Aman maintains a persistent low-priority protection-status notification, monitors new/updated app installation events, watches the public Downloads directory when Android antivirus file access is granted, runs a periodic Downloads catch-up scan, restores opted-in protection after boot/app replacement, and records a bounded local activity timeline so safe background checks are visible as well as threat alerts.
+
+The Scan Center now separates **Quick scan** (installed apps), **Full scan** (installed apps plus accessible shared-device files/install packages), **Downloads scan**, selective file scan, and Smart Scan. Long scans report actual app/file progress and the current package or file path, and can be stopped cooperatively. The Protection Center reports whether the real-time service heartbeat is actually alive, file-access readiness, app/install monitoring state, Downloads protection state, lifetime check counters, and the last protection activity.
+
+On Android 11+, shared-file and Downloads antivirus scanning uses the platform's user-granted “Manage all files” access. Aman requests it only after a dedicated disclosure and uses it for local malware scanning; this layer does not upload or automatically delete files. See `docs/CHANGELOG_2_8.md`.
 
 ## 2.7 production antivirus hardening
 
@@ -12,7 +20,7 @@ The updater downloads only bounded text/JSON/HTML indicator data from fixed HTTP
 
 See `docs/PRODUCTION_ANTIVIRUS_2_7.md` and `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md`.
 
-## Protection Center upgrade
+## 2.7 Protection Center upgrade
 
 The main dashboard now includes a multi-layer Smart Scan and a local Security & Privacy Audit. Smart Scan combines deep user-app analysis, device hardening checks, network validation/Private DNS visibility, privacy-sensitive permission review, and the selected protected-folder scan. Permissions Control lists user apps with granted sensitive permissions and links directly to Android app settings for user-controlled remediation.
 
@@ -32,7 +40,7 @@ For release self-integrity, a distributor can provide the **public** SHA-256 fin
 
 ## Upgrading an older GitHub repository
 
-Do not only overlay the ZIP on top of old repository files: Git does not remove legacy files that are absent from a new ZIP. Aman 2.7 has no GitHub threat-update workflow. It keeps one build-only workflow at `.github/workflows/build.yml`.
+Do not only overlay the ZIP on top of old repository files: Git does not remove legacy files that are absent from a new ZIP. Aman 2.8 has no GitHub threat-update workflow. It keeps one build-only workflow at `.github/workflows/build.yml`.
 
 Use the cleanup helper before committing an overlay onto an old clone:
 

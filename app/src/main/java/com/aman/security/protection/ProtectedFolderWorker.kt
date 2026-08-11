@@ -31,7 +31,17 @@ class ProtectedFolderWorker(
                 recordStore = recordStore,
                 notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
             )
-            scanner.scan(treeUri)
+            val summary = scanner.scan(treeUri)
+            preferences.totalFilesChecked += summary.scannedFiles.toLong()
+            if (summary.alerts > 0) preferences.totalThreatsDetected += summary.alerts.toLong()
+            preferences.markActivity(applicationContext.getString(com.aman.security.R.string.activity_folder_scan_complete, summary.scannedFiles))
+            ProtectionActivityStore(applicationContext).add(
+                kind = ProtectionActivityKind.FILE_SCAN,
+                state = if (summary.alerts > 0) ProtectionActivityState.THREAT else ProtectionActivityState.SAFE,
+                title = applicationContext.getString(com.aman.security.R.string.timeline_folder_scan_complete, summary.scannedFiles),
+                detail = applicationContext.getString(com.aman.security.R.string.timeline_folder_scan_detail, summary.alerts)
+            )
+            ProtectionServiceController.refresh(applicationContext)
             Result.success()
         }.getOrElse { Result.retry() }
     }

@@ -1,6 +1,7 @@
 package com.aman.security.protection
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -15,19 +16,93 @@ import com.aman.security.MainActivity
 import com.aman.security.R
 
 object ProtectionNotifier {
-    private const val CHANNEL_ID = "aman_protection_alerts"
+    private const val ALERT_CHANNEL_ID = "aman_protection_alerts"
+    private const val STATUS_CHANNEL_ID = "aman_protection_status"
+    const val STATUS_NOTIFICATION_ID = 27001
 
-    fun ensureChannel(context: Context) {
+    fun ensureChannel(context: Context) = ensureChannels(context)
+
+    fun ensureChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
-        val channel = NotificationChannel(
-            CHANNEL_ID,
+        val alerts = NotificationChannel(
+            ALERT_CHANNEL_ID,
             context.getString(R.string.protection_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = context.getString(R.string.protection_channel_description)
         }
-        manager.createNotificationChannel(channel)
+        val status = NotificationChannel(
+            STATUS_CHANNEL_ID,
+            context.getString(R.string.protection_status_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = context.getString(R.string.protection_status_channel_description)
+            setShowBadge(false)
+        }
+        manager.createNotificationChannel(alerts)
+        manager.createNotificationChannel(status)
+    }
+
+    fun buildProtectionStatusNotification(context: Context): Notification {
+        ensureChannels(context)
+        val prefs = ProtectionPreferences(context)
+        val downloadsReady = prefs.downloadsProtectionEnabled && ProtectionAccess.hasDownloadsReadAccess(context)
+        val appMonitorReady = prefs.appInstallMonitorEnabled
+        val title = context.getString(
+            if (downloadsReady && appMonitorReady) R.string.protection_status_notification_protected
+            else R.string.protection_status_notification_attention
+        )
+        val body = when {
+            !appMonitorReady -> context.getString(R.string.protection_status_notification_apps_off)
+            prefs.downloadsProtectionEnabled && !downloadsReady -> context.getString(R.string.protection_status_notification_downloads_access)
+            !prefs.downloadsProtectionEnabled -> context.getString(R.string.protection_status_notification_downloads_off)
+            else -> context.getString(R.string.protection_status_notification_body)
+        }
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context,
+            STATUS_NOTIFICATION_ID,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val scanIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_SCAN)
+            putExtra(MainActivity.EXTRA_START_SMART_SCAN, true)
+        }
+        val scanPendingIntent = PendingIntent.getActivity(
+            context,
+            STATUS_NOTIFICATION_ID + 1,
+            scanIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(context, STATUS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setContentIntent(openPendingIntent)
+            .addAction(0, context.getString(R.string.protection_status_open_action), openPendingIntent)
+            .addAction(0, context.getString(R.string.protection_status_scan_action), scanPendingIntent)
+            .build()
+    }
+
+    fun updateProtectionStatus(context: Context) {
+        if (!ProtectionPreferences(context).enabled) return
+        NotificationManagerCompat.from(context).notify(
+            STATUS_NOTIFICATION_ID,
+            buildProtectionStatusNotification(context)
+        )
     }
 
     fun notifyEvent(context: Context, event: ProtectionEvent) {
@@ -36,13 +111,14 @@ object ProtectionNotifier {
         ) {
             return
         }
-        ensureChannel(context)
+        ensureChannels(context)
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            event.id.hashCode(),
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -56,7 +132,7 @@ object ProtectionNotifier {
             ProtectionEventType.APP -> context.getString(R.string.protection_notification_app_body, event.displayName)
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_shield)
             .setContentTitle(title)
             .setContentText(body)

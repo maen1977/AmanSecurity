@@ -28,6 +28,16 @@ import com.aman.security.autonomous.AutonomousThreatUpdater
 import com.aman.security.autonomous.AutonomousUpdateResult
 import com.aman.security.protection.ProtectedFolderScanner
 import com.aman.security.protection.ProtectedFolderScanSummary
+import com.aman.security.protection.DownloadProtectionScanner
+import com.aman.security.protection.DownloadScanSummary
+import com.aman.security.protection.ProtectionAccess
+import com.aman.security.protection.ProtectionActivityEntry
+import com.aman.security.protection.ProtectionActivityKind
+import com.aman.security.protection.ProtectionActivityState
+import com.aman.security.protection.ProtectionActivityStore
+import com.aman.security.protection.ProtectionServiceController
+import com.aman.security.protection.SharedStorageScanner
+import com.aman.security.protection.SharedStorageScanSummary
 import com.aman.security.protection.ProtectionEvent
 import com.aman.security.protection.ProtectionEventStore
 import com.aman.security.protection.ProtectionEventType
@@ -97,6 +107,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var quarantineManager: QuarantineManager
     private lateinit var protectionPreferences: ProtectionPreferences
     private lateinit var protectionEventStore: ProtectionEventStore
+    private lateinit var protectionActivityStore: ProtectionActivityStore
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var lastInstalledSummary: InstalledAppsScanSummary? = null
@@ -121,10 +132,7 @@ class MainActivity : AppCompatActivity() {
             scanCancelRequested = false
             binding.btnRunSecurityAudit.isEnabled = true
             binding.btnStopScan.isEnabled = false
-            binding.btnSmartScan.isEnabled = true
-            binding.btnScanInstalledApps.isEnabled = true
-            binding.btnScanFile.isEnabled = selectedUri != null
-            binding.btnChooseFile.isEnabled = true
+            setScanControlsEnabled(true)
             binding.btnUpdateDatabase.isEnabled = true
             binding.btnCheckProtectionNow.isEnabled = true
             Toast.makeText(this, R.string.operation_failed_try_again, Toast.LENGTH_LONG).show()
@@ -166,6 +174,14 @@ class MainActivity : AppCompatActivity() {
         renderProtectionStatus()
     }
 
+    private val allFilesAccessLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        onAntivirusFileAccessReturn()
+    }
+
+    private val legacyStoragePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        onAntivirusFileAccessReturn()
+    }
+
     private val webGuardRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         renderWebGuardStatus()
     }
@@ -185,7 +201,8 @@ class MainActivity : AppCompatActivity() {
         quarantineManager = QuarantineManager(this, recordStore)
         protectionPreferences = ProtectionPreferences(this)
         protectionEventStore = ProtectionEventStore(this)
-        ProtectionNotifier.ensureChannel(this)
+        protectionActivityStore = ProtectionActivityStore(this)
+        ProtectionNotifier.ensureChannels(this)
         AutonomousThreatScheduler.schedule(this)
         renderDatabaseInfo()
         renderSecurityManagement()
@@ -209,9 +226,34 @@ class MainActivity : AppCompatActivity() {
         binding.btnCheckProtectionNow.setOnClickListener { scanProtectedFolderNow() }
         binding.btnClearProtectionEvents.setOnClickListener {
             protectionEventStore.clear()
+            protectionActivityStore.clear()
             renderProtectionStatus()
         }
         binding.btnSmartScan.setOnClickListener { requestSmartScan() }
+        binding.btnQuickScanMode.setOnClickListener { requestInstalledAppsScan() }
+        binding.btnFullScan.setOnClickListener { requestFullScan() }
+        binding.btnScanDownloads.setOnClickListener { runDownloadsScan() }
+        binding.btnGrantFileAccess.setOnClickListener { requestAntivirusFileAccess() }
+        binding.switchAppInstallMonitor.setOnCheckedChangeListener { _, checked ->
+            protectionPreferences.appInstallMonitorEnabled = checked
+            if (protectionPreferences.enabled) ProtectionServiceController.refresh(this)
+            renderProtectionStatus()
+        }
+        binding.switchDownloadsProtection.setOnCheckedChangeListener { _, checked ->
+            protectionPreferences.downloadsProtectionEnabled = checked
+            if (checked && !ProtectionAccess.hasDownloadsReadAccess(this)) {
+                requestAntivirusFileAccess()
+            } else if (checked && protectionPreferences.enabled) {
+                ProtectionScheduler.scanDownloadsNow(this)
+            }
+            if (protectionPreferences.enabled) ProtectionServiceController.refresh(this)
+            renderProtectionStatus()
+        }
+        binding.switchPeriodicAppRescan.setOnCheckedChangeListener { _, checked ->
+            protectionPreferences.periodicAppRescanEnabled = checked
+            if (protectionPreferences.enabled) ProtectionScheduler.enable(this)
+            renderProtectionStatus()
+        }
         binding.btnQuickApps.setOnClickListener { showPage(PAGE_SCAN); requestInstalledAppsScan() }
         binding.btnQuickFile.setOnClickListener { showPage(PAGE_SCAN); filePicker.launch(arrayOf("*/*")) }
         binding.btnQuickWeb.setOnClickListener {
@@ -245,7 +287,13 @@ class MainActivity : AppCompatActivity() {
             database.reloadAutonomous()
             renderDatabaseInfo()
         }
-        if (::protectionPreferences.isInitialized) renderProtectionStatus()
+        if (::protectionPreferences.isInitialized) {
+            if (protectionPreferences.enabled && ProtectionServiceController.needsRecovery(this)) {
+                runCatching { ProtectionServiceController.start(this) }
+                binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 900L)
+            }
+            renderProtectionStatus()
+        }
         if (::binding.isInitialized) {
             renderWebGuardStatus()
             if (lastSecurityAudit == null || System.currentTimeMillis() - lastSecurityAuditAt > SECURITY_AUDIT_REFRESH_MS) {
@@ -341,7 +389,20 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(uiCoroutineErrorHandler) {
             val result = withContext(Dispatchers.IO) { updater.update() }
             binding.btnUpdateDatabase.isEnabled = true
+            val updateAttention = result is AutonomousUpdateResult.Partial || result == AutonomousUpdateResult.NoSourceAvailable
+            protectionPreferences.markActivity(getString(if (updateAttention) R.string.activity_database_attention else R.string.activity_database_checked))
+            protectionActivityStore.add(
+                kind = ProtectionActivityKind.DATABASE_UPDATE,
+                state = if (updateAttention) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                title = getString(if (updateAttention) R.string.activity_database_attention else R.string.activity_database_checked),
+                detail = getString(if (updateAttention) R.string.timeline_database_attention_detail else R.string.timeline_database_checked_detail)
+            )
+            if (protectionPreferences.enabled && protectionPreferences.periodicAppRescanEnabled && !updateAttention) {
+                ProtectionScheduler.rescanInstalledAppsNow(this@MainActivity)
+            }
+            ProtectionServiceController.refresh(this@MainActivity)
             renderAutonomousIntel()
+            renderProtectionStatus()
             renderProtectionPosture()
             when (result) {
                 is AutonomousUpdateResult.Success -> {
@@ -405,8 +466,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingIntent(incoming: Intent?) {
+        val requestedPage = incoming?.getIntExtra(EXTRA_OPEN_PAGE, -1) ?: -1
+        if (requestedPage in PAGE_HOME..PAGE_SETTINGS) {
+            showPage(requestedPage)
+        }
+        if (incoming?.getBooleanExtra(EXTRA_START_SMART_SCAN, false) == true) {
+            incoming.removeExtra(EXTRA_START_SMART_SCAN)
+            binding.root.post { requestSmartScan() }
+        }
         if (incoming?.action != Intent.ACTION_SEND || incoming.type != "text/plain") return
         val candidate = SharedUrlExtractor.firstCandidate(incoming.getStringExtra(Intent.EXTRA_TEXT)) ?: return
+        showPage(PAGE_SCAN)
         binding.edtUrl.setText(candidate)
         scanUrl(candidate)
     }
@@ -545,7 +615,7 @@ class MainActivity : AppCompatActivity() {
                 databaseHealthy = database.canaryHealthy(),
                 freshSources = intel.freshSources,
                 totalSources = intel.totalSources,
-                backgroundProtectionEnabled = protectionPreferences.enabled,
+                backgroundProtectionEnabled = protectionPreferences.enabled && ProtectionServiceController.isHealthy(this),
                 webGuardActive = isWebGuardActive(),
                 devicePatchKnown = patchKnown,
                 devicePatchCurrent = patchKnown && devicePatch >= latestPatch,
@@ -577,6 +647,7 @@ class MainActivity : AppCompatActivity() {
         if (protectionPreferences.enabled) {
             protectionPreferences.enabled = false
             ProtectionScheduler.disable(this)
+            ProtectionServiceController.stop(this)
             renderProtectionStatus()
             return
         }
@@ -602,12 +673,49 @@ class MainActivity : AppCompatActivity() {
 
     private fun enableBackgroundProtection() {
         protectionPreferences.enabled = true
-        ProtectionNotifier.ensureChannel(this)
+        ProtectionNotifier.ensureChannels(this)
         ProtectionScheduler.enable(this)
+        runCatching { ProtectionServiceController.start(this) }
+            .onSuccess { binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 900L) }
+            .onFailure { Log.e(TAG, "Unable to start real-time protection service", it) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        renderProtectionStatus()
+    }
+
+    private fun requestAntivirusFileAccess() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.file_access_disclosure_title)
+            .setMessage(R.string.file_access_disclosure_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.grant_file_access_action) { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val appSpecific = Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                    runCatching { allFilesAccessLauncher.launch(appSpecific) }
+                        .onFailure {
+                            allFilesAccessLauncher.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                        }
+                } else {
+                    legacyStoragePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+            }
+            .show()
+    }
+
+    private fun onAntivirusFileAccessReturn() {
+        val granted = ProtectionAccess.hasDownloadsReadAccess(this)
+        if (granted) {
+            protectionPreferences.clearDownloadLedger()
+            if (protectionPreferences.enabled) {
+                runCatching { ProtectionServiceController.start(this) }
+                ProtectionScheduler.scanDownloadsNow(this)
+            }
         }
         renderProtectionStatus()
     }
@@ -676,6 +784,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderProtectionStatus() {
         val enabled = protectionPreferences.enabled
+        val healthy = enabled && ProtectionServiceController.isHealthy(this)
+        val downloadsAccess = ProtectionAccess.hasDownloadsReadAccess(this)
         val notificationAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
@@ -683,12 +793,61 @@ class MainActivity : AppCompatActivity() {
             when {
                 !enabled -> R.string.protection_state_disabled
                 !notificationAllowed -> R.string.protection_state_notifications_off
+                !healthy -> R.string.protection_state_service_down
                 else -> R.string.protection_state_enabled
             }
         )
-        binding.btnToggleProtection.setText(
-            if (enabled) R.string.disable_protection_action else R.string.enable_protection_action
+        binding.txtProtectionServiceHealth.setText(
+            when {
+                !enabled -> R.string.realtime_service_stopped
+                healthy -> R.string.realtime_service_active
+                else -> R.string.realtime_service_starting
+            }
         )
+        binding.btnToggleProtection.setText(if (enabled) R.string.disable_protection_action else R.string.enable_protection_action)
+
+        binding.switchAppInstallMonitor.isChecked = protectionPreferences.appInstallMonitorEnabled
+        binding.switchDownloadsProtection.isChecked = protectionPreferences.downloadsProtectionEnabled
+        binding.switchPeriodicAppRescan.isChecked = protectionPreferences.periodicAppRescanEnabled
+        binding.switchAppInstallMonitor.isEnabled = enabled
+        binding.switchDownloadsProtection.isEnabled = enabled
+        binding.switchPeriodicAppRescan.isEnabled = enabled
+
+        binding.txtDownloadsAccess.setText(if (downloadsAccess) R.string.downloads_access_granted else R.string.downloads_access_missing)
+        binding.btnGrantFileAccess.visibility = if (downloadsAccess) View.GONE else View.VISIBLE
+
+        val formatter = NumberFormat.getIntegerInstance()
+        binding.txtProtectionStats.text = getString(
+            R.string.protection_stats_line,
+            formatter.format(protectionPreferences.totalAppsChecked),
+            formatter.format(protectionPreferences.totalFilesChecked),
+            formatter.format(protectionPreferences.totalThreatsDetected)
+        )
+        val lastActivity = protectionPreferences.lastActivityLabel
+        val lastActivityLine = if (protectionPreferences.lastActivityAt > 0L && !lastActivity.isNullOrBlank()) {
+            getString(R.string.last_protection_activity_line, formatDate(protectionPreferences.lastActivityAt), lastActivity)
+        } else {
+            getString(R.string.last_protection_activity_none)
+        }
+        binding.txtProtectionLastActivity.text = lastActivityLine
+        binding.txtLastProtectionActivityHome.text = lastActivityLine
+
+        binding.txtRealtimeHome.setText(
+            when {
+                !enabled -> R.string.realtime_service_stopped
+                healthy -> R.string.realtime_service_active
+                else -> R.string.realtime_service_starting
+            }
+        )
+        binding.txtAppMonitorHome.setText(if (enabled && protectionPreferences.appInstallMonitorEnabled) R.string.app_monitor_active else R.string.app_monitor_off)
+        binding.txtDownloadsHome.setText(
+            when {
+                !enabled || !protectionPreferences.downloadsProtectionEnabled -> R.string.downloads_protection_off
+                !downloadsAccess -> R.string.downloads_protection_access_needed
+                else -> R.string.downloads_protection_active
+            }
+        )
+        binding.txtWebProtectionHome.setText(if (isWebGuardActive()) R.string.web_protection_active_short else R.string.web_protection_off_short)
 
         val treeUri = protectionPreferences.protectedTreeUri
         binding.txtProtectedFolder.text = if (treeUri == null) {
@@ -705,27 +864,48 @@ class MainActivity : AppCompatActivity() {
             getString(
                 R.string.protection_last_check_line,
                 formatDate(protectionPreferences.lastCheckAt),
-                NumberFormat.getIntegerInstance().format(protectionPreferences.lastScannedCount),
-                NumberFormat.getIntegerInstance().format(protectionPreferences.lastAlertCount)
+                formatter.format(protectionPreferences.lastScannedCount),
+                formatter.format(protectionPreferences.lastAlertCount)
             )
         }
 
-        val events = protectionEventStore.events()
-        binding.txtProtectionAlertCount.text = if (events.isEmpty()) {
+        val threatEvents = protectionEventStore.events()
+        val timeline = protectionActivityStore.entries()
+        binding.txtProtectionAlertCount.text = if (threatEvents.isEmpty()) {
             getString(R.string.protection_alert_count_zero)
         } else {
-            getString(R.string.protection_alert_count, NumberFormat.getIntegerInstance().format(events.size))
+            getString(R.string.protection_alert_count, formatter.format(threatEvents.size))
         }
-        binding.btnClearProtectionEvents.isEnabled = events.isNotEmpty()
+        binding.btnClearProtectionEvents.isEnabled = threatEvents.isNotEmpty() || timeline.isNotEmpty()
         binding.protectionEventsContainer.removeAllViews()
-        if (events.isEmpty()) {
-            binding.protectionEventsContainer.addView(protectionEventText(getString(R.string.protection_no_recent_alerts)))
+        if (timeline.isEmpty()) {
+            binding.protectionEventsContainer.addView(protectionEventText(getString(R.string.protection_timeline_empty)))
         } else {
-            events.take(MAX_VISIBLE_PROTECTION_EVENTS).forEach { event ->
-                binding.protectionEventsContainer.addView(protectionEventText(formatProtectionEvent(event)))
+            timeline.take(MAX_VISIBLE_PROTECTION_EVENTS).forEach { entry ->
+                binding.protectionEventsContainer.addView(protectionEventText(formatProtectionActivity(entry)))
             }
         }
         renderProtectionPosture()
+    }
+
+    private fun formatProtectionActivity(entry: ProtectionActivityEntry): String {
+        val marker = when (entry.state) {
+            ProtectionActivityState.SAFE -> "✓"
+            ProtectionActivityState.THREAT -> "!"
+            ProtectionActivityState.ATTENTION -> "•"
+            ProtectionActivityState.INFO -> "•"
+        }
+        return buildString {
+            append(marker)
+            append(' ')
+            append(formatDate(entry.createdAt))
+            append("  ")
+            append(entry.title)
+            entry.detail?.takeIf { it.isNotBlank() }?.let {
+                append('\n')
+                append(it)
+            }
+        }
     }
 
     private fun formatProtectionEvent(event: ProtectionEvent): String {
@@ -783,8 +963,7 @@ class MainActivity : AppCompatActivity() {
         scanCancelRequested = false
         activeScan = true
         binding.btnStopScan.isEnabled = true
-        binding.btnSmartScan.isEnabled = false
-        binding.btnScanInstalledApps.isEnabled = false
+        setScanControlsEnabled(false)
         showSmartScan(R.string.smart_scan_preparing, R.string.smart_scan_full_detail)
         updateScanProgress(1, R.string.smart_scan_preparing, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
 
@@ -844,11 +1023,23 @@ class MainActivity : AppCompatActivity() {
             }
             activeScan = false
             binding.btnStopScan.isEnabled = false
-            binding.btnSmartScan.isEnabled = true
-            binding.btnScanInstalledApps.isEnabled = true
+            setScanControlsEnabled(true)
             outcome.onSuccess { bundle ->
                 updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = bundle.installedApps
+                protectionPreferences.totalAppsChecked += bundle.installedApps.scannedApps.toLong()
+                protectionPreferences.totalThreatsDetected += (bundle.installedApps.knownThreats + bundle.installedApps.highRiskApps).toLong()
+                bundle.protectedFolder?.let { folderSummary ->
+                    protectionPreferences.totalFilesChecked += folderSummary.scannedFiles.toLong()
+                    protectionPreferences.totalThreatsDetected += folderSummary.alerts.toLong()
+                }
+                protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, bundle.installedApps.scannedApps))
+                protectionActivityStore.add(
+                    kind = ProtectionActivityKind.APP_SCAN,
+                    state = if (bundle.installedApps.knownThreats > 0 || bundle.installedApps.highRiskApps > 0) ProtectionActivityState.THREAT else if (bundle.installedApps.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    title = getString(R.string.timeline_apps_rescan_complete, bundle.installedApps.scannedApps),
+                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.installedApps.knownThreats + bundle.installedApps.highRiskApps)
+                )
                 lastSecurityAudit = bundle.securityAudit
                 lastSecurityAuditAt = System.currentTimeMillis()
                 renderInstalledApps(bundle.installedApps)
@@ -921,6 +1112,210 @@ class MainActivity : AppCompatActivity() {
         showSmartResult(titleRes, summaryRes, details, colorRes)
     }
 
+    private fun requestFullScan() {
+        if (!ProtectionAccess.hasDownloadsReadAccess(this)) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.full_scan_access_required_title)
+                .setMessage(R.string.full_scan_access_required_body)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.grant_file_access_action) { _, _ -> requestAntivirusFileAccess() }
+                .show()
+            return
+        }
+        val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
+        if (preferences.getInt(INSTALLED_SCAN_DISCLOSURE_KEY, 0) < INSTALLED_SCAN_DISCLOSURE_VERSION) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.installed_apps_disclosure_title)
+                .setMessage(R.string.installed_apps_disclosure_body)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.continue_scan) { _, _ ->
+                    preferences.edit().putInt(INSTALLED_SCAN_DISCLOSURE_KEY, INSTALLED_SCAN_DISCLOSURE_VERSION).apply()
+                    runFullScan()
+                }
+                .show()
+            return
+        }
+        runFullScan()
+    }
+
+    private data class FullScanBundle(
+        val apps: InstalledAppsScanSummary,
+        val files: SharedStorageScanSummary
+    )
+
+    private fun runFullScan() {
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        setScanControlsEnabled(false)
+        binding.btnStopScan.isEnabled = true
+        showSmartScan(R.string.full_scan_action, R.string.full_scan_running_detail)
+        updateScanProgress(1, R.string.scan_stage_apps, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
+
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    val apps = installedAppScanner.scanUserApps { completed, total, appName, packageName ->
+                        if (scanCancelRequested) throw CancellationException("scan cancelled")
+                        val percent = if (total <= 0) 2 else (2 + ((completed * 33) / total)).coerceIn(2, 35)
+                        runOnUiThread {
+                            updateScanProgress(
+                                percent,
+                                R.string.scan_stage_apps,
+                                getString(R.string.scan_stage_app_progress, NumberFormat.getIntegerInstance().format(completed.coerceAtLeast(1)), NumberFormat.getIntegerInstance().format(total)),
+                                "$appName\n${getString(R.string.scan_scope_package, packageName)}"
+                            )
+                        }
+                    }
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    val files = SharedStorageScanner(applicationContext).scan(
+                        cancelled = { scanCancelRequested },
+                        onProgress = { completed, total, fileName, path ->
+                            if (scanCancelRequested) throw CancellationException("scan cancelled")
+                            val fraction = if (total <= 0) 0 else ((completed * 63) / total)
+                            val percent = (36 + fraction).coerceIn(36, 99)
+                            runOnUiThread {
+                                updateScanProgress(
+                                    percent,
+                                    R.string.scan_stage_shared_storage,
+                                    if (total > 0) getString(R.string.scan_stage_folder_count, NumberFormat.getIntegerInstance().format(completed.coerceAtLeast(0))) else fileName,
+                                    getString(R.string.scan_scope_shared_storage, path)
+                                )
+                            }
+                        }
+                    )
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    FullScanBundle(apps, files)
+                }
+            }
+            activeScan = false
+            scanCancelRequested = false
+            setScanControlsEnabled(true)
+            binding.btnStopScan.isEnabled = false
+            outcome.onSuccess { bundle ->
+                updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
+                lastInstalledSummary = bundle.apps
+                protectionPreferences.totalAppsChecked += bundle.apps.scannedApps.toLong()
+                protectionPreferences.totalThreatsDetected += (bundle.apps.knownThreats + bundle.apps.highRiskApps).toLong()
+                protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, bundle.apps.scannedApps))
+                protectionActivityStore.add(
+                    kind = ProtectionActivityKind.APP_SCAN,
+                    state = if (bundle.apps.knownThreats > 0 || bundle.apps.highRiskApps > 0) ProtectionActivityState.THREAT else if (bundle.apps.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    title = getString(R.string.timeline_apps_rescan_complete, bundle.apps.scannedApps),
+                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.apps.knownThreats + bundle.apps.highRiskApps)
+                )
+                renderInstalledApps(bundle.apps)
+                renderProtectionStatus()
+                val totalAlerts = bundle.apps.knownThreats + bundle.apps.highRiskApps + bundle.files.alerts
+                val titleRes = when {
+                    totalAlerts > 0 -> R.string.smart_scan_complete_danger
+                    bundle.apps.reviewApps > 0 -> R.string.smart_scan_complete_attention
+                    else -> R.string.smart_scan_complete_safe
+                }
+                val colorRes = when {
+                    totalAlerts > 0 -> R.color.status_danger
+                    bundle.apps.reviewApps > 0 -> R.color.status_warn
+                    else -> R.color.status_ok
+                }
+                val detail = buildString {
+                    append(getString(
+                        R.string.full_scan_result,
+                        NumberFormat.getIntegerInstance().format(bundle.apps.scannedApps),
+                        NumberFormat.getIntegerInstance().format(bundle.files.scannedFiles),
+                        NumberFormat.getIntegerInstance().format(totalAlerts)
+                    ))
+                    if (bundle.files.truncated) {
+                        append('\n')
+                        append(getString(R.string.full_scan_truncated_note))
+                    }
+                }
+                showSmartResult(
+                    titleRes,
+                    if (totalAlerts > 0 || bundle.apps.reviewApps > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail,
+                    detail,
+                    colorRes
+                )
+            }.onFailure { error ->
+                hideSmartScan()
+                if (error is CancellationException) {
+                    showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                } else {
+                    showSmartResult(R.string.smart_scan_failed_title, R.string.smart_scan_failed_title, getString(R.string.smart_scan_failed_full_detail), R.color.status_warn)
+                }
+            }
+        }
+    }
+
+    private fun runDownloadsScan() {
+        if (!ProtectionAccess.hasDownloadsReadAccess(this)) {
+            requestAntivirusFileAccess()
+            return
+        }
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        setScanControlsEnabled(false)
+        binding.btnStopScan.isEnabled = true
+        showSmartScan(R.string.scan_stage_downloads, R.string.downloads_scan_running_detail)
+        updateScanProgress(1, R.string.scan_stage_downloads, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_shared_storage, "Downloads"))
+
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    DownloadProtectionScanner(applicationContext).scanChangedFiles { completed, total, fileName, path ->
+                        if (scanCancelRequested) throw CancellationException("scan cancelled")
+                        val percent = if (total <= 0) 1 else ((completed * 99) / total).coerceIn(1, 99)
+                        runOnUiThread {
+                            updateScanProgress(
+                                percent,
+                                R.string.scan_stage_downloads,
+                                fileName,
+                                getString(R.string.scan_scope_shared_storage, path)
+                            )
+                        }
+                    }
+                }
+            }
+            activeScan = false
+            scanCancelRequested = false
+            setScanControlsEnabled(true)
+            binding.btnStopScan.isEnabled = false
+            outcome.onSuccess { summary ->
+                updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
+                renderProtectionStatus()
+                val titleRes = if (summary.alerts > 0) R.string.smart_scan_complete_danger else R.string.smart_scan_complete_safe
+                val colorRes = if (summary.alerts > 0) R.color.status_danger else R.color.status_ok
+                showSmartResult(
+                    titleRes,
+                    if (summary.alerts > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail,
+                    getString(
+                        R.string.downloads_scan_result,
+                        NumberFormat.getIntegerInstance().format(summary.scannedFiles),
+                        NumberFormat.getIntegerInstance().format(summary.alerts)
+                    ),
+                    colorRes
+                )
+            }.onFailure { error ->
+                hideSmartScan()
+                if (error is CancellationException) {
+                    showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                } else {
+                    showSmartResult(R.string.smart_scan_failed_title, R.string.smart_scan_failed_title, getString(R.string.smart_scan_failed_detail), R.color.status_warn)
+                }
+            }
+        }
+    }
+
+    private fun setScanControlsEnabled(enabled: Boolean) {
+        binding.btnSmartScan.isEnabled = enabled
+        binding.btnScanInstalledApps.isEnabled = enabled
+        binding.btnQuickScanMode.isEnabled = enabled
+        binding.btnFullScan.isEnabled = enabled
+        binding.btnScanDownloads.isEnabled = enabled
+        binding.btnChooseFile.isEnabled = enabled
+        binding.btnScanFile.isEnabled = enabled && selectedUri != null
+    }
+
     private fun requestInstalledAppsScan() {
         val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
         if (preferences.getInt(INSTALLED_SCAN_DISCLOSURE_KEY, 0) >= INSTALLED_SCAN_DISCLOSURE_VERSION) {
@@ -946,8 +1341,7 @@ class MainActivity : AppCompatActivity() {
         scanCancelRequested = false
         activeScan = true
         binding.btnStopScan.isEnabled = true
-        binding.btnScanInstalledApps.isEnabled = false
-        binding.btnSmartScan.isEnabled = false
+        setScanControlsEnabled(false)
         binding.txtInstalledSummary.setText(R.string.scanning_installed_apps)
         binding.txtInstalledEmpty.visibility = View.GONE
         binding.installedResultsContainer.removeAllViews()
@@ -973,13 +1367,22 @@ class MainActivity : AppCompatActivity() {
             }
             activeScan = false
             binding.btnStopScan.isEnabled = false
-            binding.btnScanInstalledApps.isEnabled = true
-            binding.btnSmartScan.isEnabled = true
+            setScanControlsEnabled(true)
             result.onSuccess { summary ->
                 updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = summary
+                protectionPreferences.totalAppsChecked += summary.scannedApps.toLong()
+                protectionPreferences.totalThreatsDetected += (summary.knownThreats + summary.highRiskApps).toLong()
+                protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, summary.scannedApps))
+                protectionActivityStore.add(
+                    kind = ProtectionActivityKind.APP_SCAN,
+                    state = if (summary.knownThreats > 0 || summary.highRiskApps > 0) ProtectionActivityState.THREAT else if (summary.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    title = getString(R.string.timeline_apps_rescan_complete, summary.scannedApps),
+                    detail = getString(R.string.timeline_apps_rescan_detail, summary.knownThreats + summary.highRiskApps)
+                )
                 renderInstalledApps(summary)
                 renderSmartInstalledResult(summary)
+                renderProtectionStatus()
                 renderProtectionPosture()
             }.onFailure {
                 hideSmartScan()
@@ -1108,12 +1511,10 @@ class MainActivity : AppCompatActivity() {
         scanCancelRequested = false
         activeScan = true
         binding.btnStopScan.isEnabled = true
-        binding.btnScanFile.isEnabled = false
-        binding.btnChooseFile.isEnabled = false
+        setScanControlsEnabled(false)
         binding.txtClassification.setText(R.string.scanning)
         showSmartScan(R.string.file_scan_running_title, R.string.file_scan_running_detail)
         updateScanProgress(1, R.string.file_scan_running_title, binding.txtSelectedFile.text.toString(), uri.toString())
-        binding.btnSmartScan.isEnabled = false
         binding.txtReason.text = ""
         binding.txtTechnical.text = ""
         binding.txtApkAnalysis.text = ""
@@ -1138,17 +1539,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             activeScan = false
-            binding.btnScanFile.isEnabled = true
-            binding.btnChooseFile.isEnabled = true
-            binding.btnSmartScan.isEnabled = true
+            setScanControlsEnabled(true)
             binding.btnStopScan.isEnabled = false
             outcome.onSuccess { result ->
                 updateScanProgress(100, R.string.scan_stage_finishing, result.fileName, uri.toString())
                 lastScanResult = result
                 recordStore.recordScan(result)
+                protectionPreferences.totalFilesChecked += 1L
+                protectionPreferences.markActivity(getString(R.string.activity_file_checked, result.fileName))
+                protectionActivityStore.add(
+                    kind = ProtectionActivityKind.FILE_SCAN,
+                    state = when (result.classification) {
+                        ScanClassification.KNOWN_THREAT -> ProtectionActivityState.THREAT
+                        ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
+                        else -> ProtectionActivityState.SAFE
+                    },
+                    title = getString(R.string.timeline_file_checked, result.fileName),
+                    detail = uri.toString()
+                )
                 renderResult(result)
                 renderSecurityManagement()
                 renderSmartFileResult(result)
+                renderProtectionStatus()
                 renderProtectionPosture()
             }.onFailure {
                 hideSmartScan()
@@ -1849,9 +2261,13 @@ class MainActivity : AppCompatActivity() {
         private const val MAX_VISIBLE_APP_RESULTS = 20
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20
+        const val EXTRA_OPEN_PAGE = "open_page"
+        const val EXTRA_START_SMART_SCAN = "start_smart_scan"
+        const val OPEN_PAGE_SCAN = 1
+        const val OPEN_PAGE_PROTECTION = 2
         private const val PAGE_HOME = 0
-        private const val PAGE_SCAN = 1
-        private const val PAGE_PROTECTION = 2
+        private const val PAGE_SCAN = OPEN_PAGE_SCAN
+        private const val PAGE_PROTECTION = OPEN_PAGE_PROTECTION
         private const val PAGE_SETTINGS = 3
     }
 }
