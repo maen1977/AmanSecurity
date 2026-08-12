@@ -27,16 +27,29 @@ class FalsePositiveStressTest {
         assertTrue(verdict.score < 55)
     }
 
-    @Test fun exactAllowlistStillCapsMultiEngineHeuristics() {
+    @Test fun exactAllowlistCapsOnlyWeakGenericHeuristics() {
         val verdict = VerdictEngine.evaluate(
             listOf(
-                DetectionFinding("RULE", DetectionSource.SIGNATURE_RULE, 35, FindingConfidence.HIGH, ThreatFamily.RISKWARE),
-                DetectionFinding("DEX", DetectionSource.DEX, 30, FindingConfidence.HIGH, ThreatFamily.RISKWARE),
-                DetectionFinding("NETWORK", DetectionSource.NETWORK, 25, FindingConfidence.HIGH, ThreatFamily.RISKWARE)
+                DetectionFinding("MANIFEST_CAPABILITY", DetectionSource.MANIFEST, 35, FindingConfidence.MEDIUM, ThreatFamily.RISKWARE),
+                DetectionFinding("STATIC_CAPABILITY", DetectionSource.STATIC_BEHAVIOR, 30, FindingConfidence.MEDIUM, ThreatFamily.RISKWARE),
+                DetectionFinding("LOCAL_MODEL_HINT", DetectionSource.LOCAL_MODEL, 25, FindingConfidence.MEDIUM, ThreatFamily.RISKWARE)
             ),
             allowlisted = true
         )
         assertTrue(verdict.score <= 19)
         assertTrue(verdict.level == DetectionVerdictLevel.LOW)
+    }
+
+    @Test fun exactAllowlistDoesNotBlindCorroboratedMalwareSpecificEvidence() {
+        val verdict = VerdictEngine.evaluate(
+            listOf(
+                DetectionFinding("RULE", DetectionSource.SIGNATURE_RULE, 35, FindingConfidence.HIGH, ThreatFamily.MALWARE),
+                DetectionFinding("NETWORK", DetectionSource.NETWORK, 30, FindingConfidence.HIGH, ThreatFamily.MALWARE),
+                DetectionFinding("REPUTATION", DetectionSource.REPUTATION, 25, FindingConfidence.HIGH, ThreatFamily.MALWARE)
+            ),
+            allowlisted = true
+        )
+        assertTrue(verdict.score >= 55)
+        assertTrue(verdict.level == DetectionVerdictLevel.HIGH || verdict.level == DetectionVerdictLevel.VERY_HIGH)
     }
 }
