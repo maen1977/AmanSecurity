@@ -17,11 +17,24 @@ monitor=text('app/src/main/java/com/aman/security/security/HighRiskNetworkContac
 main=text('app/src/main/java/com/aman/security/MainActivity.kt')
 layout=text('app/src/main/res/layout/activity_main.xml')
 center=text('app/src/main/java/com/aman/security/security/AttackDetectionCenter.kt')
+preferences=text('app/src/main/java/com/aman/security/protection/ProtectionPreferences.kt')
 test=text('app/src/test/java/com/aman/security/security/DataExfiltrationPolicyTest.kt')
 
 need('versionName = "3.3.0"' in gradle and 'versionCode = 23' in gradle,'version')
 need('android.permission.PACKAGE_USAGE_STATS' in manifest,'usage_access_manifest')
 need('NetworkStatsManager' in guard and 'TrafficStats.getTotalTxBytes()' in guard,'two_stage_stats')
+need('if (totalTx < 0L) return null' in guard and 'totalTx == TrafficStats.UNSUPPORTED' not in guard,'trafficstats_long_compat')
+need(all(key in preferences for key in [
+    'KEY_DATA_EXFIL_GUARD_ENABLED',
+    'KEY_LAST_DATA_EXFIL_PROBE_AT',
+    'KEY_LAST_DATA_EXFIL_DEVICE_TX',
+    'KEY_LAST_DATA_EXFIL_DETAILED_AUDIT_AT',
+    'KEY_LAST_DATA_EXFIL_CHECK_AT',
+    'KEY_LAST_DATA_EXFIL_REVIEW_COUNT',
+    'KEY_LAST_DATA_EXFIL_HIGH_COUNT',
+    'KEY_LAST_DATA_EXFIL_TOP_PACKAGE',
+    'KEY_LAST_DATA_EXFIL_TOP_BYTES',
+]),'preference_keys_declared')
 need('QUICK_UPLOAD_TRIGGER_BYTES = 8L * MIB' in guard and 'PERIODIC_DETAILED_AUDIT_MS = 6L * 60L * 60L * 1000L' in guard,'lightweight_cadence')
 need('newSingleThreadExecutor' in service and 'Thread.MIN_PRIORITY' in service,'low_priority_worker')
 need('maybeRunDataExfiltrationGuard()' in service and 'HEARTBEAT_MS = 10 * 60_000L' in service,'piggyback_existing_heartbeat')

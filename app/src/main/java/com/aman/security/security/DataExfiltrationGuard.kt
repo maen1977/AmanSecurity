@@ -55,7 +55,7 @@ class DataExfiltrationGuard(private val context: Context) {
             return null
         }
         val totalTx = TrafficStats.getTotalTxBytes()
-        if (totalTx == TrafficStats.UNSUPPORTED) return null
+        if (totalTx < 0L) return null
 
         val previousTx = preferences.lastDataExfilDeviceTxBytes
         val previousProbeAt = preferences.lastDataExfilProbeAt

@@ -344,6 +344,15 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_BANKING_ACCESSIBILITY_HEARTBEAT_AT = "banking_accessibility_heartbeat_at"
         private const val KEY_LAST_BANKING_CHECK_AT = "last_banking_check_at"
         private const val KEY_LAST_BANKING_RISK_LEVEL = "last_banking_risk_level"
+        private const val KEY_DATA_EXFIL_GUARD_ENABLED = "data_exfiltration_guard_enabled"
+        private const val KEY_LAST_DATA_EXFIL_PROBE_AT = "last_data_exfil_probe_at"
+        private const val KEY_LAST_DATA_EXFIL_DEVICE_TX = "last_data_exfil_device_tx"
+        private const val KEY_LAST_DATA_EXFIL_DETAILED_AUDIT_AT = "last_data_exfil_detailed_audit_at"
+        private const val KEY_LAST_DATA_EXFIL_CHECK_AT = "last_data_exfil_check_at"
+        private const val KEY_LAST_DATA_EXFIL_REVIEW_COUNT = "last_data_exfil_review_count"
+        private const val KEY_LAST_DATA_EXFIL_HIGH_COUNT = "last_data_exfil_high_count"
+        private const val KEY_LAST_DATA_EXFIL_TOP_PACKAGE = "last_data_exfil_top_package"
+        private const val KEY_LAST_DATA_EXFIL_TOP_BYTES = "last_data_exfil_top_bytes"
         private const val MAX_LEDGER_ENTRIES = 2000
         private const val MAX_APP_LEDGER_ENTRIES = 1500
         private const val MAX_DOWNLOAD_LEDGER_ENTRIES = 4000
