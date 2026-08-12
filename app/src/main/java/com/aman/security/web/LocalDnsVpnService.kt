@@ -110,7 +110,7 @@ class LocalDnsVpnService : VpnService() {
 
         val notification = ProtectionNotifier.buildWebShieldStatusNotification(this)
         val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else 0
         ServiceCompat.startForeground(
             this,

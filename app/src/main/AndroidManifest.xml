@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Antivirus file protection. The user must explicitly grant "All files access" in Android settings. -->
@@ -50,8 +49,11 @@
             android:name=".web.LocalDnsVpnService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="systemExempted"
+            android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled local DNS web shield: keeps the on-device VPN interface active so malicious and phishing domains can be blocked without sending traffic to a remote VPN server." />
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
