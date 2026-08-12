@@ -16,6 +16,7 @@ class SpywareRiskPolicyTest {
             )
         )
         assertEquals(SpywareReviewLevel.LOW, result.level)
+        assertTrue(result.score < 30)
     }
 
     @Test
@@ -45,5 +46,6 @@ class SpywareRiskPolicyTest {
             )
         )
         assertEquals(SpywareReviewLevel.LOW, result.level)
+        assertTrue(result.score < 30)
     }
 }

@@ -53,7 +53,6 @@ object SpywareRiskPolicy {
         if (persistent) score += 7
         if (overlay) score += 5
         if (sideloaded) score += 10
-        score = score.coerceIn(0, 100)
 
         val level = when {
             sideloaded && controls >= 1 && surveillance >= 2 && (persistent || overlay) -> SpywareReviewLevel.HIGH
@@ -62,6 +61,17 @@ object SpywareRiskPolicy {
             controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
             else -> SpywareReviewLevel.LOW
         }
+
+        // Keep the numeric score aligned with the corroborated policy level. The
+        // floor is applied only after the multi-signal level has been established,
+        // so ordinary messaging/privacy permissions can never become spyware merely
+        // by accumulating permission points.
+        score = when (level) {
+            SpywareReviewLevel.HIGH -> maxOf(score, 65)
+            SpywareReviewLevel.REVIEW -> maxOf(score, 35)
+            SpywareReviewLevel.LOW -> minOf(score, 29)
+        }.coerceIn(0, 100)
+
         return SpywareRiskAssessment(score, level, signals)
     }
 }
