@@ -272,7 +272,15 @@ class ProtectionService : Service() {
                             inaccessible = 0,
                             candidates = folder.scannedFiles,
                             truncated = false,
-                            accessMissing = folder.permissionLost
+                            accessMissing = folder.permissionLost,
+                            findings = folder.findings.map { finding ->
+                                SharedStorageAlertFinding(
+                                    displayName = finding.displayName,
+                                    location = finding.location,
+                                    sha256 = finding.sha256,
+                                    severity = finding.severity
+                                )
+                            }
                         )
                     }
                 }
@@ -312,6 +320,14 @@ class ProtectionService : Service() {
                 },
                 title = getString(R.string.timeline_apps_rescan_complete, apps.scannedApps),
                 detail = getString(R.string.timeline_apps_rescan_detail, apps.knownThreats + apps.highRiskApps + files.alerts)
+            )
+
+            ScanFindingsStore(applicationContext).save(
+                sessionId = sessionId,
+                apps = apps,
+                audit = audit,
+                spyware = spyware,
+                files = files
             )
 
             scanStore.complete(

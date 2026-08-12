@@ -54,6 +54,11 @@ import com.aman.security.protection.PersistentScanMode
 import com.aman.security.protection.PersistentScanState
 import com.aman.security.protection.ScanSessionStore
 import com.aman.security.protection.ScanSessionSnapshot
+import com.aman.security.protection.ScanFindingsStore
+import com.aman.security.protection.ScanFindingsSnapshot
+import com.aman.security.protection.StoredScanFinding
+import com.aman.security.protection.StoredScanFindingKind
+import com.aman.security.protection.StoredScanFindingSeverity
 import com.aman.security.scanner.AppInstallSource
 import com.aman.security.scanner.ApkAnalysisState
 import com.aman.security.scanner.ApkIdentityClassification
@@ -88,6 +93,7 @@ import com.aman.security.security.NetworkSecurityAuditor
 import com.aman.security.security.NetworkTransportType
 import com.aman.security.security.PrivacyPermissionAuditor
 import com.aman.security.security.SecurityAuditSummary
+import com.aman.security.security.SpywareCapabilitySignal
 import com.aman.security.security.SpywareAuditor
 import com.aman.security.security.SpywareAuditSummary
 import com.aman.security.security.IntrusionMonitor
@@ -126,6 +132,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var protectionPreferences: ProtectionPreferences
     private lateinit var protectionEventStore: ProtectionEventStore
     private lateinit var protectionActivityStore: ProtectionActivityStore
+    private lateinit var scanFindingsStore: ScanFindingsStore
     private var selectedUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var lastInstalledSummary: InstalledAppsScanSummary? = null
@@ -240,6 +247,7 @@ class MainActivity : AppCompatActivity() {
         protectionPreferences = ProtectionPreferences(this)
         protectionEventStore = ProtectionEventStore(this)
         protectionActivityStore = ProtectionActivityStore(this)
+        scanFindingsStore = ScanFindingsStore(this)
         ProtectionNotifier.ensureChannels(this)
         AutonomousThreatScheduler.schedule(this)
         renderDatabaseInfo()
@@ -345,6 +353,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnQuickProtection.setOnClickListener { showPage(PAGE_PROTECTION) }
         binding.btnQuickQuarantine.setOnClickListener { showPage(PAGE_PROTECTION) }
         binding.btnQuickUpdate.setOnClickListener { showPage(PAGE_SETTINGS); updateThreatDatabase() }
+        binding.btnViewScanFindings.setOnClickListener {
+            renderLatestScanFindings(scrollToFindings = true)
+        }
         binding.btnStopScan.setOnClickListener {
             val persistent = ScanSessionStore(this).snapshot()
             if (persistent.isActive) {
@@ -1797,6 +1808,8 @@ class MainActivity : AppCompatActivity() {
             binding.btnStopScan.isEnabled = !scan.cancelledRequested
             binding.smartScanCard.visibility = View.VISIBLE
             binding.smartResultCard.visibility = View.GONE
+            binding.scanFindingsCard.visibility = View.GONE
+            binding.btnViewScanFindings.visibility = View.GONE
             binding.smartScanProgress.isIndeterminate = scan.state == PersistentScanState.QUEUED
             binding.smartScanProgress.progress = scan.progress
             binding.txtSmartScanPercent.text = getString(R.string.scan_progress_percent, NumberFormat.getIntegerInstance().format(scan.progress))
@@ -1825,6 +1838,7 @@ class MainActivity : AppCompatActivity() {
                         })
                     }
                     showSmartResult(title, if (scan.totalAlerts > 0 || scan.totalAttention > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail, details, color)
+                    renderLatestScanFindings(scrollToFindings = false, expectedSessionId = scan.sessionId, expectedCount = scan.totalAlerts + scan.totalAttention)
                     protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, scan.scannedApps))
                 }
                 PersistentScanState.CANCELLED -> showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
@@ -2750,11 +2764,219 @@ class MainActivity : AppCompatActivity() {
     private fun showSmartResult(titleRes: Int, summaryRes: Int, details: String, colorRes: Int) {
         hideSmartScan()
         binding.smartResultCard.visibility = View.VISIBLE
+        binding.btnViewScanFindings.visibility = View.GONE
+        binding.scanFindingsCard.visibility = View.GONE
         binding.txtSmartResultTitle.setText(titleRes)
         binding.txtSmartResultTitle.setTextColor(getColor(colorRes))
         binding.txtSmartResultSummary.setText(summaryRes)
         binding.txtSmartResultDetails.text = details
     }
+
+    private fun renderLatestScanFindings(
+        scrollToFindings: Boolean,
+        expectedSessionId: String? = null,
+        expectedCount: Int? = null
+    ) {
+        if (!::scanFindingsStore.isInitialized) return
+        val session = expectedSessionId ?: ScanSessionStore(this).snapshot().sessionId
+        val snapshot = scanFindingsStore.snapshot(session)
+        val total = snapshot.findings.size
+        val shouldShow = total > 0 || (expectedCount ?: 0) > 0
+        binding.btnViewScanFindings.visibility = if (shouldShow) View.VISIBLE else View.GONE
+        if (!shouldShow) {
+            binding.scanFindingsCard.visibility = View.GONE
+            return
+        }
+        val visibleCount = if (total > 0) total else (expectedCount ?: 0)
+        binding.btnViewScanFindings.text = getString(R.string.scan_findings_view_action, visibleCount)
+        binding.scanFindingsCard.visibility = View.VISIBLE
+        renderFindingGroups(snapshot, expectedCount ?: 0)
+        if (scrollToFindings) scrollToSection(binding.scanFindingsCard)
+    }
+
+    private fun renderFindingGroups(snapshot: ScanFindingsSnapshot, expectedCount: Int) {
+        binding.highRiskFindingsContainer.removeAllViews()
+        binding.reviewFindingsContainer.removeAllViews()
+        val high = snapshot.highFindings
+        val review = snapshot.reviewFindings
+        binding.txtHighRiskFindingsHeading.text = getString(R.string.scan_findings_high_heading, high.size)
+        binding.txtReviewFindingsHeading.text = getString(R.string.scan_findings_review_heading, review.size)
+        binding.txtHighRiskFindingsHeading.visibility = if (high.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.highRiskFindingsContainer.visibility = if (high.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.txtReviewFindingsHeading.visibility = if (review.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.reviewFindingsContainer.visibility = if (review.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.txtScanFindingsMissing.visibility = if (snapshot.findings.isEmpty() && expectedCount > 0) View.VISIBLE else View.GONE
+
+        high.take(MAX_VISIBLE_SCAN_FINDINGS).forEach { addScanFindingView(binding.highRiskFindingsContainer, it) }
+        review.take(MAX_VISIBLE_SCAN_FINDINGS).forEach { addScanFindingView(binding.reviewFindingsContainer, it) }
+        addHiddenFindingCount(binding.highRiskFindingsContainer, high.size - MAX_VISIBLE_SCAN_FINDINGS)
+        addHiddenFindingCount(binding.reviewFindingsContainer, review.size - MAX_VISIBLE_SCAN_FINDINGS)
+    }
+
+    private fun addHiddenFindingCount(container: android.widget.LinearLayout, hidden: Int) {
+        if (hidden <= 0) return
+        container.addView(android.widget.TextView(this).apply {
+            text = getString(R.string.scan_findings_more, hidden)
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 12f
+            setPadding(0, dp(8), 0, 0)
+        })
+    }
+
+    private fun addScanFindingView(container: android.widget.LinearLayout, finding: StoredScanFinding) {
+        val card = com.google.android.material.card.MaterialCardView(this).apply {
+            radius = dp(16).toFloat()
+            strokeWidth = dp(1)
+            setStrokeColor(getColor(if (finding.severity == StoredScanFindingSeverity.REVIEW) R.color.status_warn else R.color.status_danger))
+            setCardBackgroundColor(getColor(R.color.surface_card))
+            useCompatPadding = false
+            val params = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.topMargin = dp(8)
+            layoutParams = params
+        }
+        val body = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+        }
+        body.addView(android.widget.TextView(this).apply {
+            text = displayFindingTitle(finding)
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        body.addView(android.widget.TextView(this).apply {
+            text = findingSeverityLabel(finding.severity)
+            setTextColor(getColor(if (finding.severity == StoredScanFindingSeverity.REVIEW) R.color.status_warn else R.color.status_danger))
+            textSize = 13f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(0, dp(3), 0, 0)
+        })
+        body.addView(android.widget.TextView(this).apply {
+            text = findingDetails(finding)
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 12f
+            setPadding(0, dp(6), 0, 0)
+            setTextIsSelectable(true)
+        })
+        if (finding.packageName.isNotBlank()) {
+            body.addView(android.widget.TextView(this).apply {
+                setText(R.string.scan_finding_open_app_info)
+                setTextColor(getColor(R.color.brand_primary_dark))
+                textSize = 12f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dp(7), 0, 0)
+            })
+            card.setOnClickListener { openAppDetails(finding.packageName) }
+        }
+        card.addView(body)
+        container.addView(card)
+    }
+
+    private fun displayFindingTitle(finding: StoredScanFinding): String = when (finding.kind) {
+        StoredScanFindingKind.APP, StoredScanFindingKind.SPYWARE, StoredScanFindingKind.FILE -> finding.title
+        StoredScanFindingKind.DEVICE, StoredScanFindingKind.NETWORK, StoredScanFindingKind.PRIVACY -> auditFindingLabel(finding.title)
+    }
+
+    private fun findingSeverityLabel(severity: StoredScanFindingSeverity): String = getString(
+        when (severity) {
+            StoredScanFindingSeverity.CONFIRMED -> R.string.scan_finding_confirmed
+            StoredScanFindingSeverity.HIGH -> R.string.scan_finding_high
+            StoredScanFindingSeverity.REVIEW -> R.string.scan_finding_review
+        }
+    )
+
+    private fun findingDetails(finding: StoredScanFinding): String = buildString {
+        append(getString(R.string.scan_finding_category_line, getString(findingKindLabel(finding.kind))))
+        if (finding.packageName.isNotBlank()) {
+            append('\n')
+            append(getString(R.string.package_name_line, finding.packageName))
+        }
+        if (finding.score >= 0) {
+            append('\n')
+            append(getString(R.string.scan_finding_evidence_score, finding.score))
+        }
+        if (finding.sourceCode.isNotBlank()) {
+            append('\n')
+            append(getString(R.string.install_source_line, getString(installSourceString(runCatching { AppInstallSource.valueOf(finding.sourceCode) }.getOrDefault(AppInstallSource.UNKNOWN)))))
+        }
+        val reasons = finding.reasonCodes.mapNotNull { findingReasonLabel(finding.kind, it) }.distinct()
+        if (reasons.isNotEmpty()) {
+            append('\n')
+            append(getString(R.string.scan_finding_why))
+            reasons.forEach { reason -> append("\n• ").append(reason) }
+        }
+        if (finding.threatReference.isNotBlank()) {
+            append('\n')
+            append(getString(R.string.threat_reference_line, finding.threatReference))
+        }
+        if (finding.location.isNotBlank()) {
+            append('\n')
+            append(getString(R.string.scan_finding_location_line, finding.location))
+        }
+        if (finding.sha256.isNotBlank()) {
+            append('\n')
+            append(getString(R.string.scan_finding_sha256_line, finding.sha256))
+        }
+    }
+
+    private fun findingKindLabel(kind: StoredScanFindingKind): Int = when (kind) {
+        StoredScanFindingKind.APP -> R.string.scan_finding_kind_app
+        StoredScanFindingKind.SPYWARE -> R.string.scan_finding_kind_spyware
+        StoredScanFindingKind.DEVICE -> R.string.scan_finding_kind_device
+        StoredScanFindingKind.NETWORK -> R.string.scan_finding_kind_network
+        StoredScanFindingKind.PRIVACY -> R.string.scan_finding_kind_privacy
+        StoredScanFindingKind.FILE -> R.string.scan_finding_kind_file
+    }
+
+    private fun findingReasonLabel(kind: StoredScanFindingKind, code: String): String? = when (kind) {
+        StoredScanFindingKind.APP -> runCatching { AppRiskSignal.valueOf(code) }.getOrNull()?.let { getString(riskSignalString(it)) }
+        StoredScanFindingKind.SPYWARE -> spywareSignalLabel(code)
+        StoredScanFindingKind.DEVICE, StoredScanFindingKind.NETWORK, StoredScanFindingKind.PRIVACY -> auditFindingLabel(code)
+        StoredScanFindingKind.FILE -> null
+    }
+
+    private fun spywareSignalLabel(code: String): String? = when (runCatching { SpywareCapabilitySignal.valueOf(code) }.getOrNull()) {
+        SpywareCapabilitySignal.ACCESSIBILITY_SERVICE -> getString(R.string.spyware_signal_accessibility)
+        SpywareCapabilitySignal.NOTIFICATION_LISTENER -> getString(R.string.spyware_signal_notification_listener)
+        SpywareCapabilitySignal.DEVICE_ADMIN -> getString(R.string.spyware_signal_device_admin)
+        SpywareCapabilitySignal.BOOT_PERSISTENCE -> getString(R.string.spyware_signal_boot)
+        SpywareCapabilitySignal.OVERLAY_DECLARED -> getString(R.string.spyware_signal_overlay)
+        SpywareCapabilitySignal.SMS_ACCESS -> getString(R.string.spyware_signal_sms)
+        SpywareCapabilitySignal.CALL_LOG_ACCESS -> getString(R.string.spyware_signal_call_log)
+        SpywareCapabilitySignal.LOCATION_ACCESS -> getString(R.string.spyware_signal_location)
+        SpywareCapabilitySignal.MICROPHONE_ACCESS -> getString(R.string.spyware_signal_microphone)
+        SpywareCapabilitySignal.CONTACTS_ACCESS -> getString(R.string.spyware_signal_contacts)
+        SpywareCapabilitySignal.SIDELOADED -> getString(R.string.spyware_signal_sideloaded)
+        null -> null
+    }
+
+    private fun auditFindingLabel(id: String): String = getString(when (id) {
+        "screen_lock" -> R.string.scan_audit_screen_lock
+        "root_signals" -> R.string.scan_audit_root_signals
+        "adb" -> R.string.scan_audit_adb
+        "developer_options" -> R.string.scan_audit_developer_options
+        "automatic_time" -> R.string.scan_audit_automatic_time
+        "automatic_timezone" -> R.string.scan_audit_automatic_timezone
+        "captive_portal" -> R.string.scan_audit_captive_portal
+        "network_unvalidated" -> R.string.scan_audit_network_unvalidated
+        "private_dns_optional" -> R.string.scan_audit_private_dns
+        "privacy_permission_review" -> R.string.scan_audit_privacy_review
+        "privacy_permission_inventory" -> R.string.scan_audit_privacy_inventory
+        else -> R.string.scan_audit_other
+    })
+
+    private fun openAppDetails(packageName: String) {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }.onFailure {
+            Toast.makeText(this, R.string.scan_finding_app_info_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun renderSmartInstalledResult(summary: InstalledAppsScanSummary) {
         val formatter = NumberFormat.getIntegerInstance()
@@ -2842,6 +3064,7 @@ class MainActivity : AppCompatActivity() {
         private const val SECURITY_AUDIT_REFRESH_MS = 60_000L
         private const val OPERATION_UI_POLL_MS = 1_200L
         private const val MAX_VISIBLE_APP_RESULTS = 20
+        private const val MAX_VISIBLE_SCAN_FINDINGS = 50
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20
         const val EXTRA_OPEN_PAGE = "open_page"

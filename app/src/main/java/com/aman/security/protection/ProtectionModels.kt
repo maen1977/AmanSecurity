@@ -19,6 +19,13 @@ data class ProtectionEvent(
     val detectedAt: Long
 )
 
+data class ProtectedFolderAlertFinding(
+    val displayName: String,
+    val location: String,
+    val sha256: String,
+    val severity: ProtectionSeverity
+)
+
 data class ProtectedFolderScanSummary(
     val scannedFiles: Int,
     val skippedUnchanged: Int,
@@ -27,5 +34,6 @@ data class ProtectedFolderScanSummary(
     val highRisk: Int,
     val inaccessibleFiles: Int,
     val truncated: Boolean,
-    val permissionLost: Boolean
+    val permissionLost: Boolean,
+    val findings: List<ProtectedFolderAlertFinding> = emptyList()
 )

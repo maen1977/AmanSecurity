@@ -29,6 +29,7 @@ def main():
     run('play_protect_sideload_gate.py')
     run('direct_install_3_3_gate.py')
     run('core_runtime_3_4_gate.py')
+    run('scan_findings_3_4_gate.py')
     manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()
     if 'android.permission.WRITE_EXTERNAL_STORAGE' in manifest: raise SystemExit('PRIVACY_GATE_FAILED legacy_write_storage')
     if 'android:usesCleartextTraffic="false"' not in manifest or 'android.permission.INTERNET' not in manifest: raise SystemExit('PRIVACY_GATE_FAILED transport')

@@ -42,6 +42,7 @@ class ProtectedFolderScanner(
         var high = 0
         var inaccessible = 0
         var truncated = false
+        val findings = mutableListOf<ProtectedFolderAlertFinding>()
 
         while (queue.isNotEmpty()) {
             if (visited >= ProtectionPolicy.MAX_DOCUMENTS_PER_RUN || scanned >= ProtectionPolicy.MAX_SCAN_FILES_PER_RUN) {
@@ -144,6 +145,12 @@ class ProtectedFolderScanner(
                         notifier(event)
                         alerts++
                         if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                        findings += ProtectedFolderAlertFinding(
+                            displayName = result.fileName,
+                            location = treeUri.toString() + "\n" + documentId,
+                            sha256 = result.sha256,
+                            severity = severity
+                        )
                     }
                 }
             }
@@ -155,7 +162,7 @@ class ProtectedFolderScanner(
         preferences.lastCheckAt = System.currentTimeMillis()
         preferences.lastScannedCount = scanned
         preferences.lastAlertCount = alerts
-        return ProtectedFolderScanSummary(scanned, skipped, alerts, known, high, inaccessible, truncated, false)
+        return ProtectedFolderScanSummary(scanned, skipped, alerts, known, high, inaccessible, truncated, false, findings)
     }
 
     private fun hasPersistedReadPermission(treeUri: Uri): Boolean =

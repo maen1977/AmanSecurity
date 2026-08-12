@@ -10,6 +10,13 @@ import com.aman.security.security.SecurityRecordStore
 import java.io.File
 import java.util.ArrayDeque
 
+data class SharedStorageAlertFinding(
+    val displayName: String,
+    val location: String,
+    val sha256: String,
+    val severity: ProtectionSeverity
+)
+
 data class SharedStorageScanSummary(
     val scannedFiles: Int,
     val alerts: Int,
@@ -18,7 +25,8 @@ data class SharedStorageScanSummary(
     val inaccessible: Int,
     val candidates: Int,
     val truncated: Boolean,
-    val accessMissing: Boolean
+    val accessMissing: Boolean,
+    val findings: List<SharedStorageAlertFinding> = emptyList()
 )
 
 /** Manual full shared-storage scan used by the Scan Center. */
@@ -44,6 +52,7 @@ class SharedStorageScanner(private val context: Context) {
         var known = 0
         var high = 0
         var inaccessible = 0
+        val findings = mutableListOf<SharedStorageAlertFinding>()
         for ((index, file) in candidates.withIndex()) {
             if (cancelled()) break
             onProgress?.invoke(index, candidates.size, file.name, file.absolutePath)
@@ -66,6 +75,12 @@ class SharedStorageScanner(private val context: Context) {
                 preferences.totalThreatsDetected += 1L
                 alerts++
                 if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                findings += SharedStorageAlertFinding(
+                    displayName = result.fileName,
+                    location = file.absolutePath,
+                    sha256 = result.sha256,
+                    severity = severity
+                )
             }
             onProgress?.invoke(index + 1, candidates.size, file.name, file.absolutePath)
         }
@@ -79,7 +94,7 @@ class SharedStorageScanner(private val context: Context) {
             )
             ProtectionServiceController.refresh(context)
         }
-        return SharedStorageScanSummary(scanned, alerts, known, high, inaccessible, candidates.size, enumeration.second, false)
+        return SharedStorageScanSummary(scanned, alerts, known, high, inaccessible, candidates.size, enumeration.second, false, findings)
     }
 
     private fun enumerateCandidates(cancelled: () -> Boolean): Pair<List<File>, Boolean> {
