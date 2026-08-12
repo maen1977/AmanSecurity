@@ -49,14 +49,21 @@ object SpywareRiskPolicy {
         val overlay = SpywareCapabilitySignal.OVERLAY_DECLARED in signals
         val sideloaded = SpywareCapabilitySignal.SIDELOADED in signals
 
+        val sideloadedPrivilegedSurveillance =
+            sideloaded && controls >= 1 && surveillance >= 2 && (persistent || overlay)
+
         var score = controls * 13 + surveillance * 4
         if (persistent) score += 7
         if (overlay) score += 5
         if (sideloaded) score += 10
+        // Correlated high-risk capabilities are materially stronger than their isolated signals.
+        // Keep the bonus scoped to the same combination that triggers HIGH to avoid inflating
+        // ordinary permission-only or single-capability apps.
+        if (sideloadedPrivilegedSurveillance) score += 5
         score = score.coerceIn(0, 100)
 
         val level = when {
-            sideloaded && controls >= 1 && surveillance >= 2 && (persistent || overlay) -> SpywareReviewLevel.HIGH
+            sideloadedPrivilegedSurveillance -> SpywareReviewLevel.HIGH
             controls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
             sideloaded && controls >= 1 && surveillance >= 1 -> SpywareReviewLevel.REVIEW
             controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW

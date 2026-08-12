@@ -34,6 +34,21 @@ class SpywareRiskPolicyTest {
     }
 
     @Test
+    fun sideloadedPrivilegedSurveillanceWithOverlayAlsoScoresHigh() {
+        val result = SpywareRiskPolicy.evaluate(
+            setOf(
+                SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
+                SpywareCapabilitySignal.SIDELOADED,
+                SpywareCapabilitySignal.OVERLAY_DECLARED,
+                SpywareCapabilitySignal.MICROPHONE_ACCESS,
+                SpywareCapabilitySignal.LOCATION_ACCESS
+            )
+        )
+        assertEquals(SpywareReviewLevel.HIGH, result.level)
+        assertTrue(result.score >= 40)
+    }
+
+    @Test
     fun permissionsAloneNeverEscalateToReview() {
         val result = SpywareRiskPolicy.evaluate(
             setOf(
