@@ -37,12 +37,14 @@ object AutonomousThreatScheduler {
         val last = AutonomousThreatStore(app).info().lastSuccessfulUpdateEpochMs
         if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(6)) {
             val state = ThreatUpdateStateStore(app)
-            if (!state.snapshot().isActive) state.queued()
+            val snapshot = state.snapshot()
+            if (!snapshot.isActive || snapshot.isStaleActive) state.queued()
             val initial = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
                 .setConstraints(network)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
                 .build()
-            WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.KEEP, initial)
+            val policy = if (snapshot.isStaleActive) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+            WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, policy, initial)
         }
     }
 

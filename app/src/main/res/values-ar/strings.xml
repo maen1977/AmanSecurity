@@ -759,4 +759,24 @@
     <string name="scan_audit_privacy_inventory">تمت مراجعة قائمة الصلاحيات الحساسة</string>
     <string name="scan_audit_other">ملاحظة في إعدادات الأمان</string>
 
+
+    <string name="threat_update_running_detailed">تحديث الحماية • المصدر %1$d من %2$d • %3$d%% • %4$s</string>
+    <string name="threat_update_transfer_known">تم تنزيل %1$s من %2$s للمصدر الحالي</string>
+    <string name="threat_update_transfer_unknown">تم تنزيل %1$s للمصدر الحالي</string>
+    <string name="threat_update_last_success">آخر تحديث ناجح: %1$s</string>
+    <string name="threat_update_next_check">الفحص التلقائي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
+    <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
+    <string name="threat_update_never_success">لم ينجح بعد أي تحديث لمعلومات التهديدات عبر الإنترنت.</string>
+    <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مضيف تصيد • %3$s مضيف C2 • %4$s ثغرة أندرويد</string>
+    <string name="threat_update_source_ok">✓ %1$s — تم التحديث</string>
+    <string name="threat_update_source_failed">⚠ %1$s — فشل؛ تم الاحتفاظ بآخر بيانات صالحة</string>
+    <string name="threat_update_source_waiting">• %1$s — بانتظار أول تحديث ناجح</string>
+    <string name="threat_update_source_fresh">✓ %1$s — حديث</string>
+    <string name="threat_update_source_stale">⚠ %1$s — قديم / يحتاج إعادة المحاولة</string>
+    <string name="threat_source_phishing_primary">مصدر التصيد الأساسي</string>
+    <string name="threat_source_phishing_community">مصدر التصيد المجتمعي</string>
+
+    <string name="threat_update_stalled_retry">لم يرسل التحديث أي تقدم منذ مدة طويلة. يمكنك الضغط على تحديث الحماية الآن لإعادة تشغيله بأمان.</string>
+    <string name="update_in_progress_button">جارٍ تحديث الحماية…</string>
+    <string name="update_retry_button">إعادة محاولة تحديث الحماية</string>
 </resources>

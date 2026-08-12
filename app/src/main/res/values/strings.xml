@@ -759,4 +759,24 @@
     <string name="scan_audit_privacy_inventory">Sensitive permissions were inventoried</string>
     <string name="scan_audit_other">Security configuration finding</string>
 
+
+    <string name="threat_update_running_detailed">Updating protection • source %1$d of %2$d • %3$d%% • %4$s</string>
+    <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the current source</string>
+    <string name="threat_update_transfer_unknown">Downloaded %1$s for the current source</string>
+    <string name="threat_update_last_success">Last successful update: %1$s</string>
+    <string name="threat_update_next_check">Next automatic check: around %1$s (Android may delay background work)</string>
+    <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
+    <string name="threat_update_never_success">No successful online threat-intelligence update yet.</string>
+    <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s C2 hosts • %4$s Android CVEs</string>
+    <string name="threat_update_source_ok">✓ %1$s — updated</string>
+    <string name="threat_update_source_failed">⚠ %1$s — failed; last-known-good data kept</string>
+    <string name="threat_update_source_waiting">• %1$s — waiting for first successful update</string>
+    <string name="threat_update_source_fresh">✓ %1$s — current</string>
+    <string name="threat_update_source_stale">⚠ %1$s — stale / retry needed</string>
+    <string name="threat_source_phishing_primary">Primary phishing feed</string>
+    <string name="threat_source_phishing_community">Community phishing feed</string>
+
+    <string name="threat_update_stalled_retry">The update has not reported progress for too long. You can tap Update protection now to restart it safely.</string>
+    <string name="update_in_progress_button">Updating protection…</string>
+    <string name="update_retry_button">Retry protection update</string>
 </resources>

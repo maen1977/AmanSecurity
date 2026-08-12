@@ -8,6 +8,11 @@ data class ThreatUpdateSnapshot(
     val state: ThreatUpdateState,
     val progress: Int,
     val currentSource: String,
+    val currentSourceIndex: Int,
+    val totalSources: Int,
+    val completedSources: Int,
+    val currentDownloadedBytes: Long,
+    val currentTotalBytes: Long,
     val startedAt: Long,
     val finishedAt: Long,
     val successfulSources: Int,
@@ -20,6 +25,12 @@ data class ThreatUpdateSnapshot(
     val error: String
 ) {
     val isActive: Boolean get() = state == ThreatUpdateState.QUEUED || state == ThreatUpdateState.RUNNING
+    val isStaleActive: Boolean get() = isActive && startedAt > 0L && System.currentTimeMillis() - startedAt >= STALE_ACTIVE_MS
+    val blocksManualUpdate: Boolean get() = isActive && !isStaleActive
+
+    companion object {
+        private const val STALE_ACTIVE_MS = 8 * 60_000L
+    }
 }
 
 /** Durable UI/runtime state for both manual and periodic threat-intelligence updates. */
@@ -32,30 +43,75 @@ class ThreatUpdateStateStore(context: Context) {
             .putString(KEY_STATE, ThreatUpdateState.QUEUED.name)
             .putInt(KEY_PROGRESS, 0)
             .putString(KEY_SOURCE, "queued")
+            .putInt(KEY_SOURCE_INDEX, 0)
+            .putInt(KEY_TOTAL_SOURCES, AutonomousThreatUpdater.TOTAL_SOURCES)
+            .putInt(KEY_COMPLETED_SOURCES, 0)
+            .putLong(KEY_DOWNLOADED_BYTES, 0L)
+            .putLong(KEY_TOTAL_BYTES, -1L)
             .putLong(KEY_STARTED, now)
             .putLong(KEY_FINISHED, 0L)
+            .putInt(KEY_SUCCESSFUL, 0)
+            .putInt(KEY_FAILED, 0)
+            .putInt(KEY_CHANGED, 0)
             .putString(KEY_ERROR, "")
             .apply()
     }
 
     fun running() {
+        val previous = snapshot()
+        val now = System.currentTimeMillis()
+        val queuedRecently = previous.state == ThreatUpdateState.QUEUED &&
+            previous.startedAt > 0L && now - previous.startedAt < 30 * 60_000L
         prefs.edit()
             .putString(KEY_STATE, ThreatUpdateState.RUNNING.name)
             .putInt(KEY_PROGRESS, 1)
             .putString(KEY_SOURCE, "starting")
-            .putLong(KEY_STARTED, System.currentTimeMillis())
+            .putInt(KEY_SOURCE_INDEX, 0)
+            .putInt(KEY_TOTAL_SOURCES, AutonomousThreatUpdater.TOTAL_SOURCES)
+            .putInt(KEY_COMPLETED_SOURCES, 0)
+            .putLong(KEY_DOWNLOADED_BYTES, 0L)
+            .putLong(KEY_TOTAL_BYTES, -1L)
+            .putLong(KEY_STARTED, if (queuedRecently) previous.startedAt else now)
             .putLong(KEY_FINISHED, 0L)
+            .putInt(KEY_SUCCESSFUL, 0)
+            .putInt(KEY_FAILED, 0)
+            .putInt(KEY_CHANGED, 0)
             .putString(KEY_ERROR, "")
             .apply()
     }
 
-    fun progress(source: String, completed: Int, total: Int) {
-        val percent = if (total <= 0) 1 else ((completed.coerceIn(0, total) * 95) / total).coerceIn(1, 95)
-        prefs.edit()
+    /** Persist fine-grained source/download progress without allowing the visible percent to move backwards. */
+    fun progress(update: AutonomousUpdateProgress) {
+        val current = snapshot()
+        val totalSources = update.totalSources.coerceAtLeast(1)
+        val completed = update.completedSources.coerceIn(0, totalSources)
+        val sourceIndex = update.sourceIndex.coerceIn(1, totalSources)
+        val fraction = when {
+            update.sourceFinished -> 1.0
+            update.totalBytes > 0L -> (update.downloadedBytes.toDouble() / update.totalBytes.toDouble()).coerceIn(0.0, 0.95)
+            update.downloadedBytes > 0L -> 0.35
+            else -> 0.05
+        }
+        val base = (sourceIndex - 1).coerceAtLeast(0).toDouble()
+        val computed = (((base + fraction) / totalSources.toDouble()) * 100.0).toInt().coerceIn(1, 99)
+        val percent = maxOf(current.progress, computed, if (update.sourceFinished) (completed * 100 / totalSources).coerceAtMost(99) else 1)
+
+        val editor = prefs.edit()
             .putString(KEY_STATE, ThreatUpdateState.RUNNING.name)
             .putInt(KEY_PROGRESS, percent)
-            .putString(KEY_SOURCE, source.take(80))
-            .apply()
+            .putString(KEY_SOURCE, update.sourceKey.take(80))
+            .putInt(KEY_SOURCE_INDEX, sourceIndex)
+            .putInt(KEY_TOTAL_SOURCES, totalSources)
+            .putInt(KEY_COMPLETED_SOURCES, completed)
+            .putLong(KEY_DOWNLOADED_BYTES, update.downloadedBytes.coerceAtLeast(0L))
+            .putLong(KEY_TOTAL_BYTES, update.totalBytes)
+        if (update.sourceFinished && update.sourceSucceeded != null) {
+            val success = current.successfulSources + if (update.sourceSucceeded) 1 else 0
+            val failed = current.failedSources + if (!update.sourceSucceeded) 1 else 0
+            editor.putInt(KEY_SUCCESSFUL, success.coerceAtMost(totalSources))
+            editor.putInt(KEY_FAILED, failed.coerceAtMost(totalSources))
+        }
+        editor.apply()
     }
 
     fun complete(result: AutonomousUpdateResult) {
@@ -105,7 +161,7 @@ class ThreatUpdateStateStore(context: Context) {
         writeTerminal(
             state = ThreatUpdateState.FAILED,
             successful = current.successfulSources,
-            failed = current.failedSources,
+            failed = current.failedSources.coerceAtLeast(1),
             changed = current.changedSources,
             malware = current.malwareHashes,
             phishing = current.phishingHosts,
@@ -132,6 +188,11 @@ class ThreatUpdateStateStore(context: Context) {
             .putString(KEY_STATE, state.name)
             .putInt(KEY_PROGRESS, 100)
             .putString(KEY_SOURCE, "complete")
+            .putInt(KEY_SOURCE_INDEX, AutonomousThreatUpdater.TOTAL_SOURCES)
+            .putInt(KEY_TOTAL_SOURCES, AutonomousThreatUpdater.TOTAL_SOURCES)
+            .putInt(KEY_COMPLETED_SOURCES, AutonomousThreatUpdater.TOTAL_SOURCES)
+            .putLong(KEY_DOWNLOADED_BYTES, 0L)
+            .putLong(KEY_TOTAL_BYTES, -1L)
             .putLong(KEY_FINISHED, now)
             .putInt(KEY_SUCCESSFUL, successful.coerceAtLeast(0))
             .putInt(KEY_FAILED, failed.coerceAtLeast(0))
@@ -151,6 +212,11 @@ class ThreatUpdateStateStore(context: Context) {
             state = state,
             progress = prefs.getInt(KEY_PROGRESS, 0).coerceIn(0, 100),
             currentSource = prefs.getString(KEY_SOURCE, "").orEmpty(),
+            currentSourceIndex = prefs.getInt(KEY_SOURCE_INDEX, 0),
+            totalSources = prefs.getInt(KEY_TOTAL_SOURCES, AutonomousThreatUpdater.TOTAL_SOURCES).coerceAtLeast(1),
+            completedSources = prefs.getInt(KEY_COMPLETED_SOURCES, 0).coerceAtLeast(0),
+            currentDownloadedBytes = prefs.getLong(KEY_DOWNLOADED_BYTES, 0L).coerceAtLeast(0L),
+            currentTotalBytes = prefs.getLong(KEY_TOTAL_BYTES, -1L),
             startedAt = prefs.getLong(KEY_STARTED, 0L),
             finishedAt = prefs.getLong(KEY_FINISHED, 0L),
             successfulSources = prefs.getInt(KEY_SUCCESSFUL, 0),
@@ -165,10 +231,15 @@ class ThreatUpdateStateStore(context: Context) {
     }
 
     companion object {
-        private const val PREFS = "aman_threat_update_state_v1"
+        private const val PREFS = "aman_threat_update_state_v2"
         private const val KEY_STATE = "state"
         private const val KEY_PROGRESS = "progress"
         private const val KEY_SOURCE = "source"
+        private const val KEY_SOURCE_INDEX = "source_index"
+        private const val KEY_TOTAL_SOURCES = "total_sources"
+        private const val KEY_COMPLETED_SOURCES = "completed_sources"
+        private const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
+        private const val KEY_TOTAL_BYTES = "total_bytes"
         private const val KEY_STARTED = "started"
         private const val KEY_FINISHED = "finished"
         private const val KEY_SUCCESSFUL = "successful"

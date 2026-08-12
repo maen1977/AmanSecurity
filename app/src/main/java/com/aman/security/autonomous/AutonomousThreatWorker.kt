@@ -14,8 +14,8 @@ class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Wo
         state.running()
         val database = SignatureDatabase(applicationContext)
         val outcome = runCatching {
-            AutonomousThreatUpdater(applicationContext, database).update { source, completed, total ->
-                state.progress(source, completed, total)
+            AutonomousThreatUpdater(applicationContext, database).update { progress ->
+                state.progress(progress)
             }
         }
         val result = outcome.getOrElse {

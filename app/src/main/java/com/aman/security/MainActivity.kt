@@ -119,6 +119,7 @@ import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -147,6 +148,7 @@ class MainActivity : AppCompatActivity() {
     private var operationUiTickerRunning = false
     private var persistentScanObserved = false
     private var lastRenderedPersistentScanCompletion = 0L
+    private var lastRenderedThreatUpdateCompletion = 0L
     private val operationUiTicker = object : Runnable {
         override fun run() {
             if (!operationUiTickerRunning || !::binding.isInitialized || isFinishing || isDestroyed) return
@@ -493,12 +495,13 @@ class MainActivity : AppCompatActivity() {
         val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
         binding.txtDatabaseFreshness.text = getString(R.string.database_baseline_date, formattedDate)
         renderAutonomousIntel()
+        renderThreatUpdateState(ThreatUpdateStateStore(this).snapshot())
         renderProtectionPosture()
     }
 
     private fun updateThreatDatabase() {
         val state = ThreatUpdateStateStore(this).snapshot()
-        if (state.isActive) {
+        if (state.blocksManualUpdate) {
             renderThreatUpdateState(state)
             return
         }
@@ -1852,36 +1855,121 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderThreatUpdateState(state: com.aman.security.autonomous.ThreatUpdateSnapshot) {
-        binding.btnUpdateDatabase.isEnabled = !state.isActive
+        binding.btnUpdateDatabase.isEnabled = !state.blocksManualUpdate
+        binding.btnUpdateDatabase.setText(when {
+            state.isStaleActive -> R.string.update_retry_button
+            state.isActive -> R.string.update_in_progress_button
+            else -> R.string.update_database
+        })
+        binding.progressThreatUpdate.visibility = if (state.isActive) View.VISIBLE else View.GONE
+        binding.progressThreatUpdate.isIndeterminate = state.state == ThreatUpdateState.QUEUED
+        binding.progressThreatUpdate.progress = state.progress
+
+        if (state.finishedAt > 0L && state.finishedAt > lastRenderedThreatUpdateCompletion &&
+            state.state in setOf(ThreatUpdateState.SUCCESS, ThreatUpdateState.PARTIAL, ThreatUpdateState.FAILED)
+        ) {
+            lastRenderedThreatUpdateCompletion = state.finishedAt
+            database.reloadAutonomous()
+            renderAutonomousIntel()
+        }
+
+        val info = database.autonomousStore.info()
+        binding.txtUpdateTiming.text = threatUpdateTimingText(info.lastSuccessfulUpdateEpochMs)
+        binding.txtUpdateSourceDetails.text = buildThreatSourceStatusText(info)
+
+        binding.txtUpdateTransfer.visibility = View.GONE
         when (state.state) {
-            ThreatUpdateState.IDLE -> Unit
+            ThreatUpdateState.IDLE -> binding.txtUpdateStatus.setText(R.string.update_idle)
             ThreatUpdateState.QUEUED -> binding.txtUpdateStatus.setText(R.string.threat_update_queued)
-            ThreatUpdateState.RUNNING -> binding.txtUpdateStatus.text = getString(
-                R.string.threat_update_running,
-                state.progress,
-                threatSourceLabel(state.currentSource)
-            )
-            ThreatUpdateState.SUCCESS -> {
-                binding.txtUpdateStatus.text = getString(R.string.threat_update_success_persistent, state.changedSources)
-                database.reloadAutonomous()
-                renderAutonomousIntel()
+            ThreatUpdateState.RUNNING -> {
+                binding.txtUpdateStatus.text = if (state.isStaleActive) {
+                    getString(R.string.threat_update_stalled_retry)
+                } else getString(
+                    R.string.threat_update_running_detailed,
+                    state.currentSourceIndex.coerceAtLeast(1),
+                    state.totalSources,
+                    state.progress,
+                    threatSourceLabel(state.currentSource)
+                )
+                if (state.currentDownloadedBytes > 0L) {
+                    binding.txtUpdateTransfer.visibility = View.VISIBLE
+                    binding.txtUpdateTransfer.text = if (state.currentTotalBytes > 0L) {
+                        getString(
+                            R.string.threat_update_transfer_known,
+                            formatByteCount(state.currentDownloadedBytes),
+                            formatByteCount(state.currentTotalBytes)
+                        )
+                    } else {
+                        getString(R.string.threat_update_transfer_unknown, formatByteCount(state.currentDownloadedBytes))
+                    }
+                }
             }
-            ThreatUpdateState.PARTIAL -> {
-                binding.txtUpdateStatus.text = getString(R.string.threat_update_partial_persistent, state.successfulSources, state.failedSources)
-                database.reloadAutonomous()
-                renderAutonomousIntel()
+            ThreatUpdateState.SUCCESS -> binding.txtUpdateStatus.text = buildString {
+                append(getString(R.string.threat_update_success_persistent, state.changedSources))
+                append('\n')
+                append(threatIntelCountsText(info))
+            }
+            ThreatUpdateState.PARTIAL -> binding.txtUpdateStatus.text = buildString {
+                append(getString(R.string.threat_update_partial_persistent, state.successfulSources, state.failedSources))
+                append('\n')
+                append(threatIntelCountsText(info))
             }
             ThreatUpdateState.FAILED -> binding.txtUpdateStatus.setText(R.string.threat_update_failed_persistent)
         }
     }
 
-    private fun threatSourceLabel(source: String): String = getString(when {
-        source == "starting" || source == "queued" -> R.string.threat_source_starting
-        "malware_url" in source -> R.string.threat_source_malware_urls
-        "malware" in source -> R.string.threat_source_malware
-        "phish" in source -> R.string.threat_source_phishing
-        "c2" in source -> R.string.threat_source_c2
-        "android" in source -> R.string.threat_source_android
+    private fun threatUpdateTimingText(lastSuccessfulAt: Long): String {
+        if (lastSuccessfulAt <= 0L) return getString(R.string.threat_update_never_success)
+        val last = DateFormat.getDateTimeInstance().format(Date(lastSuccessfulAt))
+        val nextAt = lastSuccessfulAt + TimeUnit.HOURS.toMillis(6)
+        val nextLine = if (nextAt > System.currentTimeMillis()) {
+            getString(R.string.threat_update_next_check, DateFormat.getDateTimeInstance().format(Date(nextAt)))
+        } else {
+            getString(R.string.threat_update_due)
+        }
+        return getString(R.string.threat_update_last_success, last) + "\n" + nextLine
+    }
+
+    private fun threatIntelCountsText(info: com.aman.security.autonomous.AutonomousIntelInfo): String = getString(
+        R.string.threat_update_counts,
+        NumberFormat.getIntegerInstance().format(info.malwareFileHashes),
+        NumberFormat.getIntegerInstance().format(info.phishingHosts),
+        NumberFormat.getIntegerInstance().format(info.c2Hosts),
+        NumberFormat.getIntegerInstance().format(info.androidCveCount)
+    )
+
+    private fun buildThreatSourceStatusText(info: com.aman.security.autonomous.AutonomousIntelInfo): String {
+        if (info.sourceHealth.isEmpty()) return ""
+        val lastAttempt = info.lastAttemptEpochMs
+        return info.sourceHealth.joinToString("\n") { source ->
+            val label = threatSourceLabel(source.key)
+            when {
+                lastAttempt > 0L && source.lastSuccessEpochMs == lastAttempt -> getString(R.string.threat_update_source_ok, label)
+                lastAttempt > 0L && source.consecutiveFailures > 0 -> getString(R.string.threat_update_source_failed, label)
+                source.lastSuccessEpochMs <= 0L -> getString(R.string.threat_update_source_waiting, label)
+                source.fresh -> getString(R.string.threat_update_source_fresh, label)
+                else -> getString(R.string.threat_update_source_stale, label)
+            }
+        }
+    }
+
+    private fun formatByteCount(bytes: Long): String {
+        val safe = bytes.coerceAtLeast(0L)
+        if (safe < 1024L) return "$safe B"
+        val kb = safe / 1024.0
+        if (kb < 1024.0) return String.format(java.util.Locale.US, "%.1f KB", kb)
+        val mb = kb / 1024.0
+        return String.format(java.util.Locale.US, "%.1f MB", mb)
+    }
+
+    private fun threatSourceLabel(source: String): String = getString(when (source) {
+        "starting", "queued", "complete" -> R.string.threat_source_starting
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE -> R.string.threat_source_malware
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_PRIMARY -> R.string.threat_source_phishing_primary
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_COMMUNITY -> R.string.threat_source_phishing_community
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE_URLS -> R.string.threat_source_malware_urls
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_C2 -> R.string.threat_source_c2
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_ANDROID_BULLETIN -> R.string.threat_source_android
         else -> R.string.threat_source_starting
     })
 

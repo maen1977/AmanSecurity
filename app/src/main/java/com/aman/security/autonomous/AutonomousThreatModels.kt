@@ -26,6 +26,19 @@ data class AutonomousIntelInfo(
     val sourceHealth: List<AutonomousSourceHealth> = emptyList()
 )
 
+
+/** Fine-grained, lightweight progress for one threat-intelligence source. */
+data class AutonomousUpdateProgress(
+    val sourceKey: String,
+    val sourceIndex: Int,
+    val totalSources: Int,
+    val completedSources: Int,
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long = -1L,
+    val sourceFinished: Boolean = false,
+    val sourceSucceeded: Boolean? = null
+)
+
 sealed class AutonomousUpdateResult {
     data class Success(val info: AutonomousIntelInfo, val changedSources: Int) : AutonomousUpdateResult()
     data class Partial(val info: AutonomousIntelInfo, val successfulSources: Int, val failedSources: Int, val changedSources: Int) : AutonomousUpdateResult()
