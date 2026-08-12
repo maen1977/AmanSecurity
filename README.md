@@ -1,4 +1,4 @@
-# Aman Security 2.8.0
+# Aman Security 2.9.0
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
 

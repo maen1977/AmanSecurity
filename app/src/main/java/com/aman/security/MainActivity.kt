@@ -1155,7 +1155,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
-                    val apps = installedAppScanner.scanUserApps { completed, total, appName, packageName ->
+                    val apps = installedAppScanner.scanAllApps { completed, total, appName, packageName ->
                         if (scanCancelRequested) throw CancellationException("scan cancelled")
                         val percent = if (total <= 0) 2 else (2 + ((completed * 33) / total)).coerceIn(2, 35)
                         runOnUiThread {

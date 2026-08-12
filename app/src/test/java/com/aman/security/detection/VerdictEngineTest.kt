@@ -82,15 +82,17 @@ class VerdictEngineTest {
     }
 
     @Test
-    fun exactAllowlistCapsHeuristicVerdict() {
+    fun exactAllowlistDoesNotBlindStrongMalwareSpecificEvidence() {
         val verdict = VerdictEngine.evaluate(
             listOf(
                 DetectionFinding("RULE", DetectionSource.SIGNATURE_RULE, 75, FindingConfidence.HIGH, ThreatFamily.MALWARE)
             ),
             allowlisted = true
         )
-        assertTrue(verdict.score <= 19)
-        assertEquals(DetectionVerdictLevel.LOW, verdict.level)
+        // One static-code domain alone still cannot become HIGH, but SAFE reputation no longer
+        // erases strong malware-specific evidence by globally forcing the score below review.
+        assertTrue(verdict.score <= 49)
+        assertEquals(DetectionVerdictLevel.REVIEW, verdict.level)
         assertTrue(verdict.allowlisted)
     }
 

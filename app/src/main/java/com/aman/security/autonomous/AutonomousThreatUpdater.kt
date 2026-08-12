@@ -36,6 +36,7 @@ class AutonomousThreatUpdater(
         runSource(AutonomousThreatStore.SOURCE_PHISH_COMMUNITY) {
             updatePhishing(AutonomousThreatStore.IndexKind.PHISHING_COMMUNITY, COMMUNITY_PHISH, "phish_community", AutonomousThreatStore.SOURCE_PHISH_COMMUNITY)
         }
+        runSource(AutonomousThreatStore.SOURCE_MALWARE_URLS) { updateMalwareUrls() }
         runSource(AutonomousThreatStore.SOURCE_C2) { updateC2() }
 
         try {
@@ -84,6 +85,20 @@ class AutonomousThreatUpdater(
         return store.replaceHashes(kind, hashes, minCount = AutonomousFeedPolicy.forKey(sourceKey).minEntries, shrinkFloor = 0.25)
     }
 
+    private fun updateMalwareUrls(): Boolean {
+        val response = http.get(URLHAUS_URLS, 32 * 1024 * 1024, "text/plain", "urlhaus_malware_urls")
+        if (response.notModified) return false
+        val hosts = AutonomousThreatParsers.urlhausHosts(requireNotNull(response.bytes).toString(Charsets.UTF_8))
+        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_MALWARE_URLS, hosts.size)
+        val hashes = hosts.asSequence().map(UrlScanner::sha256).toList()
+        return store.replaceHashes(
+            AutonomousThreatStore.IndexKind.MALWARE_URL_HOSTS,
+            hashes,
+            minCount = AutonomousFeedPolicy.malwareUrls.minEntries,
+            shrinkFloor = 0.20
+        )
+    }
+
     private fun updateC2(): Boolean {
         val response = http.get(FEODO_RECOMMENDED, 2 * 1024 * 1024, "application/json", "feodo_c2")
         if (response.notModified) return false
@@ -129,6 +144,7 @@ class AutonomousThreatUpdater(
         private const val MALWARE_BAZAAR_ANDROID = "https://bazaar.abuse.ch/browse/tag/Android/"
         private const val PRIMARY_PHISH = "https://api.destroy.tools/v1/feed/primary_active"
         private const val COMMUNITY_PHISH = "https://api.destroy.tools/v1/feed/community_active"
+        private const val URLHAUS_URLS = "https://urlhaus.abuse.ch/downloads/text/"
         private const val FEODO_RECOMMENDED = "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"
         private const val ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overview?hl=en"
     }

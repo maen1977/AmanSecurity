@@ -19,10 +19,26 @@ object VerdictEngine {
             .filter { it.score >= 0 }
             .distinctBy { "${it.source}:${it.id}:${it.reference.orEmpty()}" }
 
-        val confirmed = normalized
+        // A reviewed SAFE file/signer may suppress weak generic heuristics, but it must never
+        // hide exact malicious reputation, known hashes, strong network IOCs or high-confidence
+        // zero-day chains. This avoids both false positives and dangerous global allowlisting.
+        val effective = if (allowlisted) {
+            normalized.filterNot { finding ->
+                finding.confidence.rank <= FindingConfidence.MEDIUM.rank &&
+                    finding.source in setOf(
+                        DetectionSource.MANIFEST,
+                        DetectionSource.STATIC_BEHAVIOR,
+                        DetectionSource.LOCAL_MODEL,
+                        DetectionSource.IMPERSONATION,
+                        DetectionSource.PACKER
+                    )
+            }
+        } else normalized
+
+        val confirmed = effective
             .filter { it.confidence == FindingConfidence.CONFIRMED && it.family != ThreatFamily.TEST }
             .maxByOrNull { it.score }
-        val test = normalized.firstOrNull { it.family == ThreatFamily.TEST }
+        val test = effective.firstOrNull { it.family == ThreatFamily.TEST }
 
         if (confirmed != null) {
             return MultiEngineVerdict(
@@ -31,28 +47,28 @@ object VerdictEngine {
                 family = confirmed.family.takeUnless { it == ThreatFamily.UNKNOWN } ?: ThreatFamily.MALWARE,
                 confidence = FindingConfidence.CONFIRMED,
                 findings = normalized,
-                engineCount = normalized.map { it.source }.distinct().size,
+                engineCount = effective.map { it.source }.distinct().size,
                 confirmedReference = confirmed.reference ?: confirmed.id,
                 allowlisted = allowlisted
             )
         }
 
-        if (test != null && normalized.none { it.family != ThreatFamily.TEST && it.score >= 20 }) {
+        if (test != null && effective.none { it.family != ThreatFamily.TEST && it.score >= 20 }) {
             return MultiEngineVerdict(
                 score = 0,
                 level = DetectionVerdictLevel.TEST,
                 family = ThreatFamily.TEST,
                 confidence = FindingConfidence.CONFIRMED,
                 findings = normalized,
-                engineCount = normalized.map { it.source }.distinct().size,
+                engineCount = effective.map { it.source }.distinct().size,
                 confirmedReference = test.reference ?: test.id,
                 allowlisted = allowlisted
             )
         }
 
-        val sources = normalized.map { it.source }.distinct().size
-        val domains = normalized.map { evidenceDomain(it.source) }.distinct().size
-        var score = normalized.sumOf { finding ->
+        val sources = effective.map { it.source }.distinct().size
+        val domains = effective.map { evidenceDomain(it.source) }.distinct().size
+        var score = effective.sumOf { finding ->
             val confidenceFactor = when (finding.confidence) {
                 FindingConfidence.LOW -> 0.45
                 FindingConfidence.MEDIUM -> 0.75
@@ -73,7 +89,7 @@ object VerdictEngine {
         }
 
         // Small consensus bonus when at least three independent evidence domains agree on a family.
-        val familyDomainCounts = normalized
+        val familyDomainCounts = effective
             .filter { it.family != ThreatFamily.UNKNOWN && it.family != ThreatFamily.TEST && it.confidence.rank >= FindingConfidence.MEDIUM.rank }
             .groupBy { it.family }
             .mapValues { (_, values) -> values.map { evidenceDomain(it.source) }.distinct().size }
@@ -83,14 +99,14 @@ object VerdictEngine {
         // verdict just by stacking. This is the main false-positive guard for feature-rich benign
         // apps. Known threats were already handled above; heuristic HIGH requires corroboration
         // from at least two genuinely different evidence domains.
-        val highestConfidence = normalized.maxByOrNull { it.confidence.rank }?.confidence ?: FindingConfidence.LOW
+        val highestConfidence = effective.maxByOrNull { it.confidence.rank }?.confidence ?: FindingConfidence.LOW
         if (highestConfidence == FindingConfidence.LOW) score = score.coerceAtMost(34)
         if (domains < 2) score = score.coerceAtMost(49)
 
         // Permission/capability-derived static behavior and a local statistical model are review
         // hints, not malware evidence on their own. Without at least one malware-specific source,
         // keep the antivirus verdict LOW and surface permissions in Privacy Control instead.
-        val hasMalwareSpecificEvidence = normalized.any { finding ->
+        val hasMalwareSpecificEvidence = effective.any { finding ->
             finding.source in setOf(
                 DetectionSource.FILE_HASH,
                 DetectionSource.SIGNER_IDENTITY,
@@ -107,16 +123,19 @@ object VerdictEngine {
         }
         if (!hasMalwareSpecificEvidence) score = score.coerceAtMost(19)
 
-        if (allowlisted) score = score.coerceAtMost(19)
         score = score.coerceIn(0, 99)
 
+        val highConfidenceCount = effective.count {
+            it.confidence.rank >= FindingConfidence.HIGH.rank &&
+                it.family != ThreatFamily.TEST
+        }
         val level = when {
-            score >= 80 -> DetectionVerdictLevel.VERY_HIGH
-            score >= 55 -> DetectionVerdictLevel.HIGH
+            score >= 80 && domains >= 3 && highConfidenceCount >= 2 -> DetectionVerdictLevel.VERY_HIGH
+            score >= 55 && domains >= 2 && highConfidenceCount >= 1 -> DetectionVerdictLevel.HIGH
             score >= 20 -> DetectionVerdictLevel.REVIEW
             else -> DetectionVerdictLevel.LOW
         }
-        val family = normalized
+        val family = effective
             .filter { it.family != ThreatFamily.UNKNOWN && it.family != ThreatFamily.TEST }
             .groupBy { it.family }
             .maxByOrNull { (_, familyFindings) -> familyFindings.sumOf { it.score * it.confidence.rank } }

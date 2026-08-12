@@ -18,7 +18,7 @@ class AutonomousThreatHttpClient(context: Context) {
             readTimeout = 25_000
             instanceFollowRedirects = false
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "AmanSecurity/2.6 autonomous-threat-intelligence")
+            setRequestProperty("User-Agent", "AmanSecurity/2.9 autonomous-threat-intelligence")
             setRequestProperty("Accept", accept)
             prefs.getString("etag_$cacheKey", null)?.let { setRequestProperty("If-None-Match", it) }
             prefs.getString("modified_$cacheKey", null)?.let { setRequestProperty("If-Modified-Since", it) }

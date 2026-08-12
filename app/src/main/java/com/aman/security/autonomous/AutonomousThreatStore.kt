@@ -18,12 +18,14 @@ class AutonomousThreatStore(context: Context) {
     private val fileHashes = File(directory, "malware_files.sha256")
     private val phishPrimary = File(directory, "phishing_primary.sha256")
     private val phishCommunity = File(directory, "phishing_community.sha256")
+    private val malwareUrlHosts = File(directory, "malware_url_hosts.sha256")
     private val c2Hosts = File(directory, "c2_hosts.sha256")
     private val androidCves = File(directory, "android_cves.txt")
 
     @Volatile private var malwareIndex = FixedSha256Index.load(fileHashes)
     @Volatile private var phishPrimaryIndex = FixedSha256Index.load(phishPrimary)
     @Volatile private var phishCommunityIndex = FixedSha256Index.load(phishCommunity)
+    @Volatile private var malwareUrlIndex = FixedSha256Index.load(malwareUrlHosts)
     @Volatile private var c2Index = FixedSha256Index.load(c2Hosts)
     @Volatile private var sourceLastSuccess = readSourceSuccesses()
     @Volatile private var sourceConsecutiveFailures = readSourceFailures()
@@ -42,6 +44,8 @@ class AutonomousThreatStore(context: Context) {
         return when {
             phishPrimaryIndex.contains(h) && sourceFresh(SOURCE_PHISH_PRIMARY, now, AutonomousFeedPolicy.phishingPrimary.lookupTtlMs) ->
                 UrlThreatIndicator(kind, h, "AUTO_PHISHING_PRIMARY", UrlThreatClassification.PHISHING)
+            malwareUrlIndex.contains(h) && sourceFresh(SOURCE_MALWARE_URLS, now, AutonomousFeedPolicy.malwareUrls.lookupTtlMs) ->
+                UrlThreatIndicator(kind, h, "AUTO_URLHAUS_MALWARE", UrlThreatClassification.MALWARE)
             c2Index.contains(h) && sourceFresh(SOURCE_C2, now, AutonomousFeedPolicy.c2.lookupTtlMs) ->
                 UrlThreatIndicator(kind, h, "AUTO_C2_HOST", UrlThreatClassification.MALWARE)
             phishCommunityIndex.contains(h) && sourceFresh(SOURCE_PHISH_COMMUNITY, now, AutonomousFeedPolicy.phishingCommunity.lookupTtlMs) ->
@@ -54,6 +58,7 @@ class AutonomousThreatStore(context: Context) {
         malwareIndex = FixedSha256Index.load(fileHashes)
         phishPrimaryIndex = FixedSha256Index.load(phishPrimary)
         phishCommunityIndex = FixedSha256Index.load(phishCommunity)
+        malwareUrlIndex = FixedSha256Index.load(malwareUrlHosts)
         c2Index = FixedSha256Index.load(c2Hosts)
         sourceLastSuccess = readSourceSuccesses()
         sourceConsecutiveFailures = readSourceFailures()
@@ -99,6 +104,7 @@ class AutonomousThreatStore(context: Context) {
         IndexKind.MALWARE_FILES -> malwareIndex.count
         IndexKind.PHISHING_PRIMARY -> phishPrimaryIndex.count
         IndexKind.PHISHING_COMMUNITY -> phishCommunityIndex.count
+        IndexKind.MALWARE_URL_HOSTS -> malwareUrlIndex.count
         IndexKind.C2_HOSTS -> c2Index.count
     }
 
@@ -188,12 +194,13 @@ class AutonomousThreatStore(context: Context) {
         return ttlMs == Long.MAX_VALUE || now - last <= ttlMs
     }
 
-    enum class IndexKind { MALWARE_FILES, PHISHING_PRIMARY, PHISHING_COMMUNITY, C2_HOSTS }
+    enum class IndexKind { MALWARE_FILES, PHISHING_PRIMARY, PHISHING_COMMUNITY, MALWARE_URL_HOSTS, C2_HOSTS }
 
     private fun indexFile(kind: IndexKind): File = when (kind) {
         IndexKind.MALWARE_FILES -> fileHashes
         IndexKind.PHISHING_PRIMARY -> phishPrimary
         IndexKind.PHISHING_COMMUNITY -> phishCommunity
+        IndexKind.MALWARE_URL_HOSTS -> malwareUrlHosts
         IndexKind.C2_HOSTS -> c2Hosts
     }
 
@@ -201,6 +208,7 @@ class AutonomousThreatStore(context: Context) {
         IndexKind.MALWARE_FILES -> SOURCE_MALWARE
         IndexKind.PHISHING_PRIMARY -> SOURCE_PHISH_PRIMARY
         IndexKind.PHISHING_COMMUNITY -> SOURCE_PHISH_COMMUNITY
+        IndexKind.MALWARE_URL_HOSTS -> SOURCE_MALWARE_URLS
         IndexKind.C2_HOSTS -> SOURCE_C2
     }
 
@@ -208,6 +216,7 @@ class AutonomousThreatStore(context: Context) {
         SOURCE_MALWARE -> malwareIndex.count
         SOURCE_PHISH_PRIMARY -> phishPrimaryIndex.count
         SOURCE_PHISH_COMMUNITY -> phishCommunityIndex.count
+        SOURCE_MALWARE_URLS -> malwareUrlIndex.count
         SOURCE_C2 -> c2Index.count
         SOURCE_ANDROID_BULLETIN -> state.optInt("androidCveCount", 0)
         else -> 0
@@ -265,9 +274,10 @@ class AutonomousThreatStore(context: Context) {
         const val SOURCE_MALWARE = "malware"
         const val SOURCE_PHISH_PRIMARY = "phish_primary"
         const val SOURCE_PHISH_COMMUNITY = "phish_community"
+        const val SOURCE_MALWARE_URLS = "malware_urls"
         const val SOURCE_C2 = "c2"
         const val SOURCE_ANDROID_BULLETIN = "android_bulletin"
-        val SOURCE_KEYS = listOf(SOURCE_MALWARE, SOURCE_PHISH_PRIMARY, SOURCE_PHISH_COMMUNITY, SOURCE_C2, SOURCE_ANDROID_BULLETIN)
+        val SOURCE_KEYS = listOf(SOURCE_MALWARE, SOURCE_PHISH_PRIMARY, SOURCE_PHISH_COMMUNITY, SOURCE_MALWARE_URLS, SOURCE_C2, SOURCE_ANDROID_BULLETIN)
         private val HASH = Regex("^[a-f0-9]{64}$")
         private val CVE = Regex("^CVE-20\\d{2}-\\d{4,8}$")
         fun sha256(text: String): String = MessageDigest.getInstance("SHA-256")

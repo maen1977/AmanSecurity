@@ -1,6 +1,7 @@
 package com.aman.security.autonomous
 
 import java.net.IDN
+import java.net.URI
 import java.util.Locale
 
 object AutonomousThreatParsers {
@@ -16,6 +17,15 @@ object AutonomousThreatParsers {
     fun phishingHosts(text: String): Set<String> = domainRegex.findAll(text)
         .mapNotNull { normalizeHost(it.value) }
         .filterNot { it == "api.destroy.tools" || it.endsWith(".destroy.tools") }
+        .toCollection(linkedSetOf())
+
+    fun urlhausHosts(text: String): Set<String> = text.lineSequence()
+        .map(String::trim)
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+        .mapNotNull { line ->
+            val host = runCatching { URI(line).host }.getOrNull() ?: return@mapNotNull null
+            normalizeHost(host)
+        }
         .toCollection(linkedSetOf())
 
     fun feodoIps(text: String): Set<String> = ipv4Regex.findAll(text)

@@ -14,6 +14,7 @@ object AutonomousSourcePolicy {
             "bazaar.abuse.ch" -> query == null && path == "/browse/tag/Android/"
             "api.destroy.tools" -> query == null && (path == "/v1/feed/primary_active" || path == "/v1/feed/community_active")
             "feodotracker.abuse.ch" -> query == null && path == "/downloads/ipblocklist_recommended.json"
+            "urlhaus.abuse.ch" -> query == null && path == "/downloads/text/"
             "source.android.com" -> (query == null || query == "hl=en") &&
                 (path == "/docs/security/bulletin/asb-overview" || path.matches(Regex("^/docs/security/bulletin/20\\d{2}-\\d{2}-01$")))
             else -> false

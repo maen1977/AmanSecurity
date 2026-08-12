@@ -18,6 +18,19 @@ class AutonomousThreatParsersTest {
         assertTrue("wallet-check.test" in result)
     }
 
+    @Test fun parsesUrlhausMalwareHosts() {
+        val text = """
+            # URLhaus list
+            https://bad.example/payload.apk
+            http://192.0.2.8/dropper
+            not-a-url
+        """.trimIndent()
+        val result = AutonomousThreatParsers.urlhausHosts(text)
+        assertTrue("bad.example" in result)
+        assertTrue("192.0.2.8" in result)
+        assertEquals(2, result.size)
+    }
+
     @Test fun validatesFeodoIps() {
         val text = "[{\"ip_address\":\"192.0.2.7\"},{\"ip_address\":\"999.0.0.1\"}]"
         assertEquals(setOf("192.0.2.7"), AutonomousThreatParsers.feodoIps(text))
@@ -31,6 +44,7 @@ class AutonomousThreatParsersTest {
 
     @Test fun sourcePolicyRejectsUnknownHostsAndExecutablePayloads() {
         assertTrue(AutonomousSourcePolicy.allowed("https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"))
+        assertTrue(AutonomousSourcePolicy.allowed("https://urlhaus.abuse.ch/downloads/text/"))
         assertFalse(AutonomousSourcePolicy.allowed("https://evil.example/downloads/ipblocklist_recommended.json"))
         assertFalse(AutonomousSourcePolicy.allowed("https://api.destroy.tools/v1/feed/primary_active?redirect=evil"))
         assertFalse(AutonomousSourcePolicy.textPayloadAllowed(byteArrayOf(0x50,0x4b,0x03,0x04)))

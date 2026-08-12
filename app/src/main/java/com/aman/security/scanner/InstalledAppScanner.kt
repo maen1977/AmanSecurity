@@ -31,10 +31,21 @@ class InstalledAppScanner(
     fun scanUserApps(
         deep: Boolean = true,
         onProgress: ((completed: Int, total: Int, appName: String, packageName: String) -> Unit)? = null
+    ): InstalledAppsScanSummary = scanInstalledApps(includeSystem = false, deep = deep, onProgress = onProgress)
+
+    fun scanAllApps(
+        deep: Boolean = true,
+        onProgress: ((completed: Int, total: Int, appName: String, packageName: String) -> Unit)? = null
+    ): InstalledAppsScanSummary = scanInstalledApps(includeSystem = true, deep = deep, onProgress = onProgress)
+
+    private fun scanInstalledApps(
+        includeSystem: Boolean,
+        deep: Boolean,
+        onProgress: ((completed: Int, total: Int, appName: String, packageName: String) -> Unit)?
     ): InstalledAppsScanSummary {
         val candidates = installedPackages()
             .filter { it.packageName != context.packageName }
-            .filterNot(::isSystemPackage)
+            .filter { includeSystem || !isSystemPackage(it) }
         val total = candidates.size
         val scanned = ArrayList<InstalledAppScanResult>(total)
         candidates.forEachIndexed { index, packageInfo ->
@@ -58,7 +69,6 @@ class InstalledAppScanner(
     fun scanPackageByName(packageName: String, deep: Boolean = true): InstalledAppScanResult? {
         if (packageName == context.packageName) return null
         val packageInfo = packageInfo(packageName) ?: return null
-        if (isSystemPackage(packageInfo)) return null
         return scanPackage(packageInfo, deep)
     }
 
@@ -96,11 +106,23 @@ class InstalledAppScanner(
         val source = installSource(packageInfo.packageName)
         val requestedPermissions = packageInfo.requestedPermissions?.toSet().orEmpty()
         val hasAccessibilityService = packageInfo.services?.any { it.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE } == true
-        val apkFile = applicationInfo?.sourceDir?.let(::File)
-        val apkSha256 = apkFile?.let { runCatching { hashFile(it) }.getOrNull() }
-        val signerHash = signingCertificateSha256(packageInfo)
-        val fileThreat = apkSha256?.let(database::find)?.takeIf { it.classification == ScanClassification.KNOWN_THREAT }
-        val signerThreat = signerHash?.let { database.findApk(ApkIndicatorKind.SIGNER, it) }?.takeIf { it.classification == ApkIdentityClassification.KNOWN_THREAT }
+        val apkFiles = buildList {
+            applicationInfo?.sourceDir?.let(::File)?.let(::add)
+            applicationInfo?.splitSourceDirs.orEmpty().map(::File).forEach(::add)
+        }.distinctBy { it.absolutePath }
+        val componentHashes = apkFiles.mapNotNull { file ->
+            runCatching { hashFile(file) }.getOrNull()?.let { hash -> file to hash }
+        }
+        val apkFile = apkFiles.firstOrNull()
+        val apkSha256 = componentHashes.firstOrNull()?.second
+        val signerHashes = signingCertificateSha256s(packageInfo)
+        val signerHash = signerHashes.firstOrNull()
+        val fileThreat = componentHashes.asSequence()
+            .mapNotNull { (_, hash) -> database.find(hash) }
+            .firstOrNull { it.classification == ScanClassification.KNOWN_THREAT }
+        val signerThreat = signerHashes.asSequence()
+            .mapNotNull { database.findApk(ApkIndicatorKind.SIGNER, it) }
+            .firstOrNull { it.classification == ApkIdentityClassification.KNOWN_THREAT }
         val packageHash = sha256Text(packageInfo.packageName)
         val packageThreat = database.findApk(ApkIndicatorKind.PACKAGE, packageHash)?.takeIf { it.classification == ApkIdentityClassification.KNOWN_THREAT }
         val legacyThreatReference = fileThreat?.id ?: signerThreat?.id ?: packageThreat?.id
@@ -117,17 +139,17 @@ class InstalledAppScanner(
         } else if (basic.score >= 20) {
             findings += DetectionFinding("INSTALLED_PERMISSION_REVIEW", DetectionSource.MANIFEST, 10, FindingConfidence.LOW, ThreatFamily.RISKWARE)
         }
-        val signerReputation = signerHash?.let { database.findReputation(ReputationKind.SIGNER, it) }
+        val signerReputations = signerHashes.mapNotNull { database.findReputation(ReputationKind.SIGNER, it) }
         val packageReputation = database.findReputation(ReputationKind.PACKAGE, packageHash)
-        val fileReputation = apkSha256?.let { database.findReputation(ReputationKind.FILE, it) }
-        signerReputation?.toFinding()?.let(findings::add)
+        val fileReputations = componentHashes.mapNotNull { (_, hash) -> database.findReputation(ReputationKind.FILE, hash) }
+        signerReputations.mapNotNull { it.toFinding() }.forEach(findings::add)
         packageReputation?.toFinding()?.let(findings::add)
-        fileReputation?.toFinding()?.let(findings::add)
+        fileReputations.mapNotNull { it.toFinding() }.forEach(findings::add)
         val impersonationFindings = ImpersonationDetector.evaluate(
             packageInfo.packageName,
             appName,
             database.detectionRuleset.brands,
-            signerSha256 = signerHash,
+            signerSha256s = signerHashes,
             isSideloaded = source == AppInstallSource.LOCAL_FILE || source == AppInstallSource.DOWNLOADED_FILE
         )
         findings += impersonationFindings
@@ -140,8 +162,8 @@ class InstalledAppScanner(
                 ThreatFamily.PHISHING
             )
         }
-        val trustedAllowlist = signerReputation?.disposition == ReputationDisposition.SAFE ||
-            fileReputation?.disposition == ReputationDisposition.SAFE
+        val trustedAllowlist = signerReputations.any { it.disposition == ReputationDisposition.SAFE } ||
+            fileReputations.any { it.disposition == ReputationDisposition.SAFE }
 
         val deepAnalysis = if (deep && apkFile != null && apkSha256 != null) deepAnalyzer.analyzeInstalledFile(apkFile, apkSha256) else null
         deepAnalysis?.advancedVerdict?.findings?.let(findings::addAll)
@@ -216,14 +238,21 @@ class InstalledAppScanner(
     private fun hashFile(file: File): String = FileInputStream(file).use { Sha256.fromStream(it) }
     private fun sha256Text(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 
-    private fun signingCertificateSha256(packageInfo: PackageInfo): String? {
-        val signerBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val signingInfo = packageInfo.signingInfo ?: return null
-            val signers = if (signingInfo.hasMultipleSigners()) signingInfo.apkContentsSigners else signingInfo.signingCertificateHistory
-            signers.firstOrNull()?.toByteArray()
+    private fun signingCertificateSha256s(packageInfo: PackageInfo): Set<String> {
+        val signerBytes: List<ByteArray> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val signingInfo = packageInfo.signingInfo ?: return emptySet()
+            val signers = if (signingInfo.hasMultipleSigners()) {
+                signingInfo.apkContentsSigners
+            } else {
+                signingInfo.signingCertificateHistory
+            }
+            signers.map { it.toByteArray() }
         } else {
-            @Suppress("DEPRECATION") packageInfo.signatures?.firstOrNull()?.toByteArray()
-        } ?: return null
-        return MessageDigest.getInstance("SHA-256").digest(signerBytes).joinToString("") { "%02x".format(it) }
+            @Suppress("DEPRECATION") packageInfo.signatures.orEmpty().map { it.toByteArray() }
+        }
+        return signerBytes.mapTo(linkedSetOf()) { bytes ->
+            MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        }
     }
 }
+

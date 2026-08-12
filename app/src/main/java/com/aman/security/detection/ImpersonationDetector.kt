@@ -10,15 +10,29 @@ object ImpersonationDetector {
         profiles: List<ProtectedBrandProfile>,
         signerSha256: String? = null,
         isSideloaded: Boolean = false
+    ): List<DetectionFinding> = evaluate(
+        packageName = packageName,
+        appLabel = appLabel,
+        profiles = profiles,
+        signerSha256s = signerSha256?.let(::setOf).orEmpty(),
+        isSideloaded = isSideloaded
+    )
+
+    fun evaluate(
+        packageName: String,
+        appLabel: String?,
+        profiles: List<ProtectedBrandProfile>,
+        signerSha256s: Set<String>,
+        isSideloaded: Boolean = false
     ): List<DetectionFinding> {
         val normalizedPackage = packageName.lowercase()
         val normalizedLabel = appLabel.orEmpty().lowercase()
-        val normalizedSigner = signerSha256?.lowercase()
+        val normalizedSigners = signerSha256s.map(String::lowercase).toSet()
         return profiles.mapNotNull { profile ->
             val official = profile.officialPackage.lowercase()
             val hasReviewedSigners = profile.trustedSignerSha256.isNotEmpty()
-            val signerMismatch = hasReviewedSigners && normalizedSigner != null &&
-                normalizedSigner !in profile.trustedSignerSha256
+            val signerMismatch = hasReviewedSigners && normalizedSigners.isNotEmpty() &&
+                normalizedSigners.none(profile.trustedSignerSha256::contains)
 
             if (normalizedPackage == official) {
                 if (!signerMismatch) return@mapNotNull null
