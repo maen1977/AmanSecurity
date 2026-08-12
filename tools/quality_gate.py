@@ -24,6 +24,7 @@ def main():
     run('lightweight_local_engine_3_0_gate.py')
     run('local_attack_prevention_3_1_gate.py')
     run('attack_detection_center_3_2_gate.py')
+    run('android_api_compat_3_2_gate.py')
     manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()
     if 'android.permission.WRITE_EXTERNAL_STORAGE' in manifest: raise SystemExit('PRIVACY_GATE_FAILED legacy_write_storage')
     if 'android:usesCleartextTraffic="false"' not in manifest or 'android.permission.INTERNET' not in manifest: raise SystemExit('PRIVACY_GATE_FAILED transport')

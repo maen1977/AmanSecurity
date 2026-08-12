@@ -3,7 +3,6 @@ package com.aman.security.security
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 
 class NetworkSecurityAuditor(private val context: Context) {
     fun audit(): NetworkSecurityAudit {
@@ -15,11 +14,7 @@ class NetworkSecurityAuditor(private val context: Context) {
         val validated = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
         val captivePortal = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
         val vpnActive = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
-        val privateDnsActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            linkProperties?.isPrivateDnsActive == true
-        } else {
-            false
-        }
+        val privateDnsActive = PrivateDnsCompat.isActive(linkProperties)
         val metered = manager?.isActiveNetworkMetered == true
         val transport = when {
             capabilities == null -> NetworkTransportType.NONE

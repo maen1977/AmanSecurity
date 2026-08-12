@@ -21,6 +21,7 @@ import com.aman.security.protection.ProtectionNotifier
 import com.aman.security.protection.ProtectionPreferences
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.UrlScanner
+import com.aman.security.security.PrivateDnsCompat
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
@@ -281,7 +282,7 @@ class LocalDnsVpnService : VpnService() {
         return manager.allNetworks.any { network ->
             val caps = manager.getNetworkCapabilities(network) ?: return@any false
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return@any false
-            runCatching { manager.getLinkProperties(network)?.isPrivateDnsActive == true }.getOrDefault(false)
+            runCatching { PrivateDnsCompat.isActive(manager.getLinkProperties(network)) }.getOrDefault(false)
         }
     }
 
