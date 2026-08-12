@@ -61,20 +61,9 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".banking.BankingGuardAccessibilityService"
-            android:enabled="false"
-            android:exported="true"
-            android:label="@string/banking_accessibility_service_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/banking_accessibility_service" />
-        </service>
-
+        <!-- Sideload-safe build: no AccessibilityService is declared.
+             Google Play Protect automatically blocks internet-sideloaded apps that declare
+             high-risk ACCESSIBILITY capability. Banking checks are local/on-demand instead. -->
         <service
             android:name=".protection.ProtectionService"
             android:enabled="true"

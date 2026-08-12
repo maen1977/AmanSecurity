@@ -26,6 +26,7 @@ def main():
     run('attack_detection_center_3_2_gate.py')
     run('android_api_compat_3_2_gate.py')
     run('data_exfiltration_guard_3_3_gate.py')
+    run('play_protect_sideload_gate.py')
     run('direct_install_3_3_gate.py')
     manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()
     if 'android.permission.WRITE_EXTERNAL_STORAGE' in manifest: raise SystemExit('PRIVACY_GATE_FAILED legacy_write_storage')

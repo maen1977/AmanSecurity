@@ -17,3 +17,8 @@ This repository intentionally produces a normal, single APK named `AmanSecurity-
 4. If an older CI-debug Aman build was signed by a different ephemeral key, uninstall that old **debug** package once, then install this build. Future builds should reuse the cached test key while the cache remains available.
 
 For production distribution, use a private release signing key and Android developer registration. Do not treat the cached CI debug key as a production identity.
+
+
+## Rev3.3.3 Play Protect sideload compatibility
+
+Google Play Protect Enhanced Fraud Protection automatically blocks apps installed from internet-sideload sources when they declare certain high-risk capabilities including Accessibility. The direct-install build therefore declares no AccessibilityService, no SMS permissions, and no NotificationListenerService. Banking risk checks remain available as an explicit local **Check now** action. This is a compatibility redesign, not a Play Protect bypass.

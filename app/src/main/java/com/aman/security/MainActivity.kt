@@ -1,10 +1,8 @@
 package com.aman.security
 
 import android.Manifest
-import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.role.RoleManager
 import android.content.Intent
-import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -13,7 +11,6 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import android.view.View
-import android.view.accessibility.AccessibilityManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -22,7 +19,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import com.aman.security.databinding.ActivityMainBinding
-import com.aman.security.banking.BankingGuardAccessibilityService
+import com.aman.security.banking.BankingRiskEvaluator
+import com.aman.security.banking.BankingRiskLevel
 import com.aman.security.databinding.ItemInstalledAppBinding
 import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
@@ -268,17 +266,18 @@ class MainActivity : AppCompatActivity() {
         binding.btnRunDataExfilCheck.setOnClickListener { runDataExfiltrationCheckNow() }
         binding.switchBankingProtection.setOnCheckedChangeListener { _, checked ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
-            if (checked) requestBankingProtectionEnable() else {
-                protectionPreferences.bankingProtectionEnabled = false
-                setBankingAccessibilityComponentEnabled(false)
-                renderProtectionStatus()
-            }
+            protectionPreferences.bankingProtectionEnabled = checked
+            // This sideload-safe build intentionally has no AccessibilityService.
+            // Banking checks run only when the user requests them, avoiding the
+            // sensitive ACCESSIBILITY capability that Play Protect blocks on internet sideloads.
+            protectionPreferences.blockBankingOnHighRisk = false
+            renderProtectionStatus()
         }
-        binding.switchBankingBlockHighRisk.setOnCheckedChangeListener { _, checked ->
+        binding.switchBankingBlockHighRisk.setOnCheckedChangeListener { _, _ ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
-            protectionPreferences.blockBankingOnHighRisk = checked
+            protectionPreferences.blockBankingOnHighRisk = false
         }
-        binding.btnBankingAccessibility.setOnClickListener { openBankingAccessibilitySettings() }
+        binding.btnBankingAccessibility.setOnClickListener { runBankingRiskCheckNow() }
         binding.btnChooseBankingApps.setOnClickListener { showBankingAppsDialog() }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
@@ -772,55 +771,67 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestBankingProtectionEnable() {
-        if (!protectionPreferences.enabled) {
+    private fun runBankingRiskCheckNow() {
+        if (!protectionPreferences.enabled || !protectionPreferences.bankingProtectionEnabled) {
             renderProtectionStatus()
             return
         }
-        AlertDialog.Builder(this)
-            .setTitle(R.string.banking_accessibility_disclosure_title)
-            .setMessage(R.string.banking_accessibility_disclosure_body)
-            .setNegativeButton(R.string.cancel) { _, _ -> renderProtectionStatus() }
-            .setPositiveButton(R.string.banking_open_accessibility_settings) { _, _ ->
-                protectionPreferences.bankingProtectionEnabled = true
-                setBankingAccessibilityComponentEnabled(true)
+        binding.btnBankingAccessibility.isEnabled = false
+        val targetPackage = protectionPreferences.protectedBankingPackages.firstOrNull() ?: packageName
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching { BankingRiskEvaluator(applicationContext).evaluate(targetPackage) }
+            }
+            binding.btnBankingAccessibility.isEnabled = true
+            outcome.onSuccess { assessment ->
+                protectionPreferences.lastBankingCheckAt = System.currentTimeMillis()
+                protectionPreferences.lastBankingRiskLevel = assessment.level.name
+                protectionPreferences.markActivity(getString(R.string.activity_banking_checked))
+                when (assessment.level) {
+                    BankingRiskLevel.SAFE -> protectionActivityStore.add(
+                        kind = ProtectionActivityKind.BANKING_GUARD,
+                        state = ProtectionActivityState.SAFE,
+                        title = getString(R.string.timeline_banking_safe),
+                        detail = assessment.targetPackage,
+                        dedupeKey = "banking:manual:safe:${assessment.targetPackage}"
+                    )
+                    BankingRiskLevel.REVIEW -> {
+                        protectionActivityStore.add(
+                            kind = ProtectionActivityKind.BANKING_GUARD,
+                            state = ProtectionActivityState.ATTENTION,
+                            title = getString(R.string.timeline_banking_review),
+                            detail = assessment.targetPackage
+                        )
+                        ProtectionNotifier.notifyBankingRisk(this@MainActivity, assessment, blocked = false)
+                    }
+                    BankingRiskLevel.BLOCK -> {
+                        protectionActivityStore.add(
+                            kind = ProtectionActivityKind.BANKING_GUARD,
+                            state = ProtectionActivityState.THREAT,
+                            title = getString(R.string.timeline_banking_high_risk),
+                            detail = assessment.targetPackage
+                        )
+                        // No AccessibilityService means Aman does not force-close or navigate away
+                        // from another app. It warns immediately and leaves the decision to the user.
+                        ProtectionNotifier.notifyBankingRisk(this@MainActivity, assessment, blocked = false)
+                    }
+                }
                 renderProtectionStatus()
-                if (!isBankingAccessibilityEnabled()) openBankingAccessibilitySettings()
+                val risk = when (assessment.level) {
+                    BankingRiskLevel.SAFE -> getString(R.string.banking_risk_safe)
+                    BankingRiskLevel.REVIEW -> getString(R.string.banking_risk_review)
+                    BankingRiskLevel.BLOCK -> getString(R.string.banking_risk_block)
+                }
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.banking_manual_complete, risk),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure {
+                renderProtectionStatus()
+                showInfo(R.string.operation_failed_try_again)
             }
-            .show()
-    }
-
-    private fun openBankingAccessibilitySettings() {
-        if (protectionPreferences.bankingProtectionEnabled) {
-            setBankingAccessibilityComponentEnabled(true)
         }
-        runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
-    }
-
-    private fun setBankingAccessibilityComponentEnabled(enabled: Boolean) {
-        val component = ComponentName(this, BankingGuardAccessibilityService::class.java)
-        val state = if (enabled) {
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        } else {
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        }
-        runCatching {
-            packageManager.setComponentEnabledSetting(component, state, PackageManager.DONT_KILL_APP)
-        }.onFailure { error ->
-            Log.w("AmanSecurity", "Unable to change Banking Guard component state", error)
-        }
-    }
-
-    private fun isBankingAccessibilityEnabled(): Boolean {
-        val manager = getSystemService(AccessibilityManager::class.java) ?: return false
-        return runCatching {
-            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK).any { info ->
-                val serviceInfo = info.resolveInfo?.serviceInfo ?: return@any false
-                serviceInfo.packageName == packageName &&
-                    serviceInfo.name == BankingGuardAccessibilityService::class.java.name
-            }
-        }.getOrDefault(false)
     }
 
     private fun showBankingAppsDialog() {
@@ -908,11 +919,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnRunDataExfilCheck.isEnabled = dataExfilEnabled && dataExfilAccess
 
         val bankingEnabled = enabled && protectionPreferences.bankingProtectionEnabled
-        val bankingAccess = isBankingAccessibilityEnabled()
-        val baseBankingStatus = when {
-            !bankingEnabled -> getString(R.string.banking_status_off)
-            !bankingAccess -> getString(R.string.banking_status_needs_access)
-            else -> getString(R.string.banking_status_active, protectionPreferences.protectedBankingPackages.size)
+        val baseBankingStatus = if (!bankingEnabled) {
+            getString(R.string.banking_status_off)
+        } else {
+            getString(R.string.banking_status_manual, protectionPreferences.protectedBankingPackages.size)
         }
         binding.txtBankingProtectionStatus.text = if (bankingEnabled && protectionPreferences.lastBankingCheckAt > 0L) {
             val risk = when (protectionPreferences.lastBankingRiskLevel) {
@@ -1236,7 +1246,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnDataUsageAccess.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled
         binding.btnRunDataExfilCheck.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled && DataExfiltrationAccess.isGranted(this)
         binding.switchBankingProtection.isEnabled = enabled
-        binding.switchBankingBlockHighRisk.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
+        binding.switchBankingBlockHighRisk.isEnabled = false
+        binding.switchBankingBlockHighRisk.visibility = View.GONE
         binding.btnBankingAccessibility.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         binding.btnChooseBankingApps.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
 

@@ -87,8 +87,8 @@ object BankingAppDetector {
     /**
      * Android's ApplicationInfo categories do not expose a finance/banking category.
      * Keep automatic protection local and conservative by using only the installed
-     * application's own package/label identity. A user-selected banking package still
-     * takes precedence in BankingGuardAccessibilityService.
+     * application's own package/label identity. A user-selected banking package is used as the target for the sideload-safe
+     * on-demand banking environment check in MainActivity.
      */
     fun isFinanceCategory(context: Context, packageName: String): Boolean = runCatching {
         val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
