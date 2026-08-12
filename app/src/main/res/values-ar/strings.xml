@@ -633,4 +633,28 @@
     <string name="protection_layer_active">تعمل</string>
     <string name="protection_layer_off">متوقفة</string>
 
+    <!-- 3.2 مركز كشف الهجمات الخفيف: تجميع محلي فقط دون خدمة أو استطلاع إضافي. -->
+    <string name="attack_center_title">مركز كشف الهجمات</string>
+    <string name="attack_center_checking">حالة الهجمات: جارٍ التحقق…</string>
+    <string name="attack_center_clear">لا توجد مؤشرات هجوم حديثة</string>
+    <string name="attack_center_watch">تم حظر نشاط مشبوه أو يحتاج مراجعة</string>
+    <string name="attack_center_critical">تم اكتشاف مؤشرات هجوم حرجة</string>
+    <string name="attack_center_incomplete">مراقبة الهجمات ليست مفعلة بالكامل</string>
+    <string name="attack_center_clear_summary">لم تسجل طبقات الحماية المحلية برمجيات خبيثة أو تغييرات صلاحيات عالية الأولوية أو إنذارات تحكم حول التطبيقات البنكية خلال آخر 24 ساعة.</string>
+    <string name="attack_center_watch_summary">سجل أمان %1$d إشارة حظر أو مراجعة خلال آخر 24 ساعة. حظر نطاق خبيث يعني محاولة اتصال تم منعها، وليس دليلاً وحده على اختراق الهاتف.</string>
+    <string name="attack_center_critical_summary">سجل أمان %1$d إشارة حرجة و%2$d إشارة مراجعة خلال آخر 24 ساعة. راجع السجل لمعرفة التطبيق أو الملف أو تغيير التحكم المرتبط.</string>
+    <string name="attack_center_incomplete_summary">الحماية الفورية متوقفة أو خدمة الحماية ليست بحالة سليمة. أعد تشغيل الحماية قبل الاعتماد على مراقبة الهجمات.</string>
+    <string name="attack_center_coverage">الطبقات الحية • الأساسي %1$s • الويب %2$s • مراقبة الصلاحيات %3$s • حارس البنك %4$s</string>
+    <string name="attack_center_last_signal">أحدث إشارة: %1$s • %2$s</string>
+    <string name="attack_center_no_signal">أحدث إشارة: لا شيء خلال آخر 24 ساعة</string>
+    <string name="attack_center_check_now">تشغيل فحص هجوم خفيف</string>
+    <string name="attack_home_clear">كشف الهجمات: سليم</string>
+    <string name="attack_home_watch">كشف الهجمات: راجع النشاط الحديث</string>
+    <string name="attack_home_critical">كشف الهجمات: مؤشرات حرجة</string>
+    <string name="attack_home_incomplete">كشف الهجمات: الحماية غير مكتملة</string>
+    <string name="protection_status_attack_critical_title">اكتشف أمان مؤشرات هجوم حرجة</string>
+    <string name="protection_status_attack_critical_body">افتح مركز كشف الهجمات لمراجعة أحدث إشارة محلية للبرمجيات الخبيثة أو الصلاحيات الحساسة أو التحكم حول التطبيقات البنكية.</string>
+    <string name="protection_status_attack_watch_title">حظر أمان نشاطًا مشبوهًا أو وضعه للمراجعة</string>
+    <string name="protection_status_attack_watch_body">راجع الحدث الحديث في مركز كشف الهجمات. حظر تهديد ويب لا يعني وحده أن الهاتف تم اختراقه.</string>
+
 </resources>

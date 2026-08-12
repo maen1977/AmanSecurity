@@ -633,4 +633,28 @@
     <string name="protection_layer_active">active</string>
     <string name="protection_layer_off">off</string>
 
+    <!-- 3.2 lightweight Attack Detection Center: local aggregation only, no new polling/service. -->
+    <string name="attack_center_title">Attack Detection Center</string>
+    <string name="attack_center_checking">Attack status: checking…</string>
+    <string name="attack_center_clear">No recent attack indicators</string>
+    <string name="attack_center_watch">Suspicious activity was blocked or needs review</string>
+    <string name="attack_center_critical">Critical attack indicators detected</string>
+    <string name="attack_center_incomplete">Attack monitoring is not fully active</string>
+    <string name="attack_center_clear_summary">The local protection layers have not recorded malware, high-priority privilege changes or banking-control alerts in the last 24 hours.</string>
+    <string name="attack_center_watch_summary">Aman recorded %1$d review/block signal(s) in the last 24 hours. A blocked malicious domain is an attempted contact, not proof that the phone was compromised.</string>
+    <string name="attack_center_critical_summary">Aman recorded %1$d critical and %2$d review signal(s) in the last 24 hours. Open the timeline and review the named app, file or control change.</string>
+    <string name="attack_center_incomplete_summary">Real-time protection is disabled or its foreground service is not healthy. Restore protection before relying on attack monitoring.</string>
+    <string name="attack_center_coverage">Live layers • Core %1$s • Web %2$s • Privilege monitor %3$s • Banking guard %4$s</string>
+    <string name="attack_center_last_signal">Latest signal: %1$s • %2$s</string>
+    <string name="attack_center_no_signal">Latest signal: none in the last 24 hours</string>
+    <string name="attack_center_check_now">Run lightweight attack check</string>
+    <string name="attack_home_clear">Attack detection: clear</string>
+    <string name="attack_home_watch">Attack detection: review recent activity</string>
+    <string name="attack_home_critical">Attack detection: critical indicators</string>
+    <string name="attack_home_incomplete">Attack detection: protection incomplete</string>
+    <string name="protection_status_attack_critical_title">Aman detected critical attack indicators</string>
+    <string name="protection_status_attack_critical_body">Open Attack Detection Center to review the latest local malware, privilege or banking-control signal.</string>
+    <string name="protection_status_attack_watch_title">Aman blocked or flagged suspicious activity</string>
+    <string name="protection_status_attack_watch_body">Review the recent event in Attack Detection Center. A blocked web threat does not by itself mean the phone was compromised.</string>
+
 </resources>

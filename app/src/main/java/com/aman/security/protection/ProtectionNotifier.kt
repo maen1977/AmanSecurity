@@ -14,6 +14,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.aman.security.MainActivity
 import com.aman.security.banking.BankingRiskAssessment
+import com.aman.security.security.AttackDetectionCenter
+import com.aman.security.security.AttackDetectionLevel
 import com.aman.security.security.IntrusionMonitorSummary
 import com.aman.security.R
 import com.aman.security.web.LocalWebShieldController
@@ -56,19 +58,28 @@ object ProtectionNotifier {
         val prefs = ProtectionPreferences(context)
         val downloadsReady = prefs.downloadsProtectionEnabled && ProtectionAccess.hasDownloadsReadAccess(context)
         val appMonitorReady = prefs.appInstallMonitorEnabled
+        val attack = AttackDetectionCenter(context).snapshot()
         val title = context.getString(
-            if (downloadsReady && appMonitorReady) R.string.protection_status_notification_protected
-            else R.string.protection_status_notification_attention
+            when (attack.level) {
+                AttackDetectionLevel.CRITICAL -> R.string.protection_status_attack_critical_title
+                AttackDetectionLevel.WATCH -> R.string.protection_status_attack_watch_title
+                else -> if (downloadsReady && appMonitorReady) R.string.protection_status_notification_protected
+                else R.string.protection_status_notification_attention
+            }
         )
-        val body = when {
-            !appMonitorReady -> context.getString(R.string.protection_status_notification_apps_off)
-            prefs.downloadsProtectionEnabled && !downloadsReady -> context.getString(R.string.protection_status_notification_downloads_access)
-            !prefs.downloadsProtectionEnabled -> context.getString(R.string.protection_status_notification_downloads_off)
-            else -> context.getString(
-                R.string.protection_status_notification_body_layers,
-                context.getString(if (LocalWebShieldController.isHealthy(context)) R.string.protection_layer_active else R.string.protection_layer_off),
-                context.getString(if (prefs.intrusionMonitorEnabled) R.string.protection_layer_active else R.string.protection_layer_off)
-            )
+        val body = when (attack.level) {
+            AttackDetectionLevel.CRITICAL -> context.getString(R.string.protection_status_attack_critical_body)
+            AttackDetectionLevel.WATCH -> context.getString(R.string.protection_status_attack_watch_body)
+            else -> when {
+                !appMonitorReady -> context.getString(R.string.protection_status_notification_apps_off)
+                prefs.downloadsProtectionEnabled && !downloadsReady -> context.getString(R.string.protection_status_notification_downloads_access)
+                !prefs.downloadsProtectionEnabled -> context.getString(R.string.protection_status_notification_downloads_off)
+                else -> context.getString(
+                    R.string.protection_status_notification_body_layers,
+                    context.getString(if (LocalWebShieldController.isHealthy(context)) R.string.protection_layer_active else R.string.protection_layer_off),
+                    context.getString(if (prefs.intrusionMonitorEnabled) R.string.protection_layer_active else R.string.protection_layer_off)
+                )
+            }
         }
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -159,6 +170,7 @@ object ProtectionNotifier {
                 .setContentIntent(pendingIntent)
                 .build()
         )
+        updateProtectionStatus(context)
     }
 
     fun notifyIntrusionChange(context: Context, summary: IntrusionMonitorSummary) {
@@ -189,6 +201,7 @@ object ProtectionNotifier {
                 .setContentIntent(pendingIntent)
                 .build()
         )
+        updateProtectionStatus(context)
     }
 
     fun notifyBankingRisk(context: Context, assessment: BankingRiskAssessment, blocked: Boolean) {
@@ -219,6 +232,7 @@ object ProtectionNotifier {
                 .setContentIntent(pendingIntent)
                 .build()
         )
+        updateProtectionStatus(context)
     }
 
     fun updateProtectionStatus(context: Context) {
@@ -273,6 +287,7 @@ object ProtectionNotifier {
             notificationId = event.id.hashCode(),
             notification = notification
         )
+        updateProtectionStatus(context)
     }
 
     private fun postNotificationSafely(

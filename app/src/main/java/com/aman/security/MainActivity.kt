@@ -73,6 +73,8 @@ import com.aman.security.scanner.UrlRiskLevel
 import com.aman.security.scanner.UrlRiskSignal
 import com.aman.security.scanner.UrlScanResult
 import com.aman.security.scanner.UrlScanner
+import com.aman.security.security.AttackDetectionCenter
+import com.aman.security.security.AttackDetectionLevel
 import com.aman.security.security.AppIntegrityInspector
 import com.aman.security.security.DeviceSecurityAuditor
 import com.aman.security.security.NetworkSecurityAuditor
@@ -251,6 +253,7 @@ class MainActivity : AppCompatActivity() {
             renderProtectionStatus()
         }
         binding.btnRunIntrusionCheck.setOnClickListener { runIntrusionCheckNow() }
+        binding.btnAttackCheckNow.setOnClickListener { runIntrusionCheckNow() }
         binding.switchBankingProtection.setOnCheckedChangeListener { _, checked ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
             if (checked) requestBankingProtectionEnable() else {
@@ -658,9 +661,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
         binding.btnRunIntrusionCheck.isEnabled = false
+        binding.btnAttackCheckNow.isEnabled = false
         lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) { runCatching { IntrusionMonitor(applicationContext).check() } }
             binding.btnRunIntrusionCheck.isEnabled = true
+            binding.btnAttackCheckNow.isEnabled = true
             outcome.onSuccess { summary ->
                 protectionPreferences.lastIntrusionCheckAt = System.currentTimeMillis()
                 protectionPreferences.lastIntrusionReviewCount = summary.reviewChanges
@@ -817,6 +822,53 @@ class MainActivity : AppCompatActivity() {
             }
             "$baseBankingStatus\n${getString(R.string.banking_status_last_check, formatDate(protectionPreferences.lastBankingCheckAt), risk)}"
         } else baseBankingStatus
+    }
+
+    private fun renderAttackDetectionCenter() {
+        val snapshot = AttackDetectionCenter(this).snapshot()
+        val levelText = when (snapshot.level) {
+            AttackDetectionLevel.CLEAR -> R.string.attack_center_clear
+            AttackDetectionLevel.WATCH -> R.string.attack_center_watch
+            AttackDetectionLevel.CRITICAL -> R.string.attack_center_critical
+            AttackDetectionLevel.INCOMPLETE -> R.string.attack_center_incomplete
+        }
+        val homeText = when (snapshot.level) {
+            AttackDetectionLevel.CLEAR -> R.string.attack_home_clear
+            AttackDetectionLevel.WATCH -> R.string.attack_home_watch
+            AttackDetectionLevel.CRITICAL -> R.string.attack_home_critical
+            AttackDetectionLevel.INCOMPLETE -> R.string.attack_home_incomplete
+        }
+        val levelColor = when (snapshot.level) {
+            AttackDetectionLevel.CLEAR -> R.color.status_ok
+            AttackDetectionLevel.WATCH -> R.color.status_warn
+            AttackDetectionLevel.CRITICAL -> R.color.status_danger
+            AttackDetectionLevel.INCOMPLETE -> R.color.status_warn
+        }
+        binding.txtAttackDetectionLevel.setText(levelText)
+        binding.txtAttackDetectionLevel.setTextColor(ContextCompat.getColor(this, levelColor))
+        binding.txtAttackHome.setText(homeText)
+        binding.txtAttackHome.setTextColor(ContextCompat.getColor(this, levelColor))
+        binding.txtAttackDetectionSummary.text = when (snapshot.level) {
+            AttackDetectionLevel.CLEAR -> getString(R.string.attack_center_clear_summary)
+            AttackDetectionLevel.WATCH -> getString(R.string.attack_center_watch_summary, snapshot.watchSignals)
+            AttackDetectionLevel.CRITICAL -> getString(
+                R.string.attack_center_critical_summary,
+                snapshot.criticalSignals,
+                snapshot.watchSignals
+            )
+            AttackDetectionLevel.INCOMPLETE -> getString(R.string.attack_center_incomplete_summary)
+        }
+        fun layer(active: Boolean): String = getString(if (active) R.string.protection_layer_active else R.string.protection_layer_off)
+        binding.txtAttackDetectionCoverage.text = getString(
+            R.string.attack_center_coverage,
+            layer(snapshot.serviceHealthy),
+            layer(snapshot.webShieldActive),
+            layer(snapshot.intrusionMonitorActive),
+            layer(snapshot.bankingGuardActive)
+        )
+        binding.txtAttackDetectionLastSignal.text = snapshot.lastSignal?.let { signal ->
+            getString(R.string.attack_center_last_signal, formatDate(signal.createdAt), signal.title)
+        } ?: getString(R.string.attack_center_no_signal)
     }
 
     private fun isCombinedWebProtectionActive(): Boolean =
@@ -1076,6 +1128,7 @@ class MainActivity : AppCompatActivity() {
         binding.switchLocalWebShield.isEnabled = enabled
         binding.switchIntrusionMonitor.isEnabled = enabled
         binding.btnRunIntrusionCheck.isEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
+        binding.btnAttackCheckNow.isEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
         binding.switchBankingProtection.isEnabled = enabled
         binding.switchBankingBlockHighRisk.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         binding.btnBankingAccessibility.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
@@ -1156,6 +1209,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         renderAdvancedProtectionStatus()
+        renderAttackDetectionCenter()
         renderProtectionPosture()
     }
 

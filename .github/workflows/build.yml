@@ -91,7 +91,7 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.1.0-Debug-APK
+          name: AmanSecurity-3.2.0-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -99,7 +99,7 @@ jobs:
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.1.0-Unsigned-Release-AAB
+          name: AmanSecurity-3.2.0-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -108,7 +108,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.1.0-Verification-Reports
+          name: AmanSecurity-3.2.0-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/

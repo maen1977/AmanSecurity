@@ -29,6 +29,7 @@ object ProtectionScheduler {
             .setRequiresStorageNotLow(true)
             .build()
         val request = PeriodicWorkRequestBuilder<ProtectedFolderWorker>(6, TimeUnit.HOURS, 1, TimeUnit.HOURS)
+            .setInitialDelay(6, TimeUnit.HOURS)
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
@@ -44,6 +45,7 @@ object ProtectionScheduler {
             .setRequiresStorageNotLow(true)
             .build()
         val appRescan = PeriodicWorkRequestBuilder<InstalledAppsRescanWorker>(24, TimeUnit.HOURS, 3, TimeUnit.HOURS)
+            .setInitialDelay(12, TimeUnit.HOURS)
             .setConstraints(appConstraints)
             .build()
         workManager.enqueueUniquePeriodicWork(
@@ -53,6 +55,7 @@ object ProtectionScheduler {
         )
 
         val downloadsRescan = PeriodicWorkRequestBuilder<DownloadProtectionWorker>(2, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
+            .setInitialDelay(2, TimeUnit.HOURS)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
@@ -68,6 +71,7 @@ object ProtectionScheduler {
         )
 
         val intrusionMonitor = PeriodicWorkRequestBuilder<IntrusionMonitorWorker>(6, TimeUnit.HOURS, 1, TimeUnit.HOURS)
+            .setInitialDelay(6, TimeUnit.HOURS)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
@@ -80,9 +84,9 @@ object ProtectionScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             intrusionMonitor
         )
+        // Keep enable-time work light. Existing folders/downloads are caught by deferred periodic work;
+        // new packages and new downloads are still scanned immediately by event-driven monitors.
         intrusionCheckNow(context)
-        checkNow(context)
-        scanDownloadsNow(context)
     }
 
     fun disable(context: Context) {

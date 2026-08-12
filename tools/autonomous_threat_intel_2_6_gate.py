@@ -33,7 +33,7 @@ def main():
     stale=[rel for rel in legacy if (ROOT/rel).exists()]
     if stale: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED legacy_github_pipeline={stale}')
     gradle=(ROOT/'app/build.gradle.kts').read_text()
-    need(gradle,['versionName = "3.1.0"','versionCode = 21'],'AUTONOMOUS_3_1_VERSION')
+    need(gradle,['versionName = "3.2.0"','versionCode = 22'],'AUTONOMOUS_3_2_VERSION')
     forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
     scan_paths=[ROOT/'app/src/main', ROOT/'app/build.gradle.kts', ROOT/'README.md']
     hits={x:[] for x in forbidden}
