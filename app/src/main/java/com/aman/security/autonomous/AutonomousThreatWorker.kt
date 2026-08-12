@@ -10,12 +10,25 @@ import com.aman.security.web.LocalWebShieldController
 
 class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Worker(appContext, params) {
     override fun doWork(): Result {
+        val state = ThreatUpdateStateStore(applicationContext)
+        state.running()
         val database = SignatureDatabase(applicationContext)
-        return when (AutonomousThreatUpdater(applicationContext, database).update()) {
+        val outcome = runCatching {
+            AutonomousThreatUpdater(applicationContext, database).update { source, completed, total ->
+                state.progress(source, completed, total)
+            }
+        }
+        val result = outcome.getOrElse {
+            state.fail(it.message ?: it.javaClass.simpleName)
+            return Result.retry()
+        }
+        state.complete(result)
+        return when (result) {
             AutonomousUpdateResult.NoSourceAvailable -> Result.retry()
             is AutonomousUpdateResult.Success,
             is AutonomousUpdateResult.Partial -> {
                 if (ProtectionPreferences(applicationContext).enabled) {
+                    // Recheck cached hashes only. Do not rescan the whole device after every DB update.
                     ProtectionScheduler.recheckCachedReputationNow(applicationContext)
                     LocalWebShieldController.refresh(applicationContext)
                 }

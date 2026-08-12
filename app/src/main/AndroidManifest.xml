@@ -68,10 +68,11 @@
             android:name=".protection.ProtectionService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-enabled real-time antivirus coordination: persistent protection status, installed-app monitoring, Downloads malware monitoring, and local threat scan scheduling." />
+                android:value="User-enabled antivirus runtime: persistent protection status, installed-app and Downloads monitoring, plus user-started malware scans that continue when the app UI is closed." />
         </service>
 
         <receiver

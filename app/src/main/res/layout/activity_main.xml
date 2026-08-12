@@ -38,8 +38,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/homeHeroCard"
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp"
-                    app:cardBackgroundColor="@color/brand_primary" app:cardCornerRadius="30dp" app:cardElevation="0dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="vertical" android:padding="24dp">
+                    app:cardBackgroundColor="@android:color/transparent" app:cardCornerRadius="30dp" app:cardElevation="0dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="vertical" android:padding="24dp" android:background="@drawable/bg_home_hero_gradient">
                         <ImageView android:layout_width="76dp" android:layout_height="76dp" android:src="@drawable/ic_shield_white" android:contentDescription="@null" />
                         <TextView android:id="@+id/txtSecurityScore" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/dashboard_score_placeholder" android:textColor="@android:color/white" android:textSize="44sp" android:textStyle="bold" />
                         <TextView android:id="@+id/txtDashboardHeadline" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="@string/dashboard_checking" android:textColor="@android:color/white" android:textSize="21sp" android:textStyle="bold" />
@@ -50,14 +50,14 @@
 
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@string/quick_actions" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal">
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickApps" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_apps" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickApps" style="@style/Widget.Material3.Button.TonalButton" app:backgroundTint="@color/dashboard_soft" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_apps" />
                     <Space android:layout_width="10dp" android:layout_height="1dp" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickFile" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_file" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickFile" style="@style/Widget.Material3.Button.TonalButton" app:backgroundTint="@color/accent_blue_soft" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_scan_file" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal">
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickWeb" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_web_guard" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickWeb" style="@style/Widget.Material3.Button.TonalButton" app:backgroundTint="@color/accent_cyan_soft" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_web_guard" />
                     <Space android:layout_width="10dp" android:layout_height="1dp" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickUpdate" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_update_protection" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickUpdate" style="@style/Widget.Material3.Button.TonalButton" app:backgroundTint="@color/accent_purple_soft" android:layout_width="0dp" android:layout_height="74dp" android:layout_weight="1" android:text="@string/quick_update_protection" />
                 </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">

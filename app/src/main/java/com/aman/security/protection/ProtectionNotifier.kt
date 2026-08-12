@@ -57,6 +57,8 @@ object ProtectionNotifier {
 
     fun buildProtectionStatusNotification(context: Context): Notification {
         ensureChannels(context)
+        val scan = ScanSessionStore(context).snapshot()
+        if (scan.isActive) return buildScanStatusNotification(context, scan)
         val prefs = ProtectionPreferences(context)
         val downloadsReady = prefs.downloadsProtectionEnabled && ProtectionAccess.hasDownloadsReadAccess(context)
         val appMonitorReady = prefs.appInstallMonitorEnabled
@@ -298,12 +300,99 @@ object ProtectionNotifier {
     }
 
     fun updateProtectionStatus(context: Context) {
-        if (!ProtectionPreferences(context).enabled) return
+        if (!ProtectionPreferences(context).enabled && !ScanSessionStore(context).snapshot().isActive) return
         postNotificationSafely(
             context = context,
             notificationId = STATUS_NOTIFICATION_ID,
             notification = buildProtectionStatusNotification(context)
         )
+    }
+
+
+    fun refreshForegroundStatus(context: Context) {
+        postNotificationSafely(
+            context = context,
+            notificationId = STATUS_NOTIFICATION_ID,
+            notification = buildProtectionStatusNotification(context)
+        )
+    }
+
+    private fun buildScanStatusNotification(context: Context, scan: ScanSessionSnapshot): Notification {
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_SCAN)
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context, STATUS_NOTIFICATION_ID + 20, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val cancelIntent = Intent(context, ProtectionService::class.java).apply {
+            action = ProtectionService.ACTION_CANCEL_SCAN
+            putExtra(ProtectionService.EXTRA_SCAN_SESSION_ID, scan.sessionId)
+        }
+        val cancelPendingIntent = PendingIntent.getService(
+            context, STATUS_NOTIFICATION_ID + 21, cancelIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val mode = context.getString(when (scan.mode) {
+            PersistentScanMode.QUICK -> R.string.quick_scan_action
+            PersistentScanMode.SMART -> R.string.smart_scan_action
+            PersistentScanMode.FULL -> R.string.full_scan_action
+        })
+        val body = context.getString(R.string.persistent_scan_notification_body, scan.progress, mode)
+        return NotificationCompat.Builder(context, STATUS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(context.getString(R.string.persistent_scan_notification_title))
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setProgress(100, scan.progress.coerceIn(0, 100), false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(openPendingIntent)
+            .addAction(0, context.getString(R.string.protection_status_open_action), openPendingIntent)
+            .addAction(0, context.getString(R.string.stop_scan), cancelPendingIntent)
+            .build()
+    }
+
+    fun notifyScanFinished(context: Context, scan: ScanSessionSnapshot) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_SCAN)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, STATUS_NOTIFICATION_ID + 22, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val title = when (scan.state) {
+            PersistentScanState.COMPLETED -> context.getString(
+                if (scan.totalAlerts > 0) R.string.persistent_scan_finished_attention_title else R.string.persistent_scan_finished_safe_title
+            )
+            PersistentScanState.CANCELLED -> context.getString(R.string.scan_cancelled_title)
+            else -> context.getString(R.string.smart_scan_failed_title)
+        }
+        val body = when (scan.state) {
+            PersistentScanState.COMPLETED -> context.getString(
+                R.string.persistent_scan_finished_body, scan.scannedApps, scan.scannedFiles, scan.totalAlerts
+            )
+            PersistentScanState.CANCELLED -> context.getString(R.string.scan_cancelled_detail)
+            else -> context.getString(R.string.persistent_scan_failed_body, scan.error.ifBlank { context.getString(R.string.operation_failed_try_again) })
+        }
+        postNotificationSafely(
+            context, STATUS_NOTIFICATION_ID + 23,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(if (scan.totalAlerts > 0) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        if (ProtectionPreferences(context).enabled) updateProtectionStatus(context)
     }
 
     fun notifyEvent(context: Context, event: ProtectionEvent) {

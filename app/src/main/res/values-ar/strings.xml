@@ -686,4 +686,29 @@
     <string name="high_risk_network_contact_notification_body">حاول %1$s، المصنف مسبقًا مرتفع الخطورة بسبب مؤشرات تجسس مترابطة، الوصول إلى %2$s. لا يستطيع أمان رؤية المحتوى المشفر، لذلك هذا تحذير عاجل عن اتصال شبكي وليس إثباتًا أن البيانات سُرقت.</string>
     <string name="data_exfil_dns_correlation_active">الربط الفوري لاتصالات النطاق عالية الخطورة: نشط</string>
     <string name="data_exfil_dns_correlation_off">الربط الفوري لاتصالات النطاق عالية الخطورة: فعّل درع الويب المحلي</string>
+
+    <string name="persistent_scan_notification_title">فحص أمان يعمل الآن</string>
+    <string name="persistent_scan_notification_body">اكتمل %1$d%% • يستمر %2$s حتى بعد إغلاق واجهة أمان.</string>
+    <string name="persistent_scan_finished_safe_title">اكتمل الفحص — لا توجد مؤشرات عالية الخطورة</string>
+    <string name="persistent_scan_finished_attention_title">اكتمل الفحص — توجد نتائج تحتاج مراجعة</string>
+    <string name="persistent_scan_finished_body">تم فحص %1$d تطبيق و%2$d ملف • %3$d تنبيه عالي الخطورة.</string>
+    <string name="persistent_scan_failed_body">توقف الفحص بسبب خطأ: %1$s</string>
+    <string name="persistent_scan_running_ui">الفحص المستمر يعمل • %1$d%%</string>
+    <string name="persistent_scan_complete_ui">اكتمل الفحص • %1$d تطبيق • %2$d ملف • %3$d تنبيه عالي الخطورة</string>
+    <string name="persistent_scan_attention_ui">للمراجعة: %1$d تنبيه عالي الخطورة • %2$d عنصر إضافي يحتاج الانتباه</string>
+    <string name="persistent_scan_safe_ui">لم يتم اكتشاف مؤشرات عالية الخطورة في هذا الفحص.</string>
+    <string name="persistent_scan_failed_ui">فشل الفحص: %1$s</string>
+    <string name="persistent_scan_already_running">يوجد فحص يعمل بالفعل. سيستمر أمان بتشغيله في الخلفية.</string>
+    <string name="threat_update_queued">تمت جدولة تحديث التهديدات وسيستمر حتى لو خرجت من أمان.</string>
+    <string name="threat_update_running">تحديث معلومات التهديدات • %1$d%% • %2$s</string>
+    <string name="threat_update_success_persistent">تم التحقق من معلومات التهديدات وتحديثها • تغير %1$d مصدر.</string>
+    <string name="threat_update_partial_persistent">اكتمل التحديث جزئيًا • نجح %1$d مصدر • فشل %2$d.</string>
+    <string name="threat_update_failed_persistent">تعذر الوصول إلى مصدر صالح الآن. احتفظ أمان بآخر بيانات حماية صالحة.</string>
+    <string name="threat_source_starting">تجهيز التحديث الآمن</string>
+    <string name="threat_source_malware">بصمات برمجيات أندرويد الخبيثة</string>
+    <string name="threat_source_phishing">حماية التصيد</string>
+    <string name="threat_source_malware_urls">روابط البرمجيات الخبيثة</string>
+    <string name="threat_source_c2">خوادم القيادة والتحكم</string>
+    <string name="threat_source_android">نشرة أمان أندرويد</string>
+
 </resources>

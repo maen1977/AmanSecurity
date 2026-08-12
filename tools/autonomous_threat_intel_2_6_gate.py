@@ -33,7 +33,7 @@ def main():
     stale=[rel for rel in legacy if (ROOT/rel).exists()]
     if stale: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED legacy_github_pipeline={stale}')
     gradle=(ROOT/'app/build.gradle.kts').read_text()
-    need(gradle,['versionName = "3.3.0"','versionCode = 23'],'AUTONOMOUS_3_2_VERSION')
+    need(gradle,['versionName = "3.4.0"','versionCode = 24'],'AUTONOMOUS_3_2_VERSION')
     forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
     scan_paths=[ROOT/'app/src/main', ROOT/'app/build.gradle.kts', ROOT/'README.md']
     hits={x:[] for x in forbidden}
@@ -57,7 +57,7 @@ def main():
     need(http,['instanceFollowRedirects = false','AutonomousSourcePolicy.allowed','AutonomousSourcePolicy.textPayloadAllowed','Executable/archive payload rejected'],'AUTONOMOUS_2_6_FETCH')
     need(store,['atomicWrite','Unexpected source shrink','autonomous-intel-v1','AUTO_PHISHING_PRIMARY','AUTO_PHISHING_COMMUNITY','SUSPICIOUS_SOURCE','sourceLastSuccess','sourceConsecutiveFailures','recordRun','android_cves.txt','replaceAndroidCves'],'AUTONOMOUS_2_7_STORAGE')
     need(url_models,['SUSPICIOUS_SOURCE','COMMUNITY_THREAT_FEED'],'AUTONOMOUS_2_6_FALSE_POSITIVE_POLICY')
-    need(main,['txtAutonomousLastUpdate','update_up_to_date'],'AUTONOMOUS_2_6_STATUS_UI')
+    need(main,['txtAutonomousLastUpdate','threat_update_success_persistent','AutonomousThreatScheduler.updateNow(this)'],'AUTONOMOUS_2_6_STATUS_UI')
     for suffix in ['.apk','.dex','.exe','.elf']:
         bad=[p for p in ROOT.rglob(f'*{suffix}') if 'build' not in p.parts]
         if bad: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED payload={bad}')

@@ -24,16 +24,16 @@ for rel in [
         errors.append(f'missing_community_feed_branch:{rel}')
 
 
-# Android Lint StringFormatMatches: update_partial uses string placeholders, so numeric
-# counts must be locale-formatted to String before getString() receives them.
+# Android Lint StringFormatMatches: persistent update strings use integer (%d)
+# placeholders, so the runtime may pass Int values directly. Verify the new durable UI path.
 main_activity=(ROOT/'app/src/main/java/com/aman/security/MainActivity.kt').read_text(encoding='utf-8')
 for expected in [
-    'NumberFormat.getIntegerInstance().format(result.successfulSources)',
-    'NumberFormat.getIntegerInstance().format(result.info.totalSources)',
+    'R.string.threat_update_partial_persistent, state.successfulSources, state.failedSources',
+    'R.string.threat_update_running',
 ]:
     if expected not in main_activity:
-        errors.append('update_partial_number_not_formatted:' + expected)
+        errors.append('persistent_update_status_missing:' + expected)
 
 if errors:
     raise SystemExit('ANDROID_KOTLIN_SANITY_GATE_FAILED ' + ' '.join(errors))
-print('ANDROID_KOTLIN_SANITY_GATE_OK view_imports=1 url_signal_exhaustive=1 string_format_numeric=1')
+print('ANDROID_KOTLIN_SANITY_GATE_OK view_imports=1 url_signal_exhaustive=1 persistent_update_format=1')

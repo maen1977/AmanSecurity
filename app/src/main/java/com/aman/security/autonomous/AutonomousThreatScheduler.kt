@@ -9,27 +9,52 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 object AutonomousThreatScheduler {
     private const val PERIODIC_WORK = "aman-autonomous-threat-intelligence-6h"
     private const val ON_DEMAND_WORK = "aman-autonomous-threat-intelligence-now"
 
+    private fun periodicNetworkConstraints(): Constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .setRequiresBatteryNotLow(true)
+        .build()
+
+    private fun manualNetworkConstraints(): Constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
     fun schedule(context: Context) {
-        val network = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
-            .build()
+        val app = context.applicationContext
+        val network = periodicNetworkConstraints()
         val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(6, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
             .setConstraints(network)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, periodic)
+        WorkManager.getInstance(app).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, periodic)
 
-        val last = AutonomousThreatStore(context).info().lastSuccessfulUpdateEpochMs
+        val last = AutonomousThreatStore(app).info().lastSuccessfulUpdateEpochMs
         if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(6)) {
-            val initial = OneTimeWorkRequestBuilder<AutonomousThreatWorker>().setConstraints(network).build()
-            WorkManager.getInstance(context).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.KEEP, initial)
+            val state = ThreatUpdateStateStore(app)
+            if (!state.snapshot().isActive) state.queued()
+            val initial = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
+                .setConstraints(network)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
+                .build()
+            WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.KEEP, initial)
         }
+    }
+
+    /** Manual update survives leaving MainActivity because WorkManager owns the operation. */
+    fun updateNow(context: Context): UUID {
+        val app = context.applicationContext
+        ThreatUpdateStateStore(app).queued()
+        val request = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
+            .setConstraints(manualNetworkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.REPLACE, request)
+        return request.id
     }
 }

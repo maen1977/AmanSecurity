@@ -11,13 +11,20 @@ class AutonomousThreatUpdater(
     private val store = database.autonomousStore
     private val http = AutonomousThreatHttpClient(context)
 
-    fun update(): AutonomousUpdateResult {
+    fun update(onProgress: ((sourceKey: String, completed: Int, total: Int) -> Unit)? = null): AutonomousUpdateResult {
         var changed = 0
         var latestPatch: String? = null
         var cveCount: Int? = null
         val successfulSourceKeys = linkedSetOf<String>()
         val failedSourceKeys = linkedSetOf<String>()
         val attemptAt = System.currentTimeMillis()
+        var completedSources = 0
+        onProgress?.invoke("starting", 0, TOTAL_SOURCES)
+
+        fun reportSourceComplete(key: String) {
+            completedSources++
+            onProgress?.invoke(key, completedSources, TOTAL_SOURCES)
+        }
 
         fun runSource(key: String, block: () -> Boolean) {
             try {
@@ -26,6 +33,8 @@ class AutonomousThreatUpdater(
                 if (changedNow) changed++
             } catch (_: Exception) {
                 failedSourceKeys += key
+            } finally {
+                reportSourceComplete(key)
             }
         }
 
@@ -47,6 +56,8 @@ class AutonomousThreatUpdater(
             if (bulletin.third) changed++
         } catch (_: Exception) {
             failedSourceKeys += AutonomousThreatStore.SOURCE_ANDROID_BULLETIN
+        } finally {
+            reportSourceComplete(AutonomousThreatStore.SOURCE_ANDROID_BULLETIN)
         }
 
         // Persist source-level health even on a total outage. Last-known-good indicator files

@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -26,8 +28,8 @@ import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
 import com.aman.security.databinding.ItemQuarantineBinding
 import com.aman.security.autonomous.AutonomousThreatScheduler
-import com.aman.security.autonomous.AutonomousThreatUpdater
-import com.aman.security.autonomous.AutonomousUpdateResult
+import com.aman.security.autonomous.ThreatUpdateState
+import com.aman.security.autonomous.ThreatUpdateStateStore
 import com.aman.security.protection.ProtectedFolderScanner
 import com.aman.security.protection.ProtectedFolderScanSummary
 import com.aman.security.protection.DownloadProtectionScanner
@@ -48,6 +50,10 @@ import com.aman.security.protection.ProtectionNotifier
 import com.aman.security.protection.ProtectionPreferences
 import com.aman.security.protection.ProtectionScheduler
 import com.aman.security.protection.ProtectionSeverity
+import com.aman.security.protection.PersistentScanMode
+import com.aman.security.protection.PersistentScanState
+import com.aman.security.protection.ScanSessionStore
+import com.aman.security.protection.ScanSessionSnapshot
 import com.aman.security.scanner.AppInstallSource
 import com.aman.security.scanner.ApkAnalysisState
 import com.aman.security.scanner.ApkIdentityClassification
@@ -114,7 +120,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanner: FileScanner
     private lateinit var apkStaticAnalyzer: ApkStaticAnalyzer
     private lateinit var installedAppScanner: InstalledAppScanner
-    private lateinit var updater: AutonomousThreatUpdater
     private lateinit var urlScanner: UrlScanner
     private lateinit var recordStore: SecurityRecordStore
     private lateinit var quarantineManager: QuarantineManager
@@ -131,6 +136,17 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var scanCancelRequested: Boolean = false
     private var activeScan: Boolean = false
     private var renderingProtectionControls: Boolean = false
+    private val operationUiHandler = Handler(Looper.getMainLooper())
+    private var operationUiTickerRunning = false
+    private var persistentScanObserved = false
+    private var lastRenderedPersistentScanCompletion = 0L
+    private val operationUiTicker = object : Runnable {
+        override fun run() {
+            if (!operationUiTickerRunning || !::binding.isInitialized || isFinishing || isDestroyed) return
+            renderPersistentOperations()
+            operationUiHandler.postDelayed(this, OPERATION_UI_POLL_MS)
+        }
+    }
 
     /**
      * Last-resort protection for unexpected exceptions in lifecycleScope jobs. A failed
@@ -218,7 +234,6 @@ class MainActivity : AppCompatActivity() {
         apkStaticAnalyzer = ApkStaticAnalyzer(this, database)
         scanner = FileScanner(contentResolver, database, apkStaticAnalyzer)
         installedAppScanner = InstalledAppScanner(this, database)
-        updater = AutonomousThreatUpdater(this, database)
         urlScanner = UrlScanner(database::findUrl)
         recordStore = SecurityRecordStore(this)
         quarantineManager = QuarantineManager(this, recordStore)
@@ -331,7 +346,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnQuickQuarantine.setOnClickListener { showPage(PAGE_PROTECTION) }
         binding.btnQuickUpdate.setOnClickListener { showPage(PAGE_SETTINGS); updateThreatDatabase() }
         binding.btnStopScan.setOnClickListener {
-            if (activeScan) {
+            val persistent = ScanSessionStore(this).snapshot()
+            if (persistent.isActive) {
+                ProtectionServiceController.cancelScan(this)
+                binding.txtSmartScanState.setText(R.string.scan_cancel_requested)
+                binding.btnStopScan.isEnabled = false
+            } else if (activeScan) {
                 scanCancelRequested = true
                 binding.txtSmartScanState.setText(R.string.scan_cancel_requested)
                 binding.btnStopScan.isEnabled = false
@@ -349,11 +369,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        startOperationUiTicker()
         if (::database.isInitialized) {
             database.reloadAutonomous()
             renderDatabaseInfo()
         }
         if (::protectionPreferences.isInitialized) {
+            if (ScanSessionStore(this).snapshot().isActive) {
+                runCatching { ProtectionServiceController.recoverPendingScan(this) }
+            }
             if (protectionPreferences.enabled && ProtectionServiceController.needsRecovery(this)) {
                 runCatching { ProtectionServiceController.start(this) }
                 binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 900L)
@@ -372,7 +396,14 @@ class MainActivity : AppCompatActivity() {
             } else {
                 renderSecurityAudit()
             }
+            renderPersistentOperations()
         }
+    }
+
+    override fun onPause() {
+        operationUiTickerRunning = false
+        operationUiHandler.removeCallbacks(operationUiTicker)
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -455,48 +486,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateThreatDatabase() {
-        binding.btnUpdateDatabase.isEnabled = false
-        binding.txtUpdateStatus.setText(R.string.update_checking)
-        lifecycleScope.launch(uiCoroutineErrorHandler) {
-            val result = withContext(Dispatchers.IO) { updater.update() }
-            binding.btnUpdateDatabase.isEnabled = true
-            val updateAttention = result is AutonomousUpdateResult.Partial || result == AutonomousUpdateResult.NoSourceAvailable
-            protectionPreferences.markActivity(getString(if (updateAttention) R.string.activity_database_attention else R.string.activity_database_checked))
-            protectionActivityStore.add(
-                kind = ProtectionActivityKind.DATABASE_UPDATE,
-                state = if (updateAttention) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
-                title = getString(if (updateAttention) R.string.activity_database_attention else R.string.activity_database_checked),
-                detail = getString(if (updateAttention) R.string.timeline_database_attention_detail else R.string.timeline_database_checked_detail)
-            )
-            if (protectionPreferences.enabled && protectionPreferences.periodicAppRescanEnabled && !updateAttention) {
-                ProtectionScheduler.rescanInstalledAppsNow(this@MainActivity)
-            }
-            ProtectionServiceController.refresh(this@MainActivity)
-            renderAutonomousIntel()
-            renderProtectionStatus()
-            renderProtectionPosture()
-            when (result) {
-                is AutonomousUpdateResult.Success -> {
-                    binding.txtUpdateStatus.text = if (result.changedSources == 0) {
-                        getString(R.string.update_up_to_date)
-                    } else {
-                        getString(
-                            R.string.update_success,
-                            NumberFormat.getIntegerInstance().format(result.info.malwareFileHashes),
-                            NumberFormat.getIntegerInstance().format(result.info.phishingHosts),
-                            NumberFormat.getIntegerInstance().format(result.info.c2Hosts),
-                            NumberFormat.getIntegerInstance().format(result.info.androidCveCount)
-                        )
-                    }
-                }
-                is AutonomousUpdateResult.Partial -> binding.txtUpdateStatus.text = getString(
-                    R.string.update_partial,
-                    NumberFormat.getIntegerInstance().format(result.successfulSources),
-                    NumberFormat.getIntegerInstance().format(result.info.totalSources)
-                )
-                AutonomousUpdateResult.NoSourceAvailable -> binding.txtUpdateStatus.setText(R.string.update_network_error)
-            }
+        val state = ThreatUpdateStateStore(this).snapshot()
+        if (state.isActive) {
+            renderThreatUpdateState(state)
+            return
         }
+        AutonomousThreatScheduler.updateNow(this)
+        binding.btnUpdateDatabase.isEnabled = false
+        binding.txtUpdateStatus.setText(R.string.threat_update_queued)
+        startOperationUiTicker()
+        renderPersistentOperations()
     }
 
     private fun renderAutonomousIntel() {
@@ -1377,7 +1376,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestSmartScan() {
         val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
         if (preferences.getInt(INSTALLED_SCAN_DISCLOSURE_KEY, 0) >= INSTALLED_SCAN_DISCLOSURE_VERSION) {
-            runSmartScan()
+            startPersistentScan(PersistentScanMode.SMART)
             return
         }
 
@@ -1389,7 +1388,7 @@ class MainActivity : AppCompatActivity() {
                 preferences.edit()
                     .putInt(INSTALLED_SCAN_DISCLOSURE_KEY, INSTALLED_SCAN_DISCLOSURE_VERSION)
                     .apply()
-                runSmartScan()
+                startPersistentScan(PersistentScanMode.SMART)
             }
             .show()
     }
@@ -1584,12 +1583,12 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.continue_scan) { _, _ ->
                     preferences.edit().putInt(INSTALLED_SCAN_DISCLOSURE_KEY, INSTALLED_SCAN_DISCLOSURE_VERSION).apply()
-                    runFullScan()
+                    startPersistentScan(PersistentScanMode.FULL)
                 }
                 .show()
             return
         }
-        runFullScan()
+        startPersistentScan(PersistentScanMode.FULL)
     }
 
     private data class FullScanBundle(
@@ -1760,6 +1759,135 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun startPersistentScan(mode: PersistentScanMode) {
+        showPage(PAGE_SCAN)
+        val current = ScanSessionStore(this).snapshot()
+        if (current.isActive) {
+            persistentScanObserved = true
+            Toast.makeText(this, R.string.persistent_scan_already_running, Toast.LENGTH_SHORT).show()
+            renderPersistentOperations()
+            return
+        }
+        val session = ProtectionServiceController.startScan(this, mode)
+        persistentScanObserved = true
+        activeScan = session.isActive
+        scanCancelRequested = false
+        setScanControlsEnabled(false)
+        binding.btnStopScan.isEnabled = true
+        showSmartScan(scanModeTitle(session.mode), R.string.smart_scan_full_detail)
+        updateScanProgress(1, R.string.smart_scan_preparing, getString(R.string.scan_target_preparing), getString(R.string.scan_scope_preparing))
+        startOperationUiTicker()
+    }
+
+    private fun startOperationUiTicker() {
+        if (operationUiTickerRunning) return
+        operationUiTickerRunning = true
+        operationUiHandler.removeCallbacks(operationUiTicker)
+        operationUiHandler.post(operationUiTicker)
+    }
+
+    private fun renderPersistentOperations() {
+        if (!::binding.isInitialized) return
+        val scan = ScanSessionStore(this).snapshot()
+        if (scan.isActive) {
+            persistentScanObserved = true
+            activeScan = true
+            setScanControlsEnabled(false)
+            binding.btnStopScan.visibility = View.VISIBLE
+            binding.btnStopScan.isEnabled = !scan.cancelledRequested
+            binding.smartScanCard.visibility = View.VISIBLE
+            binding.smartResultCard.visibility = View.GONE
+            binding.smartScanProgress.isIndeterminate = scan.state == PersistentScanState.QUEUED
+            binding.smartScanProgress.progress = scan.progress
+            binding.txtSmartScanPercent.text = getString(R.string.scan_progress_percent, NumberFormat.getIntegerInstance().format(scan.progress))
+            binding.txtSmartScanState.text = getString(R.string.persistent_scan_running_ui, scan.progress)
+            binding.txtSmartScanDetail.setText(scanModeTitle(scan.mode))
+            binding.txtSmartScanTarget.text = scan.target.ifBlank { getString(scanStageTitle(scan.stage)) }
+            binding.txtSmartScanScope.text = scan.scope.ifBlank { getString(R.string.scan_scope_device) }
+        } else if (scan.completedAt > 0L && (persistentScanObserved || scan.completedAt > lastRenderedPersistentScanCompletion)) {
+            persistentScanObserved = false
+            lastRenderedPersistentScanCompletion = scan.completedAt
+            activeScan = false
+            setScanControlsEnabled(true)
+            binding.btnStopScan.isEnabled = false
+            binding.btnStopScan.visibility = View.GONE
+            when (scan.state) {
+                PersistentScanState.COMPLETED -> {
+                    val color = if (scan.totalAlerts > 0) R.color.status_danger else if (scan.totalAttention > 0) R.color.status_warn else R.color.status_ok
+                    val title = if (scan.totalAlerts > 0) R.string.smart_scan_complete_danger else if (scan.totalAttention > 0) R.string.smart_scan_complete_attention else R.string.smart_scan_complete_safe
+                    val details = buildString {
+                        append(getString(R.string.persistent_scan_complete_ui, scan.scannedApps, scan.scannedFiles, scan.totalAlerts))
+                        append('\n')
+                        append(if (scan.totalAlerts > 0 || scan.totalAttention > 0) {
+                            getString(R.string.persistent_scan_attention_ui, scan.totalAlerts, scan.totalAttention)
+                        } else {
+                            getString(R.string.persistent_scan_safe_ui)
+                        })
+                    }
+                    showSmartResult(title, if (scan.totalAlerts > 0 || scan.totalAttention > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail, details, color)
+                    protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, scan.scannedApps))
+                }
+                PersistentScanState.CANCELLED -> showSmartResult(R.string.scan_cancelled_title, R.string.scan_cancelled_title, getString(R.string.scan_cancelled_detail), R.color.status_warn)
+                PersistentScanState.FAILED -> showSmartResult(R.string.smart_scan_failed_title, R.string.smart_scan_failed_title, getString(R.string.persistent_scan_failed_ui, scan.error.ifBlank { getString(R.string.operation_failed_try_again) }), R.color.status_warn)
+                else -> Unit
+            }
+            renderProtectionStatus()
+            renderProtectionPosture()
+        }
+        renderThreatUpdateState(ThreatUpdateStateStore(this).snapshot())
+    }
+
+    private fun renderThreatUpdateState(state: com.aman.security.autonomous.ThreatUpdateSnapshot) {
+        binding.btnUpdateDatabase.isEnabled = !state.isActive
+        when (state.state) {
+            ThreatUpdateState.IDLE -> Unit
+            ThreatUpdateState.QUEUED -> binding.txtUpdateStatus.setText(R.string.threat_update_queued)
+            ThreatUpdateState.RUNNING -> binding.txtUpdateStatus.text = getString(
+                R.string.threat_update_running,
+                state.progress,
+                threatSourceLabel(state.currentSource)
+            )
+            ThreatUpdateState.SUCCESS -> {
+                binding.txtUpdateStatus.text = getString(R.string.threat_update_success_persistent, state.changedSources)
+                database.reloadAutonomous()
+                renderAutonomousIntel()
+            }
+            ThreatUpdateState.PARTIAL -> {
+                binding.txtUpdateStatus.text = getString(R.string.threat_update_partial_persistent, state.successfulSources, state.failedSources)
+                database.reloadAutonomous()
+                renderAutonomousIntel()
+            }
+            ThreatUpdateState.FAILED -> binding.txtUpdateStatus.setText(R.string.threat_update_failed_persistent)
+        }
+    }
+
+    private fun threatSourceLabel(source: String): String = getString(when {
+        source == "starting" || source == "queued" -> R.string.threat_source_starting
+        "malware_url" in source -> R.string.threat_source_malware_urls
+        "malware" in source -> R.string.threat_source_malware
+        "phish" in source -> R.string.threat_source_phishing
+        "c2" in source -> R.string.threat_source_c2
+        "android" in source -> R.string.threat_source_android
+        else -> R.string.threat_source_starting
+    })
+
+    private fun scanModeTitle(mode: PersistentScanMode): Int = when (mode) {
+        PersistentScanMode.QUICK -> R.string.quick_scan_action
+        PersistentScanMode.SMART -> R.string.smart_scan_action
+        PersistentScanMode.FULL -> R.string.full_scan_action
+    }
+
+    private fun scanStageTitle(stage: String): Int = when (stage) {
+        "apps" -> R.string.scan_stage_apps
+        "device" -> R.string.scan_stage_device
+        "network", "privacy" -> R.string.scan_stage_network
+        "spyware" -> R.string.scan_stage_spyware
+        "folder" -> R.string.scan_stage_folder
+        "files" -> R.string.scan_stage_shared_storage
+        "finishing", "complete" -> R.string.scan_stage_finishing
+        else -> R.string.smart_scan_preparing
+    }
+
     private fun setScanControlsEnabled(enabled: Boolean) {
         binding.btnSmartScan.isEnabled = enabled
         binding.btnScanInstalledApps.isEnabled = enabled
@@ -1773,7 +1901,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestInstalledAppsScan() {
         val preferences = getSharedPreferences(PRIVACY_PREFERENCES, MODE_PRIVATE)
         if (preferences.getInt(INSTALLED_SCAN_DISCLOSURE_KEY, 0) >= INSTALLED_SCAN_DISCLOSURE_VERSION) {
-            scanInstalledApps()
+            startPersistentScan(PersistentScanMode.QUICK)
             return
         }
 
@@ -1785,7 +1913,7 @@ class MainActivity : AppCompatActivity() {
                 preferences.edit()
                     .putInt(INSTALLED_SCAN_DISCLOSURE_KEY, INSTALLED_SCAN_DISCLOSURE_VERSION)
                     .apply()
-                scanInstalledApps()
+                startPersistentScan(PersistentScanMode.QUICK)
             }
             .show()
     }
@@ -2712,6 +2840,7 @@ class MainActivity : AppCompatActivity() {
         private const val PROTECTION_DISCLOSURE_VERSION = 1
         private const val MAX_VISIBLE_PROTECTION_EVENTS = 8
         private const val SECURITY_AUDIT_REFRESH_MS = 60_000L
+        private const val OPERATION_UI_POLL_MS = 1_200L
         private const val MAX_VISIBLE_APP_RESULTS = 20
         private const val MAX_VISIBLE_SECURITY_RECORDS = 20
         private const val MAX_VISIBLE_HISTORY = 20

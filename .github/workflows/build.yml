@@ -88,8 +88,8 @@ jobs:
       - name: Prepare direct-install APK
         shell: bash
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk AmanSecurity-3.3.0-DirectInstall.apk
-          test -s AmanSecurity-3.3.0-DirectInstall.apk
+          cp app/build/outputs/apk/debug/app-debug.apk AmanSecurity-3.4.0-DirectInstall.apk
+          test -s AmanSecurity-3.4.0-DirectInstall.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -97,21 +97,21 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum AmanSecurity-3.3.0-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum AmanSecurity-3.4.0-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.3.0-DirectInstall-APK
-          path: AmanSecurity-3.3.0-DirectInstall.apk
+          name: AmanSecurity-3.4.0-DirectInstall-APK
+          path: AmanSecurity-3.4.0-DirectInstall.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.3.0-Unsigned-Release-AAB
+          name: AmanSecurity-3.4.0-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -120,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.3.0-Verification-Reports
+          name: AmanSecurity-3.4.0-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/

@@ -686,4 +686,29 @@
     <string name="high_risk_network_contact_notification_body">%1$s, already classified HIGH by correlated spyware signals, tried to resolve %2$s. Aman cannot see encrypted content, so this is an urgent network-contact warning rather than proof that data was stolen.</string>
     <string name="data_exfil_dns_correlation_active">Immediate high-risk DNS correlation: active</string>
     <string name="data_exfil_dns_correlation_off">Immediate high-risk DNS correlation: enable Local Web Shield</string>
+
+    <string name="persistent_scan_notification_title">Aman scan is running</string>
+    <string name="persistent_scan_notification_body">%1$d%% complete • %2$s continues even when Aman is closed.</string>
+    <string name="persistent_scan_finished_safe_title">Scan complete — no high-risk findings</string>
+    <string name="persistent_scan_finished_attention_title">Scan complete — review findings</string>
+    <string name="persistent_scan_finished_body">Checked %1$d apps and %2$d files • %3$d high-risk alerts.</string>
+    <string name="persistent_scan_failed_body">Scan stopped because of an error: %1$s</string>
+    <string name="persistent_scan_running_ui">Persistent scan running • %1$d%%</string>
+    <string name="persistent_scan_complete_ui">Scan complete • %1$d apps • %2$d files • %3$d high-risk alerts</string>
+    <string name="persistent_scan_attention_ui">Review: %1$d high-risk alerts • %2$d additional items need attention</string>
+    <string name="persistent_scan_safe_ui">No high-risk findings were detected in this scan.</string>
+    <string name="persistent_scan_failed_ui">The scan failed: %1$s</string>
+    <string name="persistent_scan_already_running">A scan is already running. Aman will keep it running in the background.</string>
+    <string name="threat_update_queued">Threat update queued. It will continue if you leave Aman.</string>
+    <string name="threat_update_running">Updating threat intelligence • %1$d%% • %2$s</string>
+    <string name="threat_update_success_persistent">Threat intelligence verified and updated • %1$d sources changed.</string>
+    <string name="threat_update_partial_persistent">Threat update completed partially • %1$d sources succeeded • %2$d failed.</string>
+    <string name="threat_update_failed_persistent">Threat update could not reach a valid source. Last-known-good protection data was kept.</string>
+    <string name="threat_source_starting">Preparing secure update</string>
+    <string name="threat_source_malware">Android malware hashes</string>
+    <string name="threat_source_phishing">Phishing protection</string>
+    <string name="threat_source_malware_urls">Malware URLs</string>
+    <string name="threat_source_c2">Command-and-control servers</string>
+    <string name="threat_source_android">Android security bulletin</string>
+
 </resources>

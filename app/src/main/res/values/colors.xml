@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand_primary">#0F766E</color>
-    <color name="brand_primary_dark">#115E59</color>
-    <color name="brand_secondary">#0891B2</color>
-    <color name="surface_soft">#F4F8F8</color>
-    <color name="text_primary">#102A2A</color>
-    <color name="text_secondary">#526666</color>
-    <color name="status_ok">#15803D</color>
-    <color name="status_warn">#B45309</color>
-    <color name="status_danger">#B91C1C</color>
+    <color name="brand_primary">#00A884</color>
+    <color name="brand_primary_dark">#007A65</color>
+    <color name="brand_secondary">#3D6DFF</color>
+    <color name="brand_secondary_vivid">#6C4DFF</color>
+    <color name="brand_cyan">#00B8D9</color>
+    <color name="surface_soft">#F2F8FF</color>
+    <color name="text_primary">#10233A</color>
+    <color name="text_secondary">#56687D</color>
+    <color name="status_ok">#00A663</color>
+    <color name="status_warn">#E58A00</color>
+    <color name="status_danger">#E23D4F</color>
     <color name="surface_card">#FFFFFF</color>
     <color name="dashboard_ring">#5EEAD4</color>
-    <color name="dashboard_soft">#E6FFFB</color>
-    <color name="card_stroke">#DCE8E6</color>
+    <color name="dashboard_soft">#E6FFF7</color>
+    <color name="accent_blue_soft">#EAF0FF</color>
+    <color name="accent_purple_soft">#F0EBFF</color>
+    <color name="accent_cyan_soft">#E6FBFF</color>
+    <color name="accent_orange_soft">#FFF4DF</color>
+    <color name="card_stroke">#D7E4F1</color>
 </resources>

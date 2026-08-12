@@ -13,6 +13,7 @@ class ProtectionBootReceiver : BroadcastReceiver() {
             intent.action != Intent.ACTION_MY_PACKAGE_REPLACED
         ) return
         val prefs = ProtectionPreferences(context)
+        ProtectionServiceController.recoverPendingScan(context.applicationContext)
         if (!prefs.enabled) return
         ProtectionScheduler.enable(context.applicationContext)
         runCatching { ProtectionServiceController.start(context.applicationContext) }
