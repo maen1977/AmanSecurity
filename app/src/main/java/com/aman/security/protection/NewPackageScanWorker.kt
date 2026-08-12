@@ -5,6 +5,8 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.security.SpywareAuditor
+import com.aman.security.security.SpywareReviewLevel
 
 class NewPackageScanWorker(
     appContext: Context,
@@ -55,6 +57,20 @@ class NewPackageScanWorker(
                     title = applicationContext.getString(com.aman.security.R.string.timeline_app_checked, result.appName),
                     detail = result.packageName,
                     dedupeKey = "${ProtectionActivityKind.APP_SCAN}:${applicationContext.getString(com.aman.security.R.string.timeline_app_checked, result.appName)}:${result.packageName}"
+                )
+            }
+
+            val spywareReview = SpywareAuditor(applicationContext).auditPackage(packageName)
+            if (spywareReview != null && spywareReview.assessment.level != SpywareReviewLevel.LOW) {
+                timeline.add(
+                    kind = ProtectionActivityKind.SECURITY_AUDIT,
+                    state = ProtectionActivityState.ATTENTION,
+                    title = applicationContext.getString(com.aman.security.R.string.timeline_spyware_review, spywareReview.appName),
+                    detail = applicationContext.getString(
+                        com.aman.security.R.string.timeline_spyware_review_detail,
+                        spywareReview.assessment.signals.size
+                    ),
+                    dedupeKey = "spyware:${spywareReview.packageName}:${spywareReview.assessment.level}"
                 )
             }
             ProtectionServiceController.refresh(applicationContext)

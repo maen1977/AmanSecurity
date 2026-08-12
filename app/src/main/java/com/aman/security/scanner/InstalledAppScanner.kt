@@ -17,6 +17,8 @@ import com.aman.security.detection.ReputationKind
 import com.aman.security.detection.ThreatFamily
 import com.aman.security.detection.ThreatGraphEngine
 import com.aman.security.detection.VerdictEngine
+import com.aman.security.protection.CachedAppArtifact
+import com.aman.security.protection.LocalScanCacheStore
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
@@ -27,6 +29,9 @@ class InstalledAppScanner(
 ) {
     private val packageManager: PackageManager = context.packageManager
     private val deepAnalyzer by lazy { ApkStaticAnalyzer(context, database) }
+    private val artifactCacheStore = LocalScanCacheStore(context)
+    private val artifactCache = artifactCacheStore.loadApps()
+    private var artifactCacheDirty = false
 
     fun scanUserApps(
         deep: Boolean = true,
@@ -57,6 +62,7 @@ class InstalledAppScanner(
             scanned += scanPackage(packageInfo, deep = deep)
             onProgress?.invoke(index + 1, total, appName, packageInfo.packageName)
         }
+        flushArtifactCache()
         val packages = scanned.sortedWith(
             compareByDescending<InstalledAppScanResult> { it.riskScore }.thenBy { it.appName.lowercase() }
         )
@@ -69,7 +75,7 @@ class InstalledAppScanner(
     fun scanPackageByName(packageName: String, deep: Boolean = true): InstalledAppScanResult? {
         if (packageName == context.packageName) return null
         val packageInfo = packageInfo(packageName) ?: return null
-        return scanPackage(packageInfo, deep)
+        return scanPackage(packageInfo, deep).also { flushArtifactCache() }
     }
 
     private fun packageInfo(packageName: String): PackageInfo? {
@@ -110,13 +116,36 @@ class InstalledAppScanner(
             applicationInfo?.sourceDir?.let(::File)?.let(::add)
             applicationInfo?.splitSourceDirs.orEmpty().map(::File).forEach(::add)
         }.distinctBy { it.absolutePath }
-        val componentHashes = apkFiles.mapNotNull { file ->
-            runCatching { hashFile(file) }.getOrNull()?.let { hash -> file to hash }
+        val metadataFingerprint = appMetadataFingerprint(packageInfo, apkFiles)
+        val cachedArtifact = artifactCache[packageInfo.packageName]
+            ?.takeIf { it.metadataFingerprint == metadataFingerprint }
+        val componentHashes = if (cachedArtifact != null) {
+            apkFiles.mapIndexedNotNull { index, file ->
+                cachedArtifact.componentHashes.getOrNull(index)?.let { hash -> file to hash }
+            }.takeIf { it.size == apkFiles.size } ?: hashComponents(apkFiles)
+        } else {
+            hashComponents(apkFiles)
         }
         val apkFile = apkFiles.firstOrNull()
         val apkSha256 = componentHashes.firstOrNull()?.second
-        val signerHashes = signingCertificateSha256s(packageInfo)
+        val signerHashes = cachedArtifact?.signerHashes?.takeIf { it.isNotEmpty() }
+            ?: signingCertificateSha256s(packageInfo)
         val signerHash = signerHashes.firstOrNull()
+        val cacheHashes = componentHashes.map { it.second }
+        if (cacheHashes.isNotEmpty() && (cachedArtifact == null || cachedArtifact.componentHashes != cacheHashes || cachedArtifact.signerHashes != signerHashes || cachedArtifact.appName != appName)) {
+            artifactCache[packageInfo.packageName] = CachedAppArtifact(
+                packageName = packageInfo.packageName,
+                appName = appName,
+                metadataFingerprint = metadataFingerprint,
+                componentHashes = cacheHashes,
+                signerHashes = signerHashes,
+                lastSeenAt = System.currentTimeMillis()
+            )
+            artifactCacheDirty = true
+        } else if (cachedArtifact != null) {
+            artifactCache[packageInfo.packageName] = cachedArtifact.copy(lastSeenAt = System.currentTimeMillis())
+            artifactCacheDirty = true
+        }
         val fileThreat = componentHashes.asSequence()
             .mapNotNull { (_, hash) -> database.find(hash) }
             .firstOrNull { it.classification == ScanClassification.KNOWN_THREAT }
@@ -233,6 +262,27 @@ class InstalledAppScanner(
             "com.google.android.packageinstaller", "com.android.packageinstaller" -> AppInstallSource.LOCAL_FILE
             else -> AppInstallSource.OTHER
         }
+    }
+
+
+    private fun hashComponents(apkFiles: List<File>): List<Pair<File, String>> = apkFiles.mapNotNull { file ->
+        runCatching { hashFile(file) }.getOrNull()?.let { hash -> file to hash }
+    }
+
+    private fun appMetadataFingerprint(packageInfo: PackageInfo, apkFiles: List<File>): String {
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) packageInfo.longVersionCode else {
+            @Suppress("DEPRECATION") packageInfo.versionCode.toLong()
+        }
+        val fileMetadata = apkFiles.joinToString(";") { file ->
+            "${file.absolutePath}:${runCatching { file.length() }.getOrDefault(-1L)}:${runCatching { file.lastModified() }.getOrDefault(-1L)}"
+        }
+        return "${database.info.serial}|$versionCode|${packageInfo.lastUpdateTime}|$fileMetadata"
+    }
+
+    private fun flushArtifactCache() {
+        if (!artifactCacheDirty) return
+        artifactCacheStore.saveApps(artifactCache)
+        artifactCacheDirty = false
     }
 
     private fun hashFile(file: File): String = FileInputStream(file).use { Sha256.fromStream(it) }

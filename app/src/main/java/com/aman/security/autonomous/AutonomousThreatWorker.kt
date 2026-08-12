@@ -15,7 +15,7 @@ class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Wo
             is AutonomousUpdateResult.Success,
             is AutonomousUpdateResult.Partial -> {
                 if (ProtectionPreferences(applicationContext).enabled) {
-                    ProtectionScheduler.rescanInstalledAppsNow(applicationContext)
+                    ProtectionScheduler.recheckCachedReputationNow(applicationContext)
                 }
                 Result.success()
             }

@@ -19,13 +19,14 @@ object ProtectionScheduler {
     private const val APP_RESCAN_NOW_WORK_NAME = "aman_installed_apps_reputation_rescan_now"
     private const val DOWNLOAD_RESCAN_WORK_NAME = "aman_downloads_realtime_catchup"
     private const val DOWNLOAD_RESCAN_NOW_WORK_NAME = "aman_downloads_realtime_now"
+    private const val CACHED_REPUTATION_SWEEP_WORK_NAME = "aman_cached_reputation_sweep_now"
 
     fun enable(context: Context) {
         val constraints = Constraints.Builder()
             .setRequiresBatteryNotLow(true)
             .setRequiresStorageNotLow(true)
             .build()
-        val request = PeriodicWorkRequestBuilder<ProtectedFolderWorker>(60, TimeUnit.MINUTES)
+        val request = PeriodicWorkRequestBuilder<ProtectedFolderWorker>(6, TimeUnit.HOURS, 1, TimeUnit.HOURS)
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
@@ -49,7 +50,7 @@ object ProtectionScheduler {
             appRescan
         )
 
-        val downloadsRescan = PeriodicWorkRequestBuilder<DownloadProtectionWorker>(15, TimeUnit.MINUTES)
+        val downloadsRescan = PeriodicWorkRequestBuilder<DownloadProtectionWorker>(2, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
@@ -75,6 +76,7 @@ object ProtectionScheduler {
         workManager.cancelUniqueWork(APP_RESCAN_NOW_WORK_NAME)
         workManager.cancelUniqueWork(DOWNLOAD_RESCAN_WORK_NAME)
         workManager.cancelUniqueWork(DOWNLOAD_RESCAN_NOW_WORK_NAME)
+        workManager.cancelUniqueWork(CACHED_REPUTATION_SWEEP_WORK_NAME)
         workManager.cancelAllWorkByTag(PACKAGE_SCAN_TAG)
         workManager.cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
     }
@@ -122,6 +124,22 @@ object ProtectionScheduler {
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             DOWNLOAD_RESCAN_NOW_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
+    fun recheckCachedReputationNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<CachedReputationSweepWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            CACHED_REPUTATION_SWEEP_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
             request
         )

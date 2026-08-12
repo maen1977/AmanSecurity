@@ -142,7 +142,7 @@ class ProtectionService : Service() {
         const val ACTION_START = "com.aman.security.action.START_PROTECTION"
         const val ACTION_STOP = "com.aman.security.action.STOP_PROTECTION"
         const val ACTION_REFRESH = "com.aman.security.action.REFRESH_PROTECTION"
-        private const val HEARTBEAT_MS = 60_000L
-        private const val STALE_RESTART_MS = 5 * 60_000L
+        private const val HEARTBEAT_MS = 10 * 60_000L
+        private const val STALE_RESTART_MS = 25 * 60_000L
     }
 }

@@ -14,7 +14,8 @@ class ProtectedFolderScanner(
     private val preferences: ProtectionPreferences,
     private val eventStore: ProtectionEventStore,
     private val recordStore: SecurityRecordStore,
-    private val notifier: (ProtectionEvent) -> Unit
+    private val notifier: (ProtectionEvent) -> Unit,
+    private val scanCacheStore: LocalScanCacheStore? = null
 ) {
     fun scan(
         treeUri: Uri,
@@ -27,6 +28,7 @@ class ProtectedFolderScanner(
         }
 
         val ledger = preferences.ledger()
+        val fileCache = scanCacheStore?.loadFiles()
         val queue = ArrayDeque<Node>()
         val rootId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
             ?: return permissionFailure()
@@ -111,6 +113,18 @@ class ProtectedFolderScanner(
                     scanned++
                     onProgress?.invoke(scanned, fileName, documentId)
                     ledger[ledgerKey] = fingerprint
+                    fileCache?.set(
+                        "protected:$ledgerKey",
+                        CachedFileArtifact(
+                            key = "protected:$ledgerKey",
+                            scope = LocalScanCacheStore.SCOPE_PROTECTED_FOLDER,
+                            displayName = result.fileName,
+                            location = treeUri.toString() + "\n" + documentId,
+                            metadataFingerprint = fingerprint,
+                            sha256 = result.sha256,
+                            lastSeenAt = System.currentTimeMillis()
+                        )
+                    )
 
                     if (result.classification == ScanClassification.KNOWN_THREAT ||
                         result.classification == ScanClassification.SUSPICIOUS
@@ -136,6 +150,7 @@ class ProtectedFolderScanner(
         }
 
         preferences.saveLedger(ledger)
+        if (fileCache != null) scanCacheStore?.saveFiles(fileCache)
         preferences.folderPermissionLost = false
         preferences.lastCheckAt = System.currentTimeMillis()
         preferences.lastScannedCount = scanned

@@ -1,6 +1,12 @@
-# Aman Security 2.9.0
+# Aman Security 3.0.0
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+## 3.0 lightweight local antivirus engine
+
+Aman 3.0 keeps malware decisions on-device and uses the network only to download bounded public threat-indicator updates. Background protection is event-driven: app installs/updates and new Downloads trigger targeted scans, while unchanged APK/file SHA-256 values are cached locally. The six-hour threat refresh re-checks cached hashes instead of re-reading the device, reducing CPU, storage I/O and battery use. Downloads catch-up is reduced to a two-hour safety net and protected-folder background scans to six hours.
+
+A separate spyware/stalkerware capability audit looks for combinations of privileged control, surveillance access, persistence and confirmed sideloading. Permissions alone are never treated as malware. The foreground-service heartbeat is relaxed to ten minutes so the persistent protection status does not create needless wakeups. No user file, app inventory or scan cache is uploaded.
 
 ## 2.8 real-time antivirus core
 
@@ -16,7 +22,7 @@ Aman 2.7 keeps the 2.6 autonomous no-key threat-intelligence architecture and ad
 
 The app itself refreshes public threat intelligence about every six hours when Android permits background work and the network is connected. GitHub Actions are **not** used for threat-intelligence updates. The single build workflow runs automatically on pushes to `main` and can also be started manually. No API keys or threat-update private keys are required.
 
-The updater downloads only bounded text/JSON/HTML indicator data from fixed HTTPS sources, rejects executable/archive payloads, validates each source independently, keeps last-known-good data when a source fails, expires transient phishing/C2 data by TTL, and re-evaluates installed apps after successful intelligence refreshes when background protection is enabled. Community-only phishing intelligence produces review/caution rather than a confirmed-malicious verdict by itself.
+The updater downloads only bounded text/JSON/HTML indicator data from fixed HTTPS sources, rejects executable/archive payloads, validates each source independently, keeps last-known-good data when a source fails, expires transient phishing/C2 data by TTL, and re-checks cached local SHA-256 values after successful intelligence refreshes when background protection is enabled, avoiding a full storage reread. Community-only phishing intelligence produces review/caution rather than a confirmed-malicious verdict by itself.
 
 See `docs/PRODUCTION_ANTIVIRUS_2_7.md` and `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md`.
 

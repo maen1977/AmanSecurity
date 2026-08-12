@@ -29,6 +29,7 @@ import com.aman.security.autonomous.AutonomousUpdateResult
 import com.aman.security.protection.ProtectedFolderScanner
 import com.aman.security.protection.ProtectedFolderScanSummary
 import com.aman.security.protection.DownloadProtectionScanner
+import com.aman.security.protection.LocalScanCacheStore
 import com.aman.security.protection.DownloadScanSummary
 import com.aman.security.protection.ProtectionAccess
 import com.aman.security.protection.ProtectionActivityEntry
@@ -75,6 +76,8 @@ import com.aman.security.security.NetworkSecurityAuditor
 import com.aman.security.security.NetworkTransportType
 import com.aman.security.security.PrivacyPermissionAuditor
 import com.aman.security.security.SecurityAuditSummary
+import com.aman.security.security.SpywareAuditor
+import com.aman.security.security.SpywareAuditSummary
 import com.aman.security.security.AppIntegrityStatus
 import com.aman.security.security.ProtectionPostureEvaluator
 import com.aman.security.security.ProtectionPostureInput
@@ -759,7 +762,8 @@ class MainActivity : AppCompatActivity() {
                         preferences = protectionPreferences,
                         eventStore = protectionEventStore,
                         recordStore = recordStore,
-                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) },
+                        scanCacheStore = LocalScanCacheStore(applicationContext)
                     ).scan(treeUri)
                 }
             }
@@ -848,6 +852,8 @@ class MainActivity : AppCompatActivity() {
             }
         )
         binding.txtWebProtectionHome.setText(if (isWebGuardActive()) R.string.web_protection_active_short else R.string.web_protection_off_short)
+        binding.txtSpywareHome.setText(if (enabled && protectionPreferences.appInstallMonitorEnabled) R.string.spyware_monitor_active else R.string.spyware_monitor_off)
+        binding.txtLightweightEngineStatus.setText(R.string.local_engine_lightweight_status)
 
         val treeUri = protectionPreferences.protectedTreeUri
         binding.txtProtectedFolder.text = if (treeUri == null) {
@@ -955,6 +961,7 @@ class MainActivity : AppCompatActivity() {
     private data class SmartScanBundle(
         val installedApps: InstalledAppsScanSummary,
         val securityAudit: SecurityAuditSummary,
+        val spywareAudit: SpywareAuditSummary,
         val protectedFolder: ProtectedFolderScanSummary?
     )
 
@@ -993,6 +1000,9 @@ class MainActivity : AppCompatActivity() {
                         network = NetworkSecurityAuditor(applicationContext).audit(),
                         privacy = PrivacyPermissionAuditor(applicationContext).audit()
                     )
+                    if (scanCancelRequested) throw CancellationException("scan cancelled")
+                    runOnUiThread { updateScanProgress(88, R.string.scan_stage_spyware, getString(R.string.scan_stage_spyware), getString(R.string.scan_scope_device)) }
+                    val spywareAudit = SpywareAuditor(applicationContext).audit()
                     val folder = protectionPreferences.protectedTreeUri?.let { treeUri ->
                         runOnUiThread {
                             updateScanProgress(90, R.string.scan_stage_folder, getString(R.string.scan_stage_folder), treeUri.toString())
@@ -1003,7 +1013,8 @@ class MainActivity : AppCompatActivity() {
                             preferences = protectionPreferences,
                             eventStore = protectionEventStore,
                             recordStore = recordStore,
-                            notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                            notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) },
+                            scanCacheStore = LocalScanCacheStore(applicationContext)
                         ).scan(treeUri) { scanned, fileName, documentId ->
                             if (scanCancelRequested) throw CancellationException("scan cancelled")
                             runOnUiThread {
@@ -1018,7 +1029,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     if (scanCancelRequested) throw CancellationException("scan cancelled")
                     runOnUiThread { updateScanProgress(99, R.string.scan_stage_finishing, getString(R.string.scan_stage_finishing), getString(R.string.scan_scope_device)) }
-                    SmartScanBundle(installed, audit, folder)
+                    SmartScanBundle(installed, audit, spywareAudit, folder)
                 }
             }
             activeScan = false
@@ -1064,7 +1075,7 @@ class MainActivity : AppCompatActivity() {
         val folder = bundle.protectedFolder
         val knownThreats = apps.knownThreats + (folder?.knownThreats ?: 0)
         val highRisk = apps.highRiskApps + (folder?.highRisk ?: 0)
-        val warnings = audit.warningFindings
+        val warnings = audit.warningFindings + bundle.spywareAudit.reviewApps + bundle.spywareAudit.highRiskApps
         val highs = audit.highFindings
         val titleRes = when {
             knownThreats > 0 || highRisk > 0 || highs > 0 -> R.string.smart_scan_complete_danger
@@ -1091,6 +1102,13 @@ class MainActivity : AppCompatActivity() {
                 formatter.format(highs),
                 formatter.format(warnings),
                 formatter.format(audit.privacy.elevatedPermissionApps)
+            ))
+            append('\n')
+            append(getString(
+                R.string.smart_scan_spyware_summary,
+                formatter.format(bundle.spywareAudit.scannedApps),
+                formatter.format(bundle.spywareAudit.reviewApps),
+                formatter.format(bundle.spywareAudit.highRiskApps)
             ))
             if (folder != null) {
                 append('\n')

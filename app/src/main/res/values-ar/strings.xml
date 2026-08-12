@@ -205,8 +205,8 @@
     <string name="apk_analysis_note">لا يشغّل التحليل الثابت ملف APK مطلقًا؛ بل يفحص بيانات الحزمة وبنية الأرشيف ضمن حدود آمنة وهوية التوقيع ومؤشرات مختارة في الشفرة محليًا على الجهاز.</string>
     <string name="reason_apk_identity_test">تطابق مؤشر اختبار آمن ومحلي لهوية الحزمة، وهذه ليست نتيجة تشير إلى برمجية ضارة.</string>
     <string name="background_protection_title">الحماية في الخلفية</string>
-    <string name="background_protection_body">عند تفعيلها، يجري أمان فحصًا عميقًا بعد تثبيت تطبيقات المستخدم أو تحديثها، ويفحص دوريًا الملفات الجديدة أو المتغيرة داخل مجلد واحد تختاره.</string>
-    <string name="background_protection_note">الحماية محلية ومحافظة. لا يثبت أمان أي ملف ولا يفتحه ولا يحذفه ولا يحجره تلقائيًا. يتم تحديث معلومات التهديد العامة كل نحو ست ساعات عندما يسمح أندرويد بالاتصال، بينما فحص تثبيت التطبيقات يعتمد على حدث التثبيت.</string>
+    <string name="background_protection_body">عند تفعيلها، يفحص أمان التطبيقات الجديدة أو المحدثة بعمق ويراقب التنزيلات الجديدة، ويستخدم البصمات المخزنة وفحوص الاستدراك بدل إعادة قراءة التخزين باستمرار.</string>
+    <string name="background_protection_note">الحماية محلية وتعتمد على الأحداث. لا يرفع أمان ذاكرة الفحص أو قائمة الملفات والتطبيقات. تتحدث معلومات التهديد كل نحو ست ساعات، وتُعاد مقارنة بصمات SHA-256 للملفات وAPK غير المتغيرة دون قراءتها من جديد.</string>
     <string name="protection_state_enabled">الحماية مفعلة</string>
     <string name="protection_state_disabled">الحماية معطلة</string>
     <string name="protection_state_notifications_off">الحماية مفعلة، لكن إذن إشعارات أندرويد متوقف. ستبقى التنبيهات محفوظة في نشاط الحماية الأخير.</string>
@@ -456,7 +456,7 @@
     <string name="protection_status_channel_description">حالة حماية الجهاز الدائمة أثناء تفعيل مضاد الفيروسات التلقائي.</string>
     <string name="protection_status_notification_protected">أمان — جهازك محمي</string>
     <string name="protection_status_notification_attention">أمان — الحماية تحتاج إلى انتباه</string>
-    <string name="protection_status_notification_body">الحماية الفورية تعمل • تتم مراقبة التطبيقات الجديدة والتنزيلات</string>
+    <string name="protection_status_notification_body">الحماية المحلية الفورية تعمل • مراقبة التطبيقات والتنزيلات تعتمد على الأحداث</string>
     <string name="protection_status_notification_apps_off">خدمة الحماية تعمل • مراقبة التطبيقات الجديدة متوقفة</string>
     <string name="protection_status_notification_downloads_access">مراقبة التطبيقات تعمل • اسمح بالوصول للملفات لحماية التنزيلات</string>
     <string name="protection_status_notification_downloads_off">مراقبة التطبيقات تعمل • حماية التنزيلات متوقفة</string>
@@ -483,7 +483,7 @@
     <string name="timeline_full_file_scan_complete">فحص الجهاز الكامل راجع %1$d ملف</string>
     <string name="timeline_full_file_scan_detail">تنبيهات التهديد: %1$d</string>
     <string name="automatic_antivirus_title">مضاد الفيروسات التلقائي</string>
-    <string name="automatic_antivirus_subtitle">حماية مستمرة عند تفعيلها مع مراقبة تثبيت وتحديث التطبيقات وحماية مجلد التنزيلات.</string>
+    <string name="automatic_antivirus_subtitle">حماية خفيفة تعتمد على الأحداث لتثبيت/تحديث التطبيقات والتنزيلات الجديدة، مع حالة حماية دائمة.</string>
     <string name="realtime_service_active">خدمة الحماية الفورية: تعمل</string>
     <string name="realtime_service_starting">خدمة الحماية الفورية: جارٍ تشغيلها…</string>
     <string name="realtime_service_stopped">خدمة الحماية الفورية: متوقفة</string>
@@ -504,7 +504,7 @@
     <string name="file_access_disclosure_body">يوفر أندرويد إذن «إدارة جميع الملفات» لتطبيقات مكافحة الفيروسات الأساسية. يستخدمه أمان فقط لفحص الملفات المشتركة والتنزيلات محليًا. لا يتم رفع الملفات أو تعديلها أو حذفها تلقائيًا.</string>
     <string name="app_install_monitor_setting">فحص التطبيقات الجديدة والمحدّثة تلقائيًا</string>
     <string name="downloads_protection_setting">حماية الملفات الجديدة في التنزيلات</string>
-    <string name="periodic_app_rescan_setting">إعادة فحص التطبيقات بعد تحديث قاعدة الحماية</string>
+    <string name="periodic_app_rescan_setting">فحص يومي خفيف لقائمة التطبيقات</string>
     <string name="protection_timeline_title">نشاط الحماية</string>
     <string name="protection_timeline_empty">لا يوجد نشاط حماية بعد.</string>
     <string name="full_scan_action">فحص كامل</string>
@@ -534,5 +534,17 @@
     <string name="timeline_database_checked_detail">قاعدة الحماية محدثة أو تم تحديثها بنجاح.</string>
     <string name="activity_database_attention">تحديث قاعدة الحماية يحتاج انتباهًا</string>
     <string name="timeline_database_attention_detail">تعذر الوصول إلى بعض مصادر معلومات التهديدات.</string>
+
+
+    <string name="activity_cached_reputation_sweep">أُعيد فحص %1$d بصمة مخزنة بعد تحديث التهديدات</string>
+    <string name="timeline_cached_reputation_sweep">طُبق تحديث التهديدات على %1$d عنصر مخزن</string>
+    <string name="timeline_cached_reputation_sweep_detail">تنبيهات تهديد جديدة: %1$d • لم تُقرأ الملفات غير المتغيرة من جديد</string>
+    <string name="timeline_spyware_review">مراجعة قدرات التجسس: %1$s</string>
+    <string name="timeline_spyware_review_detail">مؤشرات صلاحيات/مراقبة متقدمة: %1$d • هذه مراجعة قدرات وليست حكمًا بوجود فيروس</string>
+    <string name="scan_stage_spyware">مراجعة برامج التجسس والمراقبة الخفية</string>
+    <string name="smart_scan_spyware_summary">تدقيق قدرات التجسس: %1$s تطبيق • للمراجعة: %2$s • نمط مرتفع للمراجعة: %3$s</string>
+    <string name="spyware_monitor_active">مراقبة برامج التجسس: تعمل مع التطبيقات الجديدة أو المحدثة</string>
+    <string name="spyware_monitor_off">مراقبة برامج التجسس: متوقفة مع مراقبة التطبيقات</string>
+    <string name="local_engine_lightweight_status">المحرك المحلي: يعتمد على الأحداث • يعيد استخدام بصمات APK والملفات غير المتغيرة • تحديث التهديدات كل نحو 6 ساعات</string>
 
 </resources>

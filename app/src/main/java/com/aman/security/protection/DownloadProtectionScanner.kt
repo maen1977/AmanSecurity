@@ -5,6 +5,8 @@ import android.os.Environment
 import com.aman.security.scanner.ApkStaticAnalyzer
 import com.aman.security.scanner.FileScanner
 import com.aman.security.scanner.ScanClassification
+import com.aman.security.scanner.ScanDetectionReason
+import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.security.SecurityRecordStore
 import java.io.File
@@ -23,9 +25,9 @@ data class DownloadScanSummary(
 )
 
 /**
- * Antivirus-oriented Downloads scanner. It runs only after the user grants
- * Android's all-files access (or legacy read access on Android 10 and below).
- * Files are processed locally and a ledger prevents repeatedly hashing unchanged files.
+ * Antivirus-oriented Downloads scanner. New/changed files are read and hashed locally.
+ * Unchanged files reuse their cached SHA-256, so threat-database updates can re-check
+ * reputation without re-reading storage or burning CPU/battery.
  */
 class DownloadProtectionScanner(private val context: Context) {
     private val preferences = ProtectionPreferences(context)
@@ -38,6 +40,7 @@ class DownloadProtectionScanner(private val context: Context) {
         database,
         ApkStaticAnalyzer(context, database)
     )
+    private val cacheStore = LocalScanCacheStore(context)
 
     fun scanChangedFiles(
         specificFile: File? = null,
@@ -48,12 +51,8 @@ class DownloadProtectionScanner(private val context: Context) {
             return DownloadScanSummary(0, 0, 0, 0, 0, 0, false, true)
         }
 
-        val ledger = preferences.downloadLedger()
-        val candidates = if (specificFile != null) {
-            listOf(specificFile)
-        } else {
-            enumerateDownloads().toList()
-        }
+        val fileCache = cacheStore.loadFiles()
+        val candidates = if (specificFile != null) listOf(specificFile) else enumerateDownloads().toList()
         val totalCandidates = candidates.size.coerceAtLeast(1)
 
         var visited = 0
@@ -78,10 +77,32 @@ class DownloadProtectionScanner(private val context: Context) {
             val size = runCatching { file.length() }.getOrDefault(-1L)
             if (!ProtectionPolicy.shouldScanFile(file.name, size)) continue
 
-            val key = ledgerKey(file.absolutePath)
-            val fingerprint = "$size:${file.lastModified()}"
-            if (ledger[key] == fingerprint) {
+            val key = cacheKey(file.absolutePath)
+            val metadataFingerprint = "$size:${runCatching { file.lastModified() }.getOrDefault(-1L)}"
+            val cached = fileCache[key]?.takeIf {
+                it.scope == LocalScanCacheStore.SCOPE_DOWNLOADS && it.metadataFingerprint == metadataFingerprint
+            }
+            if (cached != null) {
                 skipped++
+                val cachedThreat = database.find(cached.sha256)
+                if (cachedThreat != null) {
+                    val cachedResult = ScanResult(
+                        fileName = file.name,
+                        sizeBytes = size,
+                        sha256 = cached.sha256,
+                        classification = cachedThreat.classification,
+                        signatureId = cachedThreat.id,
+                        detectionReason = if (cachedThreat.classification == ScanClassification.TEST_SIGNATURE) {
+                            ScanDetectionReason.TEST_SIGNATURE
+                        } else {
+                            ScanDetectionReason.KNOWN_FILE_SIGNATURE
+                        }
+                    )
+                    val outcome = handleResult(cachedResult, file, fromCachedReputation = true)
+                    alerts += outcome.alerts
+                    known += outcome.known
+                    high += outcome.high
+                }
                 continue
             }
 
@@ -93,22 +114,45 @@ class DownloadProtectionScanner(private val context: Context) {
             }
             val result = outcome.getOrThrow()
             scanned++
-            ledger[key] = fingerprint
             preferences.totalFilesChecked += 1L
             preferences.markActivity(context.getString(com.aman.security.R.string.activity_download_checked, file.name))
             onProgress?.invoke(candidateIndex + 1, totalCandidates, file.name, file.absolutePath)
 
-            if (result.classification == ScanClassification.KNOWN_THREAT ||
-                result.classification == ScanClassification.SUSPICIOUS
-            ) {
-                recordStore.recordScan(result)
-            }
+            fileCache[key] = CachedFileArtifact(
+                key = key,
+                scope = LocalScanCacheStore.SCOPE_DOWNLOADS,
+                displayName = result.fileName,
+                location = file.absolutePath,
+                metadataFingerprint = metadataFingerprint,
+                sha256 = result.sha256,
+                lastSeenAt = System.currentTimeMillis()
+            )
 
-            val excluded = recordStore.isExcluded(result.sha256)
-            val severity = if (ProtectionPolicy.shouldNotifyFile(result, excluded)) {
-                ProtectionPolicy.severityForFile(result)
-            } else null
-            if (severity != null) {
+            val handled = handleResult(result, file, fromCachedReputation = false)
+            alerts += handled.alerts
+            known += handled.known
+            high += handled.high
+        }
+
+        cacheStore.saveFiles(fileCache)
+        preferences.lastDownloadsScanAt = System.currentTimeMillis()
+        preferences.lastDownloadsScannedCount = scanned
+        preferences.lastDownloadsAlertCount = alerts
+        return DownloadScanSummary(scanned, skipped, alerts, known, high, inaccessible, truncated, false)
+    }
+
+    private fun handleResult(result: ScanResult, file: File, fromCachedReputation: Boolean): ResultCounts {
+        if (result.classification == ScanClassification.KNOWN_THREAT || result.classification == ScanClassification.SUSPICIOUS) {
+            recordStore.recordScan(result)
+        }
+
+        val excluded = recordStore.isExcluded(result.sha256)
+        val severity = if (ProtectionPolicy.shouldNotifyFile(result, excluded)) ProtectionPolicy.severityForFile(result) else null
+        if (severity != null) {
+            val alreadyPresent = eventStore.events().any {
+                it.type == ProtectionEventType.FILE && it.detail == file.absolutePath && it.severity == severity
+            }
+            if (!alreadyPresent) {
                 val event = eventStore.add(
                     type = ProtectionEventType.FILE,
                     displayName = result.fileName,
@@ -117,34 +161,35 @@ class DownloadProtectionScanner(private val context: Context) {
                 )
                 ProtectionNotifier.notifyEvent(context, event)
                 preferences.totalThreatsDetected += 1L
-                alerts++
-                if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
                 activityStore.add(
                     kind = ProtectionActivityKind.DOWNLOAD_SCAN,
                     state = ProtectionActivityState.THREAT,
                     title = context.getString(com.aman.security.R.string.timeline_download_threat, result.fileName),
                     detail = file.absolutePath
                 )
-            } else {
-                val state = when (result.classification) {
-                    ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
-                    else -> ProtectionActivityState.SAFE
-                }
-                activityStore.add(
-                    kind = ProtectionActivityKind.DOWNLOAD_SCAN,
-                    state = state,
-                    title = context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName),
-                    detail = file.parent ?: Environment.DIRECTORY_DOWNLOADS,
-                    dedupeKey = "${ProtectionActivityKind.DOWNLOAD_SCAN}:${context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName)}:${file.parent ?: Environment.DIRECTORY_DOWNLOADS}"
+                return ResultCounts(
+                    alerts = 1,
+                    known = if (severity == ProtectionSeverity.KNOWN_THREAT) 1 else 0,
+                    high = if (severity == ProtectionSeverity.HIGH_RISK) 1 else 0
                 )
             }
+            return ResultCounts()
         }
 
-        preferences.saveDownloadLedger(ledger)
-        preferences.lastDownloadsScanAt = System.currentTimeMillis()
-        preferences.lastDownloadsScannedCount = scanned
-        preferences.lastDownloadsAlertCount = alerts
-        return DownloadScanSummary(scanned, skipped, alerts, known, high, inaccessible, truncated, false)
+        if (!fromCachedReputation) {
+            val state = when (result.classification) {
+                ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
+                else -> ProtectionActivityState.SAFE
+            }
+            activityStore.add(
+                kind = ProtectionActivityKind.DOWNLOAD_SCAN,
+                state = state,
+                title = context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName),
+                detail = file.parent ?: Environment.DIRECTORY_DOWNLOADS,
+                dedupeKey = "${ProtectionActivityKind.DOWNLOAD_SCAN}:${context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName)}:${file.parent ?: Environment.DIRECTORY_DOWNLOADS}"
+            )
+        }
+        return ResultCounts()
     }
 
     private fun enumerateDownloads(): Sequence<File> = sequence {
@@ -159,22 +204,21 @@ class DownloadProtectionScanner(private val context: Context) {
             val children = runCatching { directory.listFiles()?.toList().orEmpty() }.getOrDefault(emptyList())
             for (child in children) {
                 if (seen++ >= MAX_DOWNLOAD_DOCUMENTS) return@sequence
-                if (child.isDirectory && depth < MAX_DOWNLOAD_DEPTH) {
-                    queue.add(child to depth + 1)
-                } else if (child.isFile) {
-                    yield(child)
-                }
+                if (child.isDirectory && depth < MAX_DOWNLOAD_DEPTH) queue.add(child to depth + 1)
+                else if (child.isFile) yield(child)
             }
         }
     }
 
-    private fun ledgerKey(path: String): String = MessageDigest.getInstance("SHA-256")
+    private fun cacheKey(path: String): String = "downloads:" + MessageDigest.getInstance("SHA-256")
         .digest(path.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
 
+    private data class ResultCounts(val alerts: Int = 0, val known: Int = 0, val high: Int = 0)
+
     companion object {
         private const val MAX_DOWNLOAD_DOCUMENTS = 3000
-        private const val MAX_DOWNLOAD_SCANS_PER_RUN = 240
+        private const val MAX_DOWNLOAD_SCANS_PER_RUN = 120
         private const val MAX_DOWNLOAD_DEPTH = 8
     }
 }

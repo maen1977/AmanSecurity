@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 
 object ProtectionServiceController {
-    private const val HEALTH_WINDOW_MS = 3 * 60 * 1000L
+    private const val HEALTH_WINDOW_MS = 22 * 60 * 1000L
 
     fun start(context: Context) {
         val app = context.applicationContext

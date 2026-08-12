@@ -29,7 +29,8 @@ class ProtectedFolderWorker(
                 preferences = preferences,
                 eventStore = eventStore,
                 recordStore = recordStore,
-                notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) },
+                scanCacheStore = LocalScanCacheStore(applicationContext)
             )
             val summary = scanner.scan(treeUri)
             preferences.totalFilesChecked += summary.scannedFiles.toLong()

@@ -96,6 +96,14 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getInt(KEY_LAST_DOWNLOADS_ALERT_COUNT, 0)
         set(value) = prefs.edit().putInt(KEY_LAST_DOWNLOADS_ALERT_COUNT, value.coerceAtLeast(0)).apply()
 
+    var lastCachedReputationSweepAt: Long
+        get() = prefs.getLong(KEY_LAST_CACHED_SWEEP_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_CACHED_SWEEP_AT, value).apply()
+
+    var lastCachedReputationSweepCount: Int
+        get() = prefs.getInt(KEY_LAST_CACHED_SWEEP_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_CACHED_SWEEP_COUNT, value.coerceAtLeast(0)).apply()
+
     @Synchronized
     fun downloadLedger(): MutableMap<String, String> {
         val raw = prefs.getString(KEY_DOWNLOAD_LEDGER, null) ?: return linkedMapOf()
@@ -212,6 +220,8 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LAST_DOWNLOADS_SCAN_AT = "last_downloads_scan_at"
         private const val KEY_LAST_DOWNLOADS_SCANNED_COUNT = "last_downloads_scanned_count"
         private const val KEY_LAST_DOWNLOADS_ALERT_COUNT = "last_downloads_alert_count"
+        private const val KEY_LAST_CACHED_SWEEP_AT = "last_cached_reputation_sweep_at"
+        private const val KEY_LAST_CACHED_SWEEP_COUNT = "last_cached_reputation_sweep_count"
         private const val KEY_DOWNLOAD_LEDGER = "downloads_file_ledger"
         private const val MAX_LEDGER_ENTRIES = 2000
         private const val MAX_APP_LEDGER_ENTRIES = 1500

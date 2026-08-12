@@ -205,8 +205,8 @@
     <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
     <string name="reason_apk_identity_test">A safe local package-identity test indicator matched. It is not a malware verdict.</string>
     <string name="background_protection_title">Background protection</string>
-    <string name="background_protection_body">When enabled, Aman performs a deep scan after user-app installs or updates and periodically checks new or changed files inside one folder you choose.</string>
-    <string name="background_protection_note">Protection is local and conservative. Aman never installs, opens, deletes, or quarantines automatically. Public threat intelligence is refreshed about every six hours when Android allows network work; app-install scans are event driven.</string>
+    <string name="background_protection_body">When enabled, Aman deeply scans new or updated apps, watches new Downloads, and uses cached hashes plus scheduled catch-up checks instead of continuously rereading storage.</string>
+    <string name="background_protection_note">Protection is local and event-driven. Aman never uploads the scan cache or file/app inventory. Public threat intelligence refreshes about every six hours when Android allows network work; unchanged APKs/files are rechecked by cached SHA-256 instead of being read again.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -456,7 +456,7 @@
     <string name="protection_status_channel_description">Persistent device protection status while Automatic Anti-Virus is enabled.</string>
     <string name="protection_status_notification_protected">Aman Security — Device protected</string>
     <string name="protection_status_notification_attention">Aman Security — Protection needs attention</string>
-    <string name="protection_status_notification_body">Real-time protection is active • New apps and Downloads are monitored</string>
+    <string name="protection_status_notification_body">Local real-time protection is active • Event-driven app and Downloads monitoring</string>
     <string name="protection_status_notification_apps_off">Real-time service is active • New-app monitoring is turned off</string>
     <string name="protection_status_notification_downloads_access">App monitoring is active • Grant file access to protect Downloads</string>
     <string name="protection_status_notification_downloads_off">App monitoring is active • Downloads protection is turned off</string>
@@ -483,7 +483,7 @@
     <string name="timeline_full_file_scan_complete">Full device file scan checked %1$d files</string>
     <string name="timeline_full_file_scan_detail">Threat alerts: %1$d</string>
     <string name="automatic_antivirus_title">Automatic Anti-Virus</string>
-    <string name="automatic_antivirus_subtitle">Continuous protection status with install/update monitoring and Downloads protection while enabled.</string>
+    <string name="automatic_antivirus_subtitle">Lightweight event-driven protection for app installs/updates and new Downloads, with a persistent protection status.</string>
     <string name="realtime_service_active">Real-time service: running</string>
     <string name="realtime_service_starting">Real-time service: starting…</string>
     <string name="realtime_service_stopped">Real-time service: stopped</string>
@@ -504,7 +504,7 @@
     <string name="file_access_disclosure_body">Android provides “Manage all files” access for core antivirus use cases. Aman uses it only to locally scan shared files and Downloads for threats. Files are not uploaded, modified, or deleted automatically.</string>
     <string name="app_install_monitor_setting">Scan new and updated apps automatically</string>
     <string name="downloads_protection_setting">Protect new files in Downloads</string>
-    <string name="periodic_app_rescan_setting">Recheck installed apps after database updates</string>
+    <string name="periodic_app_rescan_setting">Daily lightweight app inventory check</string>
     <string name="protection_timeline_title">Protection activity</string>
     <string name="protection_timeline_empty">No protection activity yet.</string>
     <string name="full_scan_action">Full scan</string>
@@ -534,5 +534,17 @@
     <string name="timeline_database_checked_detail">Protection database is current or updated.</string>
     <string name="activity_database_attention">Protection database update needs attention</string>
     <string name="timeline_database_attention_detail">Some threat-intelligence sources were unavailable.</string>
+
+
+    <string name="activity_cached_reputation_sweep">Rechecked %1$d cached hashes after threat update</string>
+    <string name="timeline_cached_reputation_sweep">Threat update applied to %1$d cached items</string>
+    <string name="timeline_cached_reputation_sweep_detail">New threat alerts: %1$d • unchanged files were not re-read</string>
+    <string name="timeline_spyware_review">Spyware capability review: %1$s</string>
+    <string name="timeline_spyware_review_detail">Privileged/surveillance signals: %1$d • capability review is not a malware verdict</string>
+    <string name="scan_stage_spyware">Spyware &amp; stalkerware review</string>
+    <string name="smart_scan_spyware_summary">Spyware capability audit: %1$s apps • Review: %2$s • High-pattern review: %3$s</string>
+    <string name="spyware_monitor_active">Spyware/stalkerware monitor: active for new or updated apps</string>
+    <string name="spyware_monitor_off">Spyware/stalkerware monitor: off with app monitoring</string>
+    <string name="local_engine_lightweight_status">Local engine: event-driven • unchanged APK/file hashes are cached • threat refresh about every 6 hours</string>
 
 </resources>

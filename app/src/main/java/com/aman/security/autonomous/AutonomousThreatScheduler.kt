@@ -16,7 +16,10 @@ object AutonomousThreatScheduler {
     private const val ON_DEMAND_WORK = "aman-autonomous-threat-intelligence-now"
 
     fun schedule(context: Context) {
-        val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+        val network = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
         val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(6, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
             .setConstraints(network)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
