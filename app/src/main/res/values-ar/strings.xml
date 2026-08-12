@@ -644,7 +644,27 @@
     <string name="attack_center_watch_summary">سجل أمان %1$d إشارة حظر أو مراجعة خلال آخر 24 ساعة. حظر نطاق خبيث يعني محاولة اتصال تم منعها، وليس دليلاً وحده على اختراق الهاتف.</string>
     <string name="attack_center_critical_summary">سجل أمان %1$d إشارة حرجة و%2$d إشارة مراجعة خلال آخر 24 ساعة. راجع السجل لمعرفة التطبيق أو الملف أو تغيير التحكم المرتبط.</string>
     <string name="attack_center_incomplete_summary">الحماية الفورية متوقفة أو خدمة الحماية ليست بحالة سليمة. أعد تشغيل الحماية قبل الاعتماد على مراقبة الهجمات.</string>
-    <string name="attack_center_coverage">الطبقات الحية • الأساسي %1$s • الويب %2$s • مراقبة الصلاحيات %3$s • حارس البنك %4$s</string>
+    <string name="attack_center_coverage">الطبقات الحية • الأساسي %1$s • الويب %2$s • مراقبة الصلاحيات %3$s • حارس البنك %4$s • حارس خروج البيانات %5$s</string>
+    <string name="data_exfil_title">حارس سحب البيانات</string>
+    <string name="data_exfil_switch">اكتشاف رفع البيانات المشبوه في الخلفية</string>
+    <string name="data_exfil_status_off">حارس خروج البيانات: متوقف</string>
+    <string name="data_exfil_status_needs_access">حارس خروج البيانات: يحتاج صلاحية الوصول إلى إحصاءات الاستخدام لقراءة إجمالي شبكة كل تطبيق محليًا</string>
+    <string name="data_exfil_status_never">حارس خروج البيانات: نشط • بانتظار أول تدقيق خفيف</string>
+    <string name="data_exfil_status_clean">آخر تدقيق لخروج البيانات %1$s • لا توجد حالة رفع غير طبيعية مدعومة بأدلة</string>
+    <string name="data_exfil_status_review">آخر تدقيق لخروج البيانات %1$s • للمراجعة %2$d تطبيق، مرتفع %3$d</string>
+    <string name="data_exfil_usage_access_action">منح صلاحية إحصاءات الاستخدام</string>
+    <string name="data_exfil_check_now">فحص الرفع غير المعتاد الآن</string>
+    <string name="data_exfil_disclosure_title">تفعيل حارس سحب البيانات؟</string>
+    <string name="data_exfil_disclosure_body">يقرأ أمان إجمالي استخدام الشبكة لكل تطبيق من أندرويد محليًا للبحث عن رفع غير معتاد في الخلفية مع مؤشرات تحكم خطرة أو تجسس. لا يقرأ محتوى الحزم أو الصور أو الرسائل أو كلمات المرور أو محتوى الاتصالات المشفرة، ولا يرفع الإحصاءات إلى أي خادم. يجب منح صلاحية إحصاءات الاستخدام يدويًا. الفحص الخلفي العادي يقرأ عداد رفع إجمالي خفيفًا، ولا يشغل الاستعلام التفصيلي إلا بعد ارتفاع رفع ملحوظ أو كل نحو 6 ساعات.</string>
+    <string name="timeline_data_exfil_high">احتمال سحب بيانات: %1$s</string>
+    <string name="timeline_data_exfil_review">رفع غير معتاد في الخلفية: %1$s</string>
+    <string name="timeline_data_exfil_detail">رفع في الخلفية %1$s • وجهات نطاق حديثة %2$d • درجة الثقة %3$d/100. حجم البيانات وحده لا يُعتبر سرقة.</string>
+    <string name="activity_data_exfil_clean">فحص خروج البيانات سليم</string>
+    <string name="activity_data_exfil_review">فحص خروج البيانات وجد %1$d تطبيق للمراجعة</string>
+    <string name="data_exfil_notification_title">تم اكتشاف احتمال سحب بيانات</string>
+    <string name="data_exfil_notification_body">قام %1$s برفع %2$s في الخلفية مع عدة مؤشرات خطر محلية. افتح أمان لمراجعة الأدلة.</string>
+    <string name="data_exfil_manual_complete">اكتمل فحص خروج البيانات • للمراجعة %1$d • مرتفع %2$d</string>
+    <string name="data_exfil_manual_needs_access">امنح صلاحية إحصاءات الاستخدام في أندرويد قبل تشغيل فحص خروج البيانات.</string>
     <string name="attack_center_last_signal">أحدث إشارة: %1$s • %2$s</string>
     <string name="attack_center_no_signal">أحدث إشارة: لا شيء خلال آخر 24 ساعة</string>
     <string name="attack_center_check_now">تشغيل فحص هجوم خفيف</string>
@@ -657,4 +677,11 @@
     <string name="protection_status_attack_watch_title">حظر أمان نشاطًا مشبوهًا أو وضعه للمراجعة</string>
     <string name="protection_status_attack_watch_body">راجع الحدث الحديث في مركز كشف الهجمات. حظر تهديد ويب لا يعني وحده أن الهاتف تم اختراقه.</string>
 
+    <string name="timeline_high_risk_network_contact">تطبيق مرتفع الخطورة بدأ اتصالًا بالشبكة: %1$s</string>
+    <string name="timeline_high_risk_network_contact_detail">الوجهة %1$s. يحذر أمان لأن التطبيق لديه مسبقًا ملف تجسس مرتفع الخطورة ومدعوم بعدة مؤشرات؛ هذا الاتصال وحده لا يثبت أن بيانات نُقلت.</string>
+    <string name="activity_high_risk_network_contact">اتصال شبكي من تطبيق مرتفع الخطورة: %1$s</string>
+    <string name="high_risk_network_contact_notification_title">تطبيق مرتفع الخطورة اتصل بالشبكة</string>
+    <string name="high_risk_network_contact_notification_body">حاول %1$s، المصنف مسبقًا مرتفع الخطورة بسبب مؤشرات تجسس مترابطة، الوصول إلى %2$s. لا يستطيع أمان رؤية المحتوى المشفر، لذلك هذا تحذير عاجل عن اتصال شبكي وليس إثباتًا أن البيانات سُرقت.</string>
+    <string name="data_exfil_dns_correlation_active">الربط الفوري لاتصالات النطاق عالية الخطورة: نشط</string>
+    <string name="data_exfil_dns_correlation_off">الربط الفوري لاتصالات النطاق عالية الخطورة: فعّل درع الويب المحلي</string>
 </resources>

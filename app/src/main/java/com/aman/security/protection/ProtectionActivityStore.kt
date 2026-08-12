@@ -15,7 +15,8 @@ enum class ProtectionActivityKind {
     SECURITY_AUDIT,
     WEB_SHIELD,
     INTRUSION_MONITOR,
-    BANKING_GUARD
+    BANKING_GUARD,
+    DATA_EXFILTRATION
 }
 
 enum class ProtectionActivityState {

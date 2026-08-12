@@ -228,6 +228,15 @@
                         <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchIntrusionMonitor" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/intrusion_monitor_switch" />
                         <com.google.android.material.button.MaterialButton android:id="@+id/btnRunIntrusionCheck" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/intrusion_check_now" />
 
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="@string/data_exfil_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtDataExfilStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchDataExfilGuard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/data_exfil_switch" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnDataUsageAccess" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/data_exfil_usage_access_action" />
+                            <Space android:layout_width="8dp" android:layout_height="1dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnRunDataExfilCheck" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/data_exfil_check_now" />
+                        </LinearLayout>
+
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="@string/banking_protection_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
                         <TextView android:id="@+id/txtBankingProtectionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
                         <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchBankingProtection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/banking_protection_switch" />

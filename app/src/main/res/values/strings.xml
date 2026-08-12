@@ -644,7 +644,6 @@
     <string name="attack_center_watch_summary">Aman recorded %1$d review/block signal(s) in the last 24 hours. A blocked malicious domain is an attempted contact, not proof that the phone was compromised.</string>
     <string name="attack_center_critical_summary">Aman recorded %1$d critical and %2$d review signal(s) in the last 24 hours. Open the timeline and review the named app, file or control change.</string>
     <string name="attack_center_incomplete_summary">Real-time protection is disabled or its foreground service is not healthy. Restore protection before relying on attack monitoring.</string>
-    <string name="attack_center_coverage">Live layers • Core %1$s • Web %2$s • Privilege monitor %3$s • Banking guard %4$s</string>
     <string name="attack_center_last_signal">Latest signal: %1$s • %2$s</string>
     <string name="attack_center_no_signal">Latest signal: none in the last 24 hours</string>
     <string name="attack_center_check_now">Run lightweight attack check</string>
@@ -657,4 +656,32 @@
     <string name="protection_status_attack_watch_title">Aman blocked or flagged suspicious activity</string>
     <string name="protection_status_attack_watch_body">Review the recent event in Attack Detection Center. A blocked web threat does not by itself mean the phone was compromised.</string>
 
+    <string name="attack_center_coverage">Live layers • Core %1$s • Web %2$s • privilege monitor %3$s • Banking Guard %4$s • data-outflow guard %5$s</string>
+    <string name="data_exfil_title">Data Exfiltration Guard</string>
+    <string name="data_exfil_switch">Detect suspicious background data upload</string>
+    <string name="data_exfil_status_off">Data-outflow guard: off</string>
+    <string name="data_exfil_status_needs_access">Data-outflow guard: Usage Access is required to read per-app network totals locally</string>
+    <string name="data_exfil_status_never">Data-outflow guard: active • waiting for the first lightweight audit</string>
+    <string name="data_exfil_status_clean">Last data-outflow audit %1$s • no corroborated upload anomaly</string>
+    <string name="data_exfil_status_review">Last data-outflow audit %1$s • review %2$d app(s), high %3$d</string>
+    <string name="data_exfil_usage_access_action">Grant Usage Access</string>
+    <string name="data_exfil_check_now">Check unusual uploads now</string>
+    <string name="data_exfil_disclosure_title">Enable Data Exfiltration Guard?</string>
+    <string name="data_exfil_disclosure_body">Aman reads Android’s per-app network usage totals locally to look for unusual background upload combined with risky control or spyware signals. It does not read packet contents, photos, messages, passwords or HTTPS data, and it does not upload the statistics. Android Usage Access must be granted manually. The normal background check uses one lightweight total-upload counter and only runs the more expensive per-app query after a meaningful upload burst or about every 6 hours.</string>
+    <string name="timeline_data_exfil_high">Possible data extraction: %1$s</string>
+    <string name="timeline_data_exfil_review">Unusual background upload: %1$s</string>
+    <string name="timeline_data_exfil_detail">Background upload %1$s • recent DNS destinations %2$d • confidence score %3$d/100. Volume alone is never treated as theft.</string>
+    <string name="activity_data_exfil_clean">Data-outflow check clean</string>
+    <string name="activity_data_exfil_review">Data-outflow check found %1$d app(s) to review</string>
+    <string name="data_exfil_notification_title">Possible data extraction detected</string>
+    <string name="data_exfil_notification_body">%1$s uploaded %2$s in the background with multiple local risk signals. Open Aman to review the evidence.</string>
+    <string name="data_exfil_manual_complete">Data-outflow check complete • review %1$d • high %2$d</string>
+    <string name="data_exfil_manual_needs_access">Grant Android Usage Access before running the data-outflow check.</string>
+    <string name="timeline_high_risk_network_contact">High-risk app opened a network contact: %1$s</string>
+    <string name="timeline_high_risk_network_contact_detail">Destination %1$s. Aman is warning because the app already has a HIGH correlated spyware profile; this contact alone does not prove that data was transferred.</string>
+    <string name="activity_high_risk_network_contact">High-risk network contact: %1$s</string>
+    <string name="high_risk_network_contact_notification_title">High-risk app contacted the network</string>
+    <string name="high_risk_network_contact_notification_body">%1$s, already classified HIGH by correlated spyware signals, tried to resolve %2$s. Aman cannot see encrypted content, so this is an urgent network-contact warning rather than proof that data was stolen.</string>
+    <string name="data_exfil_dns_correlation_active">Immediate high-risk DNS correlation: active</string>
+    <string name="data_exfil_dns_correlation_off">Immediate high-risk DNS correlation: enable Local Web Shield</string>
 </resources>

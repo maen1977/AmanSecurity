@@ -16,6 +16,7 @@ import com.aman.security.MainActivity
 import com.aman.security.banking.BankingRiskAssessment
 import com.aman.security.security.AttackDetectionCenter
 import com.aman.security.security.AttackDetectionLevel
+import com.aman.security.security.DataExfiltrationFinding
 import com.aman.security.security.IntrusionMonitorSummary
 import com.aman.security.R
 import com.aman.security.web.LocalWebShieldController
@@ -28,6 +29,7 @@ object ProtectionNotifier {
     private const val WEB_THREAT_ALERT_ID = 27100
     private const val INTRUSION_ALERT_ID = 27200
     private const val BANKING_ALERT_ID = 27300
+    private const val DATA_EXFIL_ALERT_ID = 27400
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -224,6 +226,66 @@ object ProtectionNotifier {
             NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_shield)
                 .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyHighRiskNetworkContact(context: Context, appName: String, host: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, DATA_EXFIL_ALERT_ID + 500, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.high_risk_network_contact_notification_body, appName, host)
+        postNotificationSafely(
+            context,
+            DATA_EXFIL_ALERT_ID + host.hashCode().and(0x1ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.high_risk_network_contact_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyDataExfiltration(context: Context, finding: DataExfiltrationFinding) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, DATA_EXFIL_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(
+            R.string.data_exfil_notification_body,
+            finding.appName,
+            android.text.format.Formatter.formatFileSize(context, finding.backgroundTxBytes)
+        )
+        postNotificationSafely(
+            context,
+            DATA_EXFIL_ALERT_ID + finding.packageName.hashCode().and(0x3ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.data_exfil_notification_title))
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_MAX)

@@ -11,7 +11,10 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.ServiceCompat
 import com.aman.security.R
+import com.aman.security.security.DataExfiltrationGuard
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * User-visible real-time protection coordinator.
@@ -28,6 +31,10 @@ class ProtectionService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var downloadsObserver: FileObserver? = null
     private var securityControlWatcher: SecurityControlChangeWatcher? = null
+    private val exfilExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "AmanDataExfilGuard").apply { priority = Thread.MIN_PRIORITY }
+    }
+    private val exfilAuditRunning = AtomicBoolean(false)
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -39,6 +46,7 @@ class ProtectionService : Service() {
             ProtectionNotifier.updateProtectionStatus(this@ProtectionService)
             ensureDownloadsObserver()
             ensureSecurityControlWatcher()
+            maybeRunDataExfiltrationGuard()
             handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
@@ -105,11 +113,24 @@ class ProtectionService : Service() {
         downloadsObserver?.stopWatching()
         downloadsObserver = null
         securityControlWatcher?.stop()
+        exfilExecutor.shutdownNow()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+
+    private fun maybeRunDataExfiltrationGuard() {
+        if (!preferences.enabled || !preferences.dataExfiltrationGuardEnabled) return
+        if (!exfilAuditRunning.compareAndSet(false, true)) return
+        exfilExecutor.execute {
+            try {
+                DataExfiltrationGuard(applicationContext).lightweightHeartbeat()
+            } finally {
+                exfilAuditRunning.set(false)
+            }
+        }
+    }
 
     private fun ensureSecurityControlWatcher() {
         if (preferences.enabled && preferences.intrusionMonitorEnabled) {

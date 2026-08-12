@@ -18,6 +18,7 @@ data class AttackDetectionSnapshot(
     val webShieldActive: Boolean,
     val intrusionMonitorActive: Boolean,
     val bankingGuardActive: Boolean,
+    val dataExfiltrationGuardActive: Boolean,
     val evaluatedAt: Long
 )
 
@@ -39,6 +40,8 @@ class AttackDetectionCenter(private val context: Context) {
             LocalWebShieldController.isHealthy(context)
         val intrusionMonitorActive = preferences.enabled && preferences.intrusionMonitorEnabled
         val bankingGuardActive = preferences.enabled && preferences.bankingProtectionEnabled
+        val dataExfiltrationGuardActive = preferences.enabled && preferences.dataExfiltrationGuardEnabled &&
+            DataExfiltrationAccess.isGranted(context)
 
         val cutoff = now - RECENT_SIGNAL_WINDOW_MS
         val recentSignals = ProtectionActivityStore(context).entries()
@@ -68,6 +71,7 @@ class AttackDetectionCenter(private val context: Context) {
             webShieldActive = webShieldActive,
             intrusionMonitorActive = intrusionMonitorActive,
             bankingGuardActive = bankingGuardActive,
+            dataExfiltrationGuardActive = dataExfiltrationGuardActive,
             evaluatedAt = now
         )
     }
@@ -79,6 +83,7 @@ class AttackDetectionCenter(private val context: Context) {
         ProtectionActivityKind.WEB_SHIELD,
         ProtectionActivityKind.INTRUSION_MONITOR,
         ProtectionActivityKind.BANKING_GUARD,
+        ProtectionActivityKind.DATA_EXFILTRATION,
         ProtectionActivityKind.SECURITY_AUDIT -> true
         else -> false
     }

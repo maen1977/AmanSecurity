@@ -22,11 +22,13 @@ import com.aman.security.protection.ProtectionPreferences
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.scanner.UrlScanner
 import com.aman.security.security.PrivateDnsCompat
+import com.aman.security.security.HighRiskNetworkContactMonitor
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -43,6 +45,7 @@ class LocalDnsVpnService : VpnService() {
     private lateinit var database: SignatureDatabase
     private lateinit var scanner: UrlScanner
     private lateinit var activityStore: ProtectionActivityStore
+    private lateinit var highRiskNetworkContactMonitor: HighRiskNetworkContactMonitor
     private val running = AtomicBoolean(false)
     private val mainHandler = Handler(Looper.getMainLooper())
     private var tunnel: ParcelFileDescriptor? = null
@@ -69,6 +72,7 @@ class LocalDnsVpnService : VpnService() {
         database = SignatureDatabase(this)
         scanner = UrlScanner(database::findUrl)
         activityStore = ProtectionActivityStore(this)
+        highRiskNetworkContactMonitor = HighRiskNetworkContactMonitor(this)
         lastIntelUpdateAt = database.autonomousStore.info().lastSuccessfulUpdateEpochMs
         ProtectionNotifier.ensureChannels(this)
     }
@@ -165,6 +169,7 @@ class LocalDnsVpnService : VpnService() {
                 val query = DnsPacketCodec.parseIpv4UdpDns(buffer, length) ?: continue
                 if (query.destinationPort != DNS_PORT || query.destinationAddress.hostAddress != VPN_DNS_ADDRESS) continue
                 val host = query.host
+                if (host != null) recordDnsObservation(query, host)
                 val blocked = host != null && isBlockedHost(host)
                 val dnsResponse = when {
                     blocked -> DnsPacketCodec.nxdomainResponse(query.dnsPayload)
@@ -179,6 +184,22 @@ class LocalDnsVpnService : VpnService() {
         } finally {
             runCatching { input.close() }
             runCatching { output.close() }
+        }
+    }
+
+    private fun recordDnsObservation(query: DnsQueryPacket, host: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        val uid = runCatching {
+            manager.getConnectionOwnerUid(
+                OsConstants.IPPROTO_UDP,
+                InetSocketAddress(query.sourceAddress, query.sourcePort),
+                InetSocketAddress(query.destinationAddress, query.destinationPort)
+            )
+        }.getOrDefault(android.os.Process.INVALID_UID)
+        if (uid != android.os.Process.INVALID_UID) {
+            RecentDnsObservationCache.record(uid, host)
+            highRiskNetworkContactMonitor.onDnsContact(uid, host)
         }
     }
 

@@ -172,6 +172,42 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getString(KEY_LAST_BANKING_RISK_LEVEL, null)
         set(value) = prefs.edit().putString(KEY_LAST_BANKING_RISK_LEVEL, value).apply()
 
+    var dataExfiltrationGuardEnabled: Boolean
+        get() = prefs.getBoolean(KEY_DATA_EXFIL_GUARD_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_DATA_EXFIL_GUARD_ENABLED, value).apply()
+
+    var lastDataExfilProbeAt: Long
+        get() = prefs.getLong(KEY_LAST_DATA_EXFIL_PROBE_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_PROBE_AT, value).apply()
+
+    var lastDataExfilDeviceTxBytes: Long
+        get() = prefs.getLong(KEY_LAST_DATA_EXFIL_DEVICE_TX, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_DEVICE_TX, value.coerceAtLeast(0L)).apply()
+
+    var lastDataExfilDetailedAuditAt: Long
+        get() = prefs.getLong(KEY_LAST_DATA_EXFIL_DETAILED_AUDIT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_DETAILED_AUDIT_AT, value).apply()
+
+    var lastDataExfilCheckAt: Long
+        get() = prefs.getLong(KEY_LAST_DATA_EXFIL_CHECK_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_CHECK_AT, value).apply()
+
+    var lastDataExfilReviewCount: Int
+        get() = prefs.getInt(KEY_LAST_DATA_EXFIL_REVIEW_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_DATA_EXFIL_REVIEW_COUNT, value.coerceAtLeast(0)).apply()
+
+    var lastDataExfilHighCount: Int
+        get() = prefs.getInt(KEY_LAST_DATA_EXFIL_HIGH_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_DATA_EXFIL_HIGH_COUNT, value.coerceAtLeast(0)).apply()
+
+    var lastDataExfilTopPackage: String?
+        get() = prefs.getString(KEY_LAST_DATA_EXFIL_TOP_PACKAGE, null)
+        set(value) = prefs.edit().putString(KEY_LAST_DATA_EXFIL_TOP_PACKAGE, value).apply()
+
+    var lastDataExfilTopBytes: Long
+        get() = prefs.getLong(KEY_LAST_DATA_EXFIL_TOP_BYTES, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_TOP_BYTES, value.coerceAtLeast(0L)).apply()
+
     @Synchronized
     fun downloadLedger(): MutableMap<String, String> {
         val raw = prefs.getString(KEY_DOWNLOAD_LEDGER, null) ?: return linkedMapOf()

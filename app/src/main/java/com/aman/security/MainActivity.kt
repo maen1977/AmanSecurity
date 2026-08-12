@@ -77,6 +77,8 @@ import com.aman.security.security.AttackDetectionCenter
 import com.aman.security.security.AttackDetectionLevel
 import com.aman.security.security.AppIntegrityInspector
 import com.aman.security.security.DeviceSecurityAuditor
+import com.aman.security.security.DataExfiltrationAccess
+import com.aman.security.security.DataExfiltrationGuard
 import com.aman.security.security.NetworkSecurityAuditor
 import com.aman.security.security.NetworkTransportType
 import com.aman.security.security.PrivacyPermissionAuditor
@@ -254,6 +256,15 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnRunIntrusionCheck.setOnClickListener { runIntrusionCheckNow() }
         binding.btnAttackCheckNow.setOnClickListener { runIntrusionCheckNow() }
+        binding.switchDataExfilGuard.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            if (checked) requestDataExfiltrationEnable() else {
+                protectionPreferences.dataExfiltrationGuardEnabled = false
+                renderProtectionStatus()
+            }
+        }
+        binding.btnDataUsageAccess.setOnClickListener { openUsageAccessSettings() }
+        binding.btnRunDataExfilCheck.setOnClickListener { runDataExfiltrationCheckNow() }
         binding.switchBankingProtection.setOnCheckedChangeListener { _, checked ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
             if (checked) requestBankingProtectionEnable() else {
@@ -710,6 +721,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestDataExfiltrationEnable() {
+        if (!protectionPreferences.enabled) {
+            renderProtectionStatus()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.data_exfil_disclosure_title)
+            .setMessage(R.string.data_exfil_disclosure_body)
+            .setNegativeButton(R.string.cancel) { _, _ -> renderProtectionStatus() }
+            .setPositiveButton(R.string.data_exfil_usage_access_action) { _, _ ->
+                protectionPreferences.dataExfiltrationGuardEnabled = true
+                renderProtectionStatus()
+                if (!DataExfiltrationAccess.isGranted(this)) openUsageAccessSettings()
+            }
+            .show()
+    }
+
+    private fun openUsageAccessSettings() {
+        runCatching { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun runDataExfiltrationCheckNow() {
+        if (!protectionPreferences.enabled || !protectionPreferences.dataExfiltrationGuardEnabled) {
+            renderProtectionStatus()
+            return
+        }
+        if (!DataExfiltrationAccess.isGranted(this)) {
+            showInfo(R.string.data_exfil_manual_needs_access)
+            return
+        }
+        binding.btnRunDataExfilCheck.isEnabled = false
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) { runCatching { DataExfiltrationGuard(applicationContext).audit() } }
+            binding.btnRunDataExfilCheck.isEnabled = true
+            outcome.onSuccess { summary ->
+                renderProtectionStatus()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.data_exfil_manual_complete, summary.reviewCount, summary.highCount),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure {
+                renderProtectionStatus()
+                showInfo(R.string.operation_failed_try_again)
+            }
+        }
+    }
+
     private fun requestBankingProtectionEnable() {
         if (!protectionPreferences.enabled) {
             renderProtectionStatus()
@@ -806,6 +866,27 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        val dataExfilEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled
+        val dataExfilAccess = DataExfiltrationAccess.isGranted(this)
+        val dataExfilBaseStatus = when {
+            !dataExfilEnabled -> getString(R.string.data_exfil_status_off)
+            !dataExfilAccess -> getString(R.string.data_exfil_status_needs_access)
+            protectionPreferences.lastDataExfilCheckAt <= 0L -> getString(R.string.data_exfil_status_never)
+            protectionPreferences.lastDataExfilHighCount == 0 && protectionPreferences.lastDataExfilReviewCount == 0 ->
+                getString(R.string.data_exfil_status_clean, formatDate(protectionPreferences.lastDataExfilCheckAt))
+            else -> getString(
+                R.string.data_exfil_status_review,
+                formatDate(protectionPreferences.lastDataExfilCheckAt),
+                protectionPreferences.lastDataExfilReviewCount,
+                protectionPreferences.lastDataExfilHighCount
+            )
+        }
+        binding.txtDataExfilStatus.text = if (dataExfilEnabled && dataExfilAccess) {
+            "$dataExfilBaseStatus\n${getString(if (localShieldHealthy) R.string.data_exfil_dns_correlation_active else R.string.data_exfil_dns_correlation_off)}"
+        } else dataExfilBaseStatus
+        binding.btnDataUsageAccess.visibility = if (dataExfilEnabled && !dataExfilAccess) View.VISIBLE else View.GONE
+        binding.btnRunDataExfilCheck.isEnabled = dataExfilEnabled && dataExfilAccess
+
         val bankingEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         val bankingAccess = isBankingAccessibilityEnabled()
         val baseBankingStatus = when {
@@ -864,7 +945,8 @@ class MainActivity : AppCompatActivity() {
             layer(snapshot.serviceHealthy),
             layer(snapshot.webShieldActive),
             layer(snapshot.intrusionMonitorActive),
-            layer(snapshot.bankingGuardActive)
+            layer(snapshot.bankingGuardActive),
+            layer(snapshot.dataExfiltrationGuardActive)
         )
         binding.txtAttackDetectionLastSignal.text = snapshot.lastSignal?.let { signal ->
             getString(R.string.attack_center_last_signal, formatDate(signal.createdAt), signal.title)
@@ -1117,6 +1199,7 @@ class MainActivity : AppCompatActivity() {
             binding.switchPeriodicAppRescan.isChecked = protectionPreferences.periodicAppRescanEnabled
             binding.switchLocalWebShield.isChecked = enabled && protectionPreferences.localWebShieldEnabled
             binding.switchIntrusionMonitor.isChecked = enabled && protectionPreferences.intrusionMonitorEnabled
+            binding.switchDataExfilGuard.isChecked = enabled && protectionPreferences.dataExfiltrationGuardEnabled
             binding.switchBankingProtection.isChecked = enabled && protectionPreferences.bankingProtectionEnabled
             binding.switchBankingBlockHighRisk.isChecked = protectionPreferences.blockBankingOnHighRisk
         } finally {
@@ -1129,6 +1212,9 @@ class MainActivity : AppCompatActivity() {
         binding.switchIntrusionMonitor.isEnabled = enabled
         binding.btnRunIntrusionCheck.isEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
         binding.btnAttackCheckNow.isEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
+        binding.switchDataExfilGuard.isEnabled = enabled
+        binding.btnDataUsageAccess.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled
+        binding.btnRunDataExfilCheck.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled && DataExfiltrationAccess.isGranted(this)
         binding.switchBankingProtection.isEnabled = enabled
         binding.switchBankingBlockHighRisk.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         binding.btnBankingAccessibility.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
