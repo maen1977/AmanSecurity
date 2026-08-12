@@ -1,6 +1,10 @@
-# Rev3.2.1 build fix
+# Aman Security 3.2.0 — Banking Guard compile fix (Rev3.2.1)
 
-- Fixed `ImpersonationDetectorTest.facebookSiblingPackageDoesNotTriggerBrandImpersonation` to pass a `Set<String>` to `ProtectedBrandProfile.tokens` (`setOf("facebook")`) instead of `List<String>`.
-- Main application compilation had already succeeded in CI; the reported failure was isolated to debug unit-test Kotlin compilation.
+- Removed the invalid `ApplicationInfo.CATEGORY_FINANCE` reference. Android's `ApplicationInfo` category API does not define a finance category.
+- Added a conservative, fully local `FinanceAppIdentityMatcher` based on installed app package/label identity.
+- The matcher is only a hint for deciding when Banking Guard performs an extra safety check; it never marks an app as malware or changes the malware verdict.
+- User-selected protected banking apps still take precedence.
+- Added regression tests for banking/wallet identities and for ordinary apps such as WhatsApp, Messenger and ChatGPT.
+- Updated the local attack-prevention gate to reject reintroduction of `CATEGORY_FINANCE`.
 - `tools/quality_gate.py` passes after the fix.
-- Focused Kotlin compile check for `DetectionModels.kt`, `ImpersonationDetector.kt`, and `ImpersonationDetectorTest.kt` passes with minimal Android/JUnit stubs.
+- Focused Kotlin smoke test for the pure finance matcher passes.
