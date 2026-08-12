@@ -1,6 +1,7 @@
 package com.aman.security
 
 import android.Manifest
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,6 +12,7 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import android.view.View
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import com.aman.security.databinding.ActivityMainBinding
+import com.aman.security.banking.BankingGuardAccessibilityService
 import com.aman.security.databinding.ItemInstalledAppBinding
 import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
@@ -78,6 +81,9 @@ import com.aman.security.security.PrivacyPermissionAuditor
 import com.aman.security.security.SecurityAuditSummary
 import com.aman.security.security.SpywareAuditor
 import com.aman.security.security.SpywareAuditSummary
+import com.aman.security.security.IntrusionMonitor
+import com.aman.security.security.integrityChangeLabel
+import com.aman.security.security.privilegedAccessLabel
 import com.aman.security.security.AppIntegrityStatus
 import com.aman.security.security.ProtectionPostureEvaluator
 import com.aman.security.security.ProtectionPostureInput
@@ -89,6 +95,7 @@ import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
 import com.aman.security.detection.ThreatFamily
+import com.aman.security.web.LocalWebShieldController
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -120,6 +127,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingRestoreId: String? = null
     @Volatile private var scanCancelRequested: Boolean = false
     private var activeScan: Boolean = false
+    private var renderingProtectionControls: Boolean = false
 
     /**
      * Last-resort protection for unexpected exceptions in lifecycleScope jobs. A failed
@@ -189,6 +197,15 @@ class MainActivity : AppCompatActivity() {
         renderWebGuardStatus()
     }
 
+    private val localWebShieldPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val granted = LocalWebShieldController.isPermissionGranted(this)
+        protectionPreferences.localWebShieldEnabled = granted
+        if (granted && protectionPreferences.enabled) {
+            runCatching { LocalWebShieldController.start(this) }
+        }
+        binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 700L)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -219,6 +236,34 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
         binding.btnConfigureWebGuard.setOnClickListener { configureWebGuard() }
+        binding.switchLocalWebShield.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            if (checked) requestLocalWebShieldEnable() else {
+                protectionPreferences.localWebShieldEnabled = false
+                LocalWebShieldController.stop(this)
+                renderProtectionStatus()
+            }
+        }
+        binding.switchIntrusionMonitor.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.intrusionMonitorEnabled = checked
+            if (checked && protectionPreferences.enabled) ProtectionScheduler.intrusionCheckNow(this)
+            renderProtectionStatus()
+        }
+        binding.btnRunIntrusionCheck.setOnClickListener { runIntrusionCheckNow() }
+        binding.switchBankingProtection.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            if (checked) requestBankingProtectionEnable() else {
+                protectionPreferences.bankingProtectionEnabled = false
+                renderProtectionStatus()
+            }
+        }
+        binding.switchBankingBlockHighRisk.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.blockBankingOnHighRisk = checked
+        }
+        binding.btnBankingAccessibility.setOnClickListener { openBankingAccessibilitySettings() }
+        binding.btnChooseBankingApps.setOnClickListener { showBankingAppsDialog() }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
         binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
@@ -238,11 +283,13 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanDownloads.setOnClickListener { runDownloadsScan() }
         binding.btnGrantFileAccess.setOnClickListener { requestAntivirusFileAccess() }
         binding.switchAppInstallMonitor.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
             protectionPreferences.appInstallMonitorEnabled = checked
             if (protectionPreferences.enabled) ProtectionServiceController.refresh(this)
             renderProtectionStatus()
         }
         binding.switchDownloadsProtection.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
             protectionPreferences.downloadsProtectionEnabled = checked
             if (checked && !ProtectionAccess.hasDownloadsReadAccess(this)) {
                 requestAntivirusFileAccess()
@@ -253,6 +300,7 @@ class MainActivity : AppCompatActivity() {
             renderProtectionStatus()
         }
         binding.switchPeriodicAppRescan.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
             protectionPreferences.periodicAppRescanEnabled = checked
             if (protectionPreferences.enabled) ProtectionScheduler.enable(this)
             renderProtectionStatus()
@@ -294,6 +342,11 @@ class MainActivity : AppCompatActivity() {
             if (protectionPreferences.enabled && ProtectionServiceController.needsRecovery(this)) {
                 runCatching { ProtectionServiceController.start(this) }
                 binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 900L)
+            }
+            if (protectionPreferences.enabled && protectionPreferences.localWebShieldEnabled &&
+                LocalWebShieldController.isPermissionGranted(this) && !LocalWebShieldController.isHealthy(this)
+            ) {
+                runCatching { LocalWebShieldController.start(this) }
             }
             renderProtectionStatus()
         }
@@ -577,6 +630,198 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
     }
 
+    private fun requestLocalWebShieldEnable() {
+        if (!protectionPreferences.enabled) {
+            renderProtectionStatus()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.local_web_shield_disclosure_title)
+            .setMessage(R.string.local_web_shield_disclosure_body)
+            .setNegativeButton(R.string.cancel) { _, _ -> renderProtectionStatus() }
+            .setPositiveButton(R.string.local_web_shield_enable_action) { _, _ ->
+                val prepareIntent = LocalWebShieldController.prepareIntent(this)
+                if (prepareIntent == null) {
+                    protectionPreferences.localWebShieldEnabled = true
+                    runCatching { LocalWebShieldController.start(this) }
+                    binding.root.postDelayed({ if (!isFinishing && !isDestroyed) renderProtectionStatus() }, 700L)
+                } else {
+                    localWebShieldPermissionLauncher.launch(prepareIntent)
+                }
+            }
+            .show()
+    }
+
+    private fun runIntrusionCheckNow() {
+        if (!protectionPreferences.enabled || !protectionPreferences.intrusionMonitorEnabled) {
+            renderProtectionStatus()
+            return
+        }
+        binding.btnRunIntrusionCheck.isEnabled = false
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val outcome = withContext(Dispatchers.IO) { runCatching { IntrusionMonitor(applicationContext).check() } }
+            binding.btnRunIntrusionCheck.isEnabled = true
+            outcome.onSuccess { summary ->
+                protectionPreferences.lastIntrusionCheckAt = System.currentTimeMillis()
+                protectionPreferences.lastIntrusionReviewCount = summary.reviewChanges
+                protectionPreferences.lastIntrusionHighCount = summary.highChanges
+                val timeline = ProtectionActivityStore(applicationContext)
+                when {
+                    summary.baselineCreated -> timeline.add(
+                        kind = ProtectionActivityKind.INTRUSION_MONITOR,
+                        state = ProtectionActivityState.INFO,
+                        title = getString(R.string.timeline_intrusion_baseline),
+                        detail = getString(R.string.timeline_intrusion_baseline_detail, summary.scannedPrivilegedApps),
+                        dedupeKey = "intrusion:baseline"
+                    )
+                    summary.totalChanges == 0 -> timeline.add(
+                        kind = ProtectionActivityKind.INTRUSION_MONITOR,
+                        state = ProtectionActivityState.SAFE,
+                        title = getString(R.string.timeline_intrusion_clean),
+                        detail = getString(R.string.timeline_intrusion_clean_detail),
+                        dedupeKey = "intrusion:clean"
+                    )
+                    else -> {
+                        timeline.add(
+                            kind = ProtectionActivityKind.INTRUSION_MONITOR,
+                            state = if (summary.highChanges > 0) ProtectionActivityState.THREAT else ProtectionActivityState.ATTENTION,
+                            title = getString(R.string.timeline_intrusion_change, summary.totalChanges),
+                            detail = buildList {
+                                addAll(summary.changes.take(3).map { change ->
+                                    "${change.appName}: ${change.addedKinds.joinToString { privilegedAccessLabel(it) }}"
+                                })
+                                addAll(summary.integrityChanges.take(2).map { integrityChangeLabel(it.kind) })
+                            }.joinToString(" • ")
+                        )
+                        ProtectionNotifier.notifyIntrusionChange(applicationContext, summary)
+                    }
+                }
+                protectionPreferences.markActivity(getString(R.string.activity_intrusion_checked))
+                renderProtectionStatus()
+            }.onFailure {
+                renderProtectionStatus()
+                showInfo(R.string.operation_failed_try_again)
+            }
+        }
+    }
+
+    private fun requestBankingProtectionEnable() {
+        if (!protectionPreferences.enabled) {
+            renderProtectionStatus()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.banking_accessibility_disclosure_title)
+            .setMessage(R.string.banking_accessibility_disclosure_body)
+            .setNegativeButton(R.string.cancel) { _, _ -> renderProtectionStatus() }
+            .setPositiveButton(R.string.banking_open_accessibility_settings) { _, _ ->
+                protectionPreferences.bankingProtectionEnabled = true
+                renderProtectionStatus()
+                if (!isBankingAccessibilityEnabled()) openBankingAccessibilitySettings()
+            }
+            .show()
+    }
+
+    private fun openBankingAccessibilitySettings() {
+        runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun isBankingAccessibilityEnabled(): Boolean {
+        val manager = getSystemService(AccessibilityManager::class.java) ?: return false
+        return runCatching {
+            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK).any { info ->
+                val serviceInfo = info.resolveInfo?.serviceInfo ?: return@any false
+                serviceInfo.packageName == packageName &&
+                    serviceInfo.name == BankingGuardAccessibilityService::class.java.name
+            }
+        }.getOrDefault(false)
+    }
+
+    private fun showBankingAppsDialog() {
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        @Suppress("DEPRECATION")
+        val apps = packageManager.queryIntentActivities(launcherIntent, 0)
+            .filter { it.activityInfo?.packageName != packageName }
+            .distinctBy { it.activityInfo?.packageName }
+            .mapNotNull { resolve ->
+                val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
+                val label = runCatching { resolve.loadLabel(packageManager)?.toString().orEmpty() }
+                    .getOrDefault("").ifBlank { packageName }
+                label to packageName
+            }
+            .sortedBy { it.first.lowercase() }
+        if (apps.isEmpty()) {
+            showInfo(R.string.banking_choose_apps_empty)
+            return
+        }
+        val selected = protectionPreferences.protectedBankingPackages.toMutableSet()
+        val labels = apps.map { it.first }.toTypedArray()
+        val checked = BooleanArray(apps.size) { index -> apps[index].second in selected }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.banking_choose_apps_title)
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                val packageName = apps[which].second
+                if (isChecked) selected += packageName else selected -= packageName
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.banking_save_apps) { _, _ ->
+                protectionPreferences.protectedBankingPackages = selected
+                renderProtectionStatus()
+            }
+            .show()
+    }
+
+    private fun renderAdvancedProtectionStatus() {
+        val enabled = protectionPreferences.enabled
+        val localShieldEnabled = enabled && protectionPreferences.localWebShieldEnabled
+        val localShieldHealthy = localShieldEnabled && LocalWebShieldController.isHealthy(this)
+        val localShieldPermission = LocalWebShieldController.isPermissionGranted(this)
+        binding.txtLocalWebShieldStatus.setText(
+            when {
+                !localShieldEnabled -> R.string.local_web_shield_status_off
+                !localShieldPermission -> R.string.local_web_shield_status_permission
+                localShieldHealthy && protectionPreferences.localWebShieldPrivateDnsAtStart -> R.string.local_web_shield_status_private_dns
+                localShieldHealthy -> R.string.local_web_shield_status_active
+                else -> R.string.local_web_shield_status_starting
+            }
+        )
+
+        val intrusionEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
+        binding.txtIntrusionStatus.text = when {
+            !intrusionEnabled -> getString(R.string.intrusion_status_off)
+            protectionPreferences.lastIntrusionCheckAt <= 0L -> getString(R.string.intrusion_status_never)
+            protectionPreferences.lastIntrusionHighCount == 0 && protectionPreferences.lastIntrusionReviewCount == 0 ->
+                getString(R.string.intrusion_status_clean, formatDate(protectionPreferences.lastIntrusionCheckAt))
+            else -> getString(
+                R.string.intrusion_status_review,
+                formatDate(protectionPreferences.lastIntrusionCheckAt),
+                protectionPreferences.lastIntrusionReviewCount,
+                protectionPreferences.lastIntrusionHighCount
+            )
+        }
+
+        val bankingEnabled = enabled && protectionPreferences.bankingProtectionEnabled
+        val bankingAccess = isBankingAccessibilityEnabled()
+        val baseBankingStatus = when {
+            !bankingEnabled -> getString(R.string.banking_status_off)
+            !bankingAccess -> getString(R.string.banking_status_needs_access)
+            else -> getString(R.string.banking_status_active, protectionPreferences.protectedBankingPackages.size)
+        }
+        binding.txtBankingProtectionStatus.text = if (bankingEnabled && protectionPreferences.lastBankingCheckAt > 0L) {
+            val risk = when (protectionPreferences.lastBankingRiskLevel) {
+                "SAFE" -> getString(R.string.banking_risk_safe)
+                "REVIEW" -> getString(R.string.banking_risk_review)
+                "BLOCK" -> getString(R.string.banking_risk_block)
+                else -> getString(R.string.banking_risk_unknown)
+            }
+            "$baseBankingStatus\n${getString(R.string.banking_status_last_check, formatDate(protectionPreferences.lastBankingCheckAt), risk)}"
+        } else baseBankingStatus
+    }
+
+    private fun isCombinedWebProtectionActive(): Boolean =
+        LocalWebShieldController.isHealthy(this) || isWebGuardActive()
+
     private fun configureWebGuard() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
@@ -596,6 +841,7 @@ class MainActivity : AppCompatActivity() {
         val active = isWebGuardActive()
         binding.txtWebGuardStatus.setText(if (active) R.string.web_guard_status_active else R.string.web_guard_status_optional)
         binding.btnConfigureWebGuard.setText(if (active) R.string.web_guard_manage_action else R.string.web_guard_configure_action)
+        if (::protectionPreferences.isInitialized) renderAdvancedProtectionStatus()
         if (::protectionPreferences.isInitialized && ::database.isInitialized) renderProtectionPosture()
     }
 
@@ -619,7 +865,7 @@ class MainActivity : AppCompatActivity() {
                 freshSources = intel.freshSources,
                 totalSources = intel.totalSources,
                 backgroundProtectionEnabled = protectionPreferences.enabled && ProtectionServiceController.isHealthy(this),
-                webGuardActive = isWebGuardActive(),
+                webGuardActive = isCombinedWebProtectionActive(),
                 devicePatchKnown = patchKnown,
                 devicePatchCurrent = patchKnown && devicePatch >= latestPatch,
                 integrityStatus = integrity.status
@@ -649,8 +895,10 @@ class MainActivity : AppCompatActivity() {
     private fun toggleBackgroundProtection() {
         if (protectionPreferences.enabled) {
             protectionPreferences.enabled = false
+            protectionPreferences.localWebShieldEnabled = false
             ProtectionScheduler.disable(this)
             ProtectionServiceController.stop(this)
+            LocalWebShieldController.stop(this)
             renderProtectionStatus()
             return
         }
@@ -810,12 +1058,28 @@ class MainActivity : AppCompatActivity() {
         )
         binding.btnToggleProtection.setText(if (enabled) R.string.disable_protection_action else R.string.enable_protection_action)
 
-        binding.switchAppInstallMonitor.isChecked = protectionPreferences.appInstallMonitorEnabled
-        binding.switchDownloadsProtection.isChecked = protectionPreferences.downloadsProtectionEnabled
-        binding.switchPeriodicAppRescan.isChecked = protectionPreferences.periodicAppRescanEnabled
+        renderingProtectionControls = true
+        try {
+            binding.switchAppInstallMonitor.isChecked = protectionPreferences.appInstallMonitorEnabled
+            binding.switchDownloadsProtection.isChecked = protectionPreferences.downloadsProtectionEnabled
+            binding.switchPeriodicAppRescan.isChecked = protectionPreferences.periodicAppRescanEnabled
+            binding.switchLocalWebShield.isChecked = enabled && protectionPreferences.localWebShieldEnabled
+            binding.switchIntrusionMonitor.isChecked = enabled && protectionPreferences.intrusionMonitorEnabled
+            binding.switchBankingProtection.isChecked = enabled && protectionPreferences.bankingProtectionEnabled
+            binding.switchBankingBlockHighRisk.isChecked = protectionPreferences.blockBankingOnHighRisk
+        } finally {
+            renderingProtectionControls = false
+        }
         binding.switchAppInstallMonitor.isEnabled = enabled
         binding.switchDownloadsProtection.isEnabled = enabled
         binding.switchPeriodicAppRescan.isEnabled = enabled
+        binding.switchLocalWebShield.isEnabled = enabled
+        binding.switchIntrusionMonitor.isEnabled = enabled
+        binding.btnRunIntrusionCheck.isEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
+        binding.switchBankingProtection.isEnabled = enabled
+        binding.switchBankingBlockHighRisk.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
+        binding.btnBankingAccessibility.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
+        binding.btnChooseBankingApps.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
 
         binding.txtDownloadsAccess.setText(if (downloadsAccess) R.string.downloads_access_granted else R.string.downloads_access_missing)
         binding.btnGrantFileAccess.visibility = if (downloadsAccess) View.GONE else View.VISIBLE
@@ -851,7 +1115,7 @@ class MainActivity : AppCompatActivity() {
                 else -> R.string.downloads_protection_active
             }
         )
-        binding.txtWebProtectionHome.setText(if (isWebGuardActive()) R.string.web_protection_active_short else R.string.web_protection_off_short)
+        binding.txtWebProtectionHome.setText(if (isCombinedWebProtectionActive()) R.string.web_protection_active_short else R.string.web_protection_off_short)
         binding.txtSpywareHome.setText(if (enabled && protectionPreferences.appInstallMonitorEnabled) R.string.spyware_monitor_active else R.string.spyware_monitor_off)
         binding.txtLightweightEngineStatus.setText(R.string.local_engine_lightweight_status)
 
@@ -891,6 +1155,7 @@ class MainActivity : AppCompatActivity() {
                 binding.protectionEventsContainer.addView(protectionEventText(formatProtectionActivity(entry)))
             }
         }
+        renderAdvancedProtectionStatus()
         renderProtectionPosture()
     }
 

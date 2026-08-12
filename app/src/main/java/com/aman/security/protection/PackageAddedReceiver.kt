@@ -10,8 +10,14 @@ class PackageAddedReceiver : BroadcastReceiver() {
         val packageName = intent.data?.schemeSpecificPart?.takeIf { it.isNotBlank() } ?: return
         if (packageName == context.packageName) return
         val preferences = ProtectionPreferences(context)
-        if (!preferences.enabled || !preferences.appInstallMonitorEnabled) return
-        preferences.markActivity(context.getString(com.aman.security.R.string.activity_app_install_detected, packageName))
-        ProtectionScheduler.scanNewPackage(context.applicationContext, packageName)
+        if (!preferences.enabled) return
+
+        if (preferences.appInstallMonitorEnabled) {
+            preferences.markActivity(context.getString(com.aman.security.R.string.activity_app_install_detected, packageName))
+            ProtectionScheduler.scanNewPackage(context.applicationContext, packageName)
+        }
+        if (preferences.intrusionMonitorEnabled) {
+            ProtectionScheduler.intrusionCheckNow(context.applicationContext)
+        }
     }
 }

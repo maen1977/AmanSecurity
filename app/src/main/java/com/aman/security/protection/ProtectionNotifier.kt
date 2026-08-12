@@ -13,12 +13,19 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.aman.security.MainActivity
+import com.aman.security.banking.BankingRiskAssessment
+import com.aman.security.security.IntrusionMonitorSummary
 import com.aman.security.R
+import com.aman.security.web.LocalWebShieldController
 
 object ProtectionNotifier {
     private const val ALERT_CHANNEL_ID = "aman_protection_alerts"
     private const val STATUS_CHANNEL_ID = "aman_protection_status"
     const val STATUS_NOTIFICATION_ID = 27001
+    const val WEB_SHIELD_NOTIFICATION_ID = 27002
+    private const val WEB_THREAT_ALERT_ID = 27100
+    private const val INTRUSION_ALERT_ID = 27200
+    private const val BANKING_ALERT_ID = 27300
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -57,7 +64,11 @@ object ProtectionNotifier {
             !appMonitorReady -> context.getString(R.string.protection_status_notification_apps_off)
             prefs.downloadsProtectionEnabled && !downloadsReady -> context.getString(R.string.protection_status_notification_downloads_access)
             !prefs.downloadsProtectionEnabled -> context.getString(R.string.protection_status_notification_downloads_off)
-            else -> context.getString(R.string.protection_status_notification_body)
+            else -> context.getString(
+                R.string.protection_status_notification_body_layers,
+                context.getString(if (LocalWebShieldController.isHealthy(context)) R.string.protection_layer_active else R.string.protection_layer_off),
+                context.getString(if (prefs.intrusionMonitorEnabled) R.string.protection_layer_active else R.string.protection_layer_off)
+            )
         }
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -95,6 +106,119 @@ object ProtectionNotifier {
             .addAction(0, context.getString(R.string.protection_status_open_action), openPendingIntent)
             .addAction(0, context.getString(R.string.protection_status_scan_action), scanPendingIntent)
             .build()
+    }
+
+    fun buildWebShieldStatusNotification(context: Context): Notification {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context,
+            WEB_SHIELD_NOTIFICATION_ID,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(context, STATUS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(context.getString(R.string.local_web_shield_notification_title))
+            .setContentText(context.getString(R.string.local_web_shield_notification_body))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.local_web_shield_notification_body)))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setContentIntent(openPendingIntent)
+            .build()
+    }
+
+    fun notifyWebThreatBlocked(context: Context, host: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, WEB_THREAT_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.local_web_shield_blocked_notification_body, host)
+        postNotificationSafely(
+            context,
+            WEB_THREAT_ALERT_ID + host.hashCode().and(0x3ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.local_web_shield_blocked_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+    }
+
+    fun notifyIntrusionChange(context: Context, summary: IntrusionMonitorSummary) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, INTRUSION_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(
+            R.string.intrusion_change_notification_body,
+            summary.totalChanges,
+            summary.highChanges
+        )
+        postNotificationSafely(
+            context, INTRUSION_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.intrusion_change_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+    }
+
+    fun notifyBankingRisk(context: Context, assessment: BankingRiskAssessment, blocked: Boolean) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, BANKING_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val title = context.getString(if (blocked) R.string.banking_block_notification_title else R.string.banking_review_notification_title)
+        val body = context.getString(
+            if (blocked) R.string.banking_block_notification_body else R.string.banking_review_notification_body,
+            assessment.riskyApps.size
+        )
+        postNotificationSafely(
+            context, BANKING_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
     }
 
     fun updateProtectionStatus(context: Context) {

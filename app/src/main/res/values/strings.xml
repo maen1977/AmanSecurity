@@ -547,4 +547,90 @@
     <string name="spyware_monitor_off">Spyware/stalkerware monitor: off with app monitoring</string>
     <string name="local_engine_lightweight_status">Local engine: event-driven • unchanged APK/file hashes are cached • threat refresh about every 6 hours</string>
 
+    <!-- Aman 3.1 local attack prevention -->
+    <string name="web_protection_center_title">Web Protection</string>
+    <string name="local_web_shield_switch">System-wide local domain shield</string>
+    <string name="browser_link_guard_subtitle">Link Guard fallback</string>
+    <string name="local_web_shield_status_off">Local Web Shield: off</string>
+    <string name="local_web_shield_status_permission">Local Web Shield: Android VPN permission is required</string>
+    <string name="local_web_shield_status_starting">Local Web Shield: starting…</string>
+    <string name="local_web_shield_status_active">Local Web Shield: active • known malicious domains are blocked before connection</string>
+    <string name="local_web_shield_status_private_dns">Local Web Shield: active with limited DNS visibility because Private DNS was enabled when the shield started</string>
+    <string name="local_web_shield_disclosure_title">Enable Local Web Shield?</string>
+    <string name="local_web_shield_disclosure_body">Aman uses Android’s local VPN slot only to receive DNS requests at a synthetic on-device DNS address. Normal app traffic is not proxied, decrypted, uploaded or stored. Known malicious/phishing domains are blocked locally. Android allows only one VPN at a time, so enabling this may replace another VPN. Private DNS can reduce DNS visibility.</string>
+    <string name="local_web_shield_enable_action">Enable shield</string>
+    <string name="local_web_shield_vpn_session">Aman Local Web Shield</string>
+    <string name="local_web_shield_notification_title">Aman Web Shield is active</string>
+    <string name="local_web_shield_notification_body">Local DNS threat filtering is running on this device. HTTPS content is not decrypted.</string>
+    <string name="local_web_shield_blocked_notification_title">Malicious domain blocked</string>
+    <string name="local_web_shield_blocked_notification_body">Aman blocked a connection to %1$s before the app could resolve the domain.</string>
+    <string name="timeline_web_shield_started">Local Web Shield started</string>
+    <string name="timeline_web_shield_started_detail">System-wide DNS requests are checked locally against Aman’s threat database; normal traffic is not proxied.</string>
+    <string name="timeline_web_threat_blocked">Blocked malicious domain: %1$s</string>
+    <string name="timeline_web_threat_blocked_detail">The DNS request was answered locally as blocked before a connection to the domain was made.</string>
+    <string name="activity_web_threat_blocked">Blocked malicious domain: %1$s</string>
+
+    <string name="advanced_protection_title">Attack &amp; Account Protection</string>
+    <string name="intrusion_monitor_switch">Monitor privileged-access changes every ~6 hours</string>
+    <string name="intrusion_check_now">Check privileged access now</string>
+    <string name="intrusion_status_off">Intrusion indicators: off</string>
+    <string name="intrusion_status_never">Intrusion indicators: active • baseline not created yet</string>
+    <string name="intrusion_status_clean">Last privilege check %1$s • no new elevated access</string>
+    <string name="intrusion_status_review">Last privilege check %1$s • review %2$d change(s), high %3$d</string>
+    <string name="timeline_intrusion_baseline">Privileged-access baseline created</string>
+    <string name="timeline_intrusion_baseline_detail">Recorded %1$d currently privileged app(s). Future newly enabled access can be detected.</string>
+    <string name="timeline_intrusion_clean">Privileged-access check clean</string>
+    <string name="timeline_intrusion_clean_detail">No new accessibility, notification-listener, device-admin or overlay access was detected.</string>
+    <string name="timeline_intrusion_change">New privileged access detected: %1$d change(s)</string>
+    <string name="activity_intrusion_checked">Privileged-access changes checked</string>
+    <string name="intrusion_change_notification_title">New powerful app access detected</string>
+    <string name="intrusion_change_notification_body">Aman found %1$d new privileged-access change(s); %2$d require high-priority review.</string>
+
+    <string name="banking_protection_title">Banking Protection</string>
+    <string name="banking_protection_switch">Watch protected banking/finance app launches</string>
+    <string name="banking_block_high_risk_switch">Exit a banking session when high-risk local control is detected</string>
+    <string name="banking_accessibility_action">Banking access</string>
+    <string name="banking_choose_apps_action">Protected apps</string>
+    <string name="banking_status_off">Banking Protection: off</string>
+    <string name="banking_status_needs_access">Banking Protection: enable Aman Banking Guard in Accessibility settings. It observes package changes only and cannot read screen content.</string>
+    <string name="banking_status_active">Banking Protection: active • %1$d manually selected app(s) + finance-category apps</string>
+    <string name="banking_status_last_check">Last banking risk check: %1$s • %2$s</string>
+    <string name="banking_accessibility_service_label">Aman Banking Guard</string>
+    <string name="banking_accessibility_service_description">Observes only which app enters the foreground so Aman can run an on-device banking risk check. Aman Banking Guard cannot retrieve window content, typed text, passwords, messages or account data.</string>
+    <string name="banking_accessibility_disclosure_title">Enable Banking Guard?</string>
+    <string name="banking_accessibility_disclosure_body">Banking Guard uses an optional Android Accessibility service only for window-state package events. Window content retrieval is disabled in the service configuration. Aman does not read typed text, passwords, messages or banking data. When a protected finance app opens, Aman checks for risky active accessibility/device-admin/notification-listener/overlay combinations on other apps.</string>
+    <string name="banking_open_accessibility_settings">Open Accessibility settings</string>
+    <string name="banking_choose_apps_title">Choose apps to protect</string>
+    <string name="banking_choose_apps_empty">No launchable user apps were found.</string>
+    <string name="banking_save_apps">Save</string>
+    <string name="banking_block_notification_title">Banking session stopped</string>
+    <string name="banking_block_notification_body">Aman found high-risk privileged control from %1$d app(s) and exited the banking app. Review privileged access before reopening it.</string>
+    <string name="banking_review_notification_title">Banking protection needs review</string>
+    <string name="banking_review_notification_body">Aman found %1$d app(s) with privileged-control combinations worth reviewing while a protected finance app was opened.</string>
+    <string name="timeline_banking_safe">Banking environment checked</string>
+    <string name="timeline_banking_review">Banking environment needs review</string>
+    <string name="timeline_banking_blocked">Banking session stopped due to high-risk local control</string>
+    <string name="timeline_banking_high_risk">High-risk banking environment detected</string>
+    <string name="activity_banking_checked">Banking environment checked</string>
+    <string name="banking_root_signal_detail">Root indicators: %1$d</string>
+
+    <string name="banking_risk_safe">safe</string>
+    <string name="banking_risk_review">review</string>
+    <string name="banking_risk_block">high risk / blocked</string>
+    <string name="banking_risk_unknown">unknown</string>
+
+
+    <string name="privilege_accessibility">Accessibility service</string>
+    <string name="privilege_notification_listener">notification access</string>
+    <string name="privilege_device_admin">Device Admin</string>
+    <string name="privilege_overlay">display over other apps</string>
+    <string name="integrity_root_added">new root indicator</string>
+    <string name="integrity_adb_enabled">USB debugging enabled</string>
+    <string name="integrity_developer_options_enabled">Developer options enabled</string>
+    <string name="integrity_screen_lock_disabled">secure screen lock removed</string>
+
+    <string name="protection_status_notification_body_layers">Apps and Downloads are active • Web Shield: %1$s • Intrusion Monitor: %2$s</string>
+    <string name="protection_layer_active">active</string>
+    <string name="protection_layer_off">off</string>
+
 </resources>

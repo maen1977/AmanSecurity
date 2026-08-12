@@ -12,7 +12,10 @@ enum class ProtectionActivityKind {
     DOWNLOAD_SCAN,
     DATABASE_UPDATE,
     WEB_CHECK,
-    SECURITY_AUDIT
+    SECURITY_AUDIT,
+    WEB_SHIELD,
+    INTRUSION_MONITOR,
+    BANKING_GUARD
 }
 
 enum class ProtectionActivityState {

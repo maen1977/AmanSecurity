@@ -1,6 +1,14 @@
-# Aman Security 3.0.0
+# Aman Security 3.1.0
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+## 3.1 local attack prevention
+
+Aman 3.1 adds three opt-in, on-device attack-prevention layers without a private cloud backend. **Local Web Shield** uses Android's VPN interface only as a DNS interception point for a synthetic local DNS address; it does not route ordinary application traffic through a server and does not decrypt HTTPS. Known malicious/phishing domains can therefore be denied before a connection is made, while the existing browser/link guard can still inspect a full URL when the user routes a link through Aman.
+
+The **Intrusion Monitor** stores a local baseline of high-value Android control surfaces and checks for newly enabled Accessibility services, notification listeners, Device Admin, overlay access, new root indicators, newly enabled ADB/developer options, or a newly disabled screen lock. Changes are evidence for review, not proof that a remote attacker exists. Checks are event-driven after package changes and also run as a battery-aware six-hour safety net.
+
+The optional **Banking Guard** Accessibility service watches only foreground package transitions (`TYPE_WINDOW_STATE_CHANGED`) and explicitly has `canRetrieveWindowContent=false`; it cannot read typed text, passwords, messages, balances or banking page contents. When a protected finance app opens, Aman locally checks whether other non-system apps hold correlated high-risk control combinations such as Accessibility + overlay/notification access, especially from confirmed sideloads. A corroborated high-risk state can return the user to Home and show an alert.
 
 ## 3.0 lightweight local antivirus engine
 

@@ -20,6 +20,8 @@ object ProtectionScheduler {
     private const val DOWNLOAD_RESCAN_WORK_NAME = "aman_downloads_realtime_catchup"
     private const val DOWNLOAD_RESCAN_NOW_WORK_NAME = "aman_downloads_realtime_now"
     private const val CACHED_REPUTATION_SWEEP_WORK_NAME = "aman_cached_reputation_sweep_now"
+    private const val INTRUSION_MONITOR_WORK_NAME = "aman_intrusion_monitor_6h"
+    private const val INTRUSION_MONITOR_NOW_WORK_NAME = "aman_intrusion_monitor_now"
 
     fun enable(context: Context) {
         val constraints = Constraints.Builder()
@@ -64,6 +66,21 @@ object ProtectionScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             downloadsRescan
         )
+
+        val intrusionMonitor = PeriodicWorkRequestBuilder<IntrusionMonitorWorker>(6, TimeUnit.HOURS, 1, TimeUnit.HOURS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            INTRUSION_MONITOR_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            intrusionMonitor
+        )
+        intrusionCheckNow(context)
         checkNow(context)
         scanDownloadsNow(context)
     }
@@ -77,6 +94,8 @@ object ProtectionScheduler {
         workManager.cancelUniqueWork(DOWNLOAD_RESCAN_WORK_NAME)
         workManager.cancelUniqueWork(DOWNLOAD_RESCAN_NOW_WORK_NAME)
         workManager.cancelUniqueWork(CACHED_REPUTATION_SWEEP_WORK_NAME)
+        workManager.cancelUniqueWork(INTRUSION_MONITOR_WORK_NAME)
+        workManager.cancelUniqueWork(INTRUSION_MONITOR_NOW_WORK_NAME)
         workManager.cancelAllWorkByTag(PACKAGE_SCAN_TAG)
         workManager.cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
     }
@@ -140,6 +159,18 @@ object ProtectionScheduler {
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             CACHED_REPUTATION_SWEEP_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
+    fun intrusionCheckNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<IntrusionMonitorWorker>()
+            .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            INTRUSION_MONITOR_NOW_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
             request
         )

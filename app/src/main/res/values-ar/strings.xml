@@ -547,4 +547,90 @@
     <string name="spyware_monitor_off">مراقبة برامج التجسس: متوقفة مع مراقبة التطبيقات</string>
     <string name="local_engine_lightweight_status">المحرك المحلي: يعتمد على الأحداث • يعيد استخدام بصمات APK والملفات غير المتغيرة • تحديث التهديدات كل نحو 6 ساعات</string>
 
+    <!-- أمان 3.1: منع الهجمات محليًا -->
+    <string name="web_protection_center_title">حماية الويب</string>
+    <string name="local_web_shield_switch">درع نطاقات محلي على مستوى الجهاز</string>
+    <string name="browser_link_guard_subtitle">حارس الروابط الاحتياطي</string>
+    <string name="local_web_shield_status_off">درع الويب المحلي: متوقف</string>
+    <string name="local_web_shield_status_permission">درع الويب المحلي: يحتاج موافقة أندرويد على اتصال الشبكة الخاصة المحلي</string>
+    <string name="local_web_shield_status_starting">درع الويب المحلي: جارٍ التشغيل…</string>
+    <string name="local_web_shield_status_active">درع الويب المحلي: يعمل • يمنع النطاقات الخبيثة المعروفة قبل الاتصال</string>
+    <string name="local_web_shield_status_private_dns">درع الويب المحلي: يعمل برؤية محدودة لطلبات أسماء النطاقات لأن نظام أسماء النطاقات الخاص كان مفعّلًا عند بدء الدرع</string>
+    <string name="local_web_shield_disclosure_title">تفعيل درع الويب المحلي؟</string>
+    <string name="local_web_shield_disclosure_body">يستخدم أمان واجهة الشبكة الخاصة في أندرويد فقط لاستقبال طلبات أسماء النطاقات على عنوان محلي اصطناعي داخل الجهاز. لا يتم تمرير حركة التطبيقات العادية عبر خادم، ولا فك تشفيرها أو رفعها أو تخزينها. تُحجب نطاقات التصيد والبرمجيات الخبيثة المعروفة محليًا. يسمح أندرويد باتصال شبكة خاصة واحد فقط، لذلك قد يحل هذا محل اتصال آخر من النوع نفسه. كما قد يقلل نظام أسماء النطاقات الخاص من رؤية الطلبات.</string>
+    <string name="local_web_shield_enable_action">تفعيل الدرع</string>
+    <string name="local_web_shield_vpn_session">درع الويب المحلي من أمان</string>
+    <string name="local_web_shield_notification_title">درع الويب من أمان يعمل</string>
+    <string name="local_web_shield_notification_body">تصفية تهديدات أسماء النطاقات تعمل محليًا على هذا الجهاز. لا يتم فك تشفير محتوى الويب المشفّر.</string>
+    <string name="local_web_shield_blocked_notification_title">تم حظر نطاق خبيث</string>
+    <string name="local_web_shield_blocked_notification_body">منع أمان الاتصال مع %1$s قبل أن يتمكن التطبيق من حل اسم النطاق.</string>
+    <string name="timeline_web_shield_started">بدأ درع الويب المحلي</string>
+    <string name="timeline_web_shield_started_detail">تُفحص طلبات أسماء النطاقات على مستوى الجهاز محليًا مقابل قاعدة تهديدات أمان، بدون تمرير حركة التطبيقات العادية.</string>
+    <string name="timeline_web_threat_blocked">تم حظر نطاق خبيث: %1$s</string>
+    <string name="timeline_web_threat_blocked_detail">تم حظر طلب اسم النطاق محليًا قبل إنشاء اتصال مع النطاق.</string>
+    <string name="activity_web_threat_blocked">تم حظر نطاق خبيث: %1$s</string>
+
+    <string name="advanced_protection_title">حماية الهجمات والحسابات</string>
+    <string name="intrusion_monitor_switch">مراقبة تغييرات الصلاحيات فائقة الحساسية كل نحو 6 ساعات</string>
+    <string name="intrusion_check_now">فحص الصلاحيات الحساسة الآن</string>
+    <string name="intrusion_status_off">مؤشرات الاختراق: متوقفة</string>
+    <string name="intrusion_status_never">مؤشرات الاختراق: تعمل • لم يتم إنشاء خط أساس بعد</string>
+    <string name="intrusion_status_clean">آخر فحص للصلاحيات %1$s • لا يوجد وصول مرتفع جديد</string>
+    <string name="intrusion_status_review">آخر فحص للصلاحيات %1$s • للمراجعة %2$d تغيير • مرتفع %3$d</string>
+    <string name="timeline_intrusion_baseline">تم إنشاء خط أساس للصلاحيات الحساسة</string>
+    <string name="timeline_intrusion_baseline_detail">تم تسجيل %1$d تطبيق ذي صلاحيات قوية حاليًا. سيتم كشف الوصول الجديد مستقبلًا.</string>
+    <string name="timeline_intrusion_clean">فحص الصلاحيات الحساسة سليم</string>
+    <string name="timeline_intrusion_clean_detail">لم يتم اكتشاف وصول جديد إلى خدمات تسهيل الاستخدام أو مستمع الإشعارات أو إدارة الجهاز أو النوافذ العائمة.</string>
+    <string name="timeline_intrusion_change">تم اكتشاف وصول حساس جديد: %1$d تغيير</string>
+    <string name="activity_intrusion_checked">تم فحص تغييرات الصلاحيات الحساسة</string>
+    <string name="intrusion_change_notification_title">تم اكتشاف وصول قوي جديد لتطبيق</string>
+    <string name="intrusion_change_notification_body">وجد أمان %1$d تغيير جديد في الصلاحيات الحساسة؛ منها %2$d يحتاج مراجعة عالية الأولوية.</string>
+
+    <string name="banking_protection_title">حماية الخدمات البنكية</string>
+    <string name="banking_protection_switch">مراقبة فتح تطبيقات البنوك والمال المحمية</string>
+    <string name="banking_block_high_risk_switch">الخروج من جلسة البنك عند اكتشاف تحكم محلي عالي الخطورة</string>
+    <string name="banking_accessibility_action">صلاحية حماية البنك</string>
+    <string name="banking_choose_apps_action">التطبيقات المحمية</string>
+    <string name="banking_status_off">حماية الخدمات البنكية: متوقفة</string>
+    <string name="banking_status_needs_access">حماية الخدمات البنكية: فعّل حارس أمان البنكي من إعدادات تسهيل الاستخدام. الخدمة تراقب اسم التطبيق المنتقل للواجهة فقط ولا تستطيع قراءة محتوى الشاشة.</string>
+    <string name="banking_status_active">حماية الخدمات البنكية: تعمل • %1$d تطبيق محدد يدويًا + تطبيقات فئة المال</string>
+    <string name="banking_status_last_check">آخر فحص لبيئة البنك: %1$s • %2$s</string>
+    <string name="banking_accessibility_service_label">حارس أمان البنكي</string>
+    <string name="banking_accessibility_service_description">تراقب فقط أي تطبيق ينتقل إلى الواجهة حتى يستطيع أمان تشغيل فحص مخاطر بنكي محلي. لا تستطيع الخدمة استرجاع محتوى النوافذ أو النص المكتوب أو كلمات المرور أو الرسائل أو بيانات الحساب.</string>
+    <string name="banking_accessibility_disclosure_title">تفعيل حارس الخدمات البنكية؟</string>
+    <string name="banking_accessibility_disclosure_body">يستخدم حارس الخدمات البنكية خدمة تسهيل استخدام اختيارية فقط لأحداث تغير التطبيق الظاهر. استرجاع محتوى النوافذ معطل في إعداد الخدمة. لا يقرأ أمان النص المكتوب أو كلمات المرور أو الرسائل أو البيانات البنكية. عند فتح تطبيق مالي محمي، يفحص أمان وجود تركيبات خطرة من تسهيل الاستخدام وإدارة الجهاز ومستمع الإشعارات والنوافذ العائمة لدى التطبيقات الأخرى.</string>
+    <string name="banking_open_accessibility_settings">فتح إعدادات تسهيل الاستخدام</string>
+    <string name="banking_choose_apps_title">اختر التطبيقات التي تريد حمايتها</string>
+    <string name="banking_choose_apps_empty">لم يتم العثور على تطبيقات مستخدم قابلة للتشغيل.</string>
+    <string name="banking_save_apps">حفظ</string>
+    <string name="banking_block_notification_title">تم إيقاف جلسة البنك</string>
+    <string name="banking_block_notification_body">اكتشف أمان تحكمًا محليًا عالي الخطورة من %1$d تطبيق، فخرج من تطبيق البنك. راجع الصلاحيات الحساسة قبل فتحه مجددًا.</string>
+    <string name="banking_review_notification_title">حماية البنك تحتاج مراجعة</string>
+    <string name="banking_review_notification_body">وجد أمان %1$d تطبيق بتركيبة صلاحيات تحكم تستحق المراجعة أثناء فتح تطبيق مالي محمي.</string>
+    <string name="timeline_banking_safe">تم فحص بيئة الخدمات البنكية</string>
+    <string name="timeline_banking_review">بيئة الخدمات البنكية تحتاج مراجعة</string>
+    <string name="timeline_banking_blocked">تم إيقاف جلسة البنك بسبب تحكم محلي عالي الخطورة</string>
+    <string name="timeline_banking_high_risk">تم اكتشاف بيئة بنكية عالية الخطورة</string>
+    <string name="activity_banking_checked">تم فحص بيئة الخدمات البنكية</string>
+    <string name="banking_root_signal_detail">مؤشرات الروت: %1$d</string>
+
+    <string name="banking_risk_safe">سليم</string>
+    <string name="banking_risk_review">يحتاج مراجعة</string>
+    <string name="banking_risk_block">خطورة مرتفعة / تم الإيقاف</string>
+    <string name="banking_risk_unknown">غير معروف</string>
+
+
+    <string name="privilege_accessibility">خدمة تسهيل الاستخدام</string>
+    <string name="privilege_notification_listener">الوصول إلى الإشعارات</string>
+    <string name="privilege_device_admin">إدارة الجهاز</string>
+    <string name="privilege_overlay">العرض فوق التطبيقات الأخرى</string>
+    <string name="integrity_root_added">مؤشر صلاحيات جذر جديد</string>
+    <string name="integrity_adb_enabled">تم تفعيل تصحيح أخطاء يو إس بي</string>
+    <string name="integrity_developer_options_enabled">تم تفعيل خيارات المطور</string>
+    <string name="integrity_screen_lock_disabled">تمت إزالة قفل الشاشة الآمن</string>
+
+    <string name="protection_status_notification_body_layers">حماية التطبيقات والتنزيلات تعمل • درع الويب: %1$s • مراقبة الاختراق: %2$s</string>
+    <string name="protection_layer_active">تعمل</string>
+    <string name="protection_layer_off">متوقفة</string>
+
 </resources>

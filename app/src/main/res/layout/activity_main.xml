@@ -200,9 +200,31 @@
 
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/web_guard_title" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
-                        <TextView android:id="@+id/txtWebGuardStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                        <com.google.android.material.button.MaterialButton android:id="@+id/btnConfigureWebGuard" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/web_guard_configure_action" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/web_protection_center_title" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtLocalWebShieldStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchLocalWebShield" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/local_web_shield_switch" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/browser_link_guard_subtitle" android:textColor="@color/text_primary" android:textSize="13sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtWebGuardStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnConfigureWebGuard" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="@string/web_guard_configure_action" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/advanced_protection_title" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtIntrusionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchIntrusionMonitor" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/intrusion_monitor_switch" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnRunIntrusionCheck" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/intrusion_check_now" />
+
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="@string/banking_protection_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtBankingProtectionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchBankingProtection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/banking_protection_switch" />
+                        <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchBankingBlockHighRisk" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/banking_block_high_risk_switch" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnBankingAccessibility" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/banking_accessibility_action" />
+                            <Space android:layout_width="8dp" android:layout_height="1dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnChooseBankingApps" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/banking_choose_apps_action" />
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

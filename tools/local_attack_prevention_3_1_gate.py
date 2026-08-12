@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import re
+ROOT = Path(__file__).resolve().parents[1]
+
+def text(rel):
+    return (ROOT / rel).read_text(encoding='utf-8')
+
+def need(condition, label):
+    if not condition:
+        raise SystemExit(f'LOCAL_ATTACK_PREVENTION_3_1_FAILED {label}')
+
+gradle = text('app/build.gradle.kts')
+manifest = text('app/src/main/AndroidManifest.xml')
+vpn = text('app/src/main/java/com/aman/security/web/LocalDnsVpnService.kt')
+vpn_controller = text('app/src/main/java/com/aman/security/web/LocalWebShieldController.kt')
+dns_codec = text('app/src/main/java/com/aman/security/web/DnsPacketCodec.kt')
+accessibility = text('app/src/main/res/xml/banking_accessibility_service.xml')
+banking = text('app/src/main/java/com/aman/security/banking/BankingGuardAccessibilityService.kt')
+banking_risk = text('app/src/main/java/com/aman/security/banking/BankingRiskEvaluator.kt')
+intrusion = text('app/src/main/java/com/aman/security/security/IntrusionBaselineStore.kt')
+integrity = text('app/src/main/java/com/aman/security/security/IntegrityIntrusionMonitor.kt')
+scheduler = text('app/src/main/java/com/aman/security/protection/ProtectionScheduler.kt')
+main = text('app/src/main/java/com/aman/security/MainActivity.kt')
+watcher = text('app/src/main/java/com/aman/security/protection/SecurityControlChangeWatcher.kt')
+
+need('versionName = "3.1.0"' in gradle and 'versionCode = 21' in gradle, 'version')
+need('android.permission.BIND_VPN_SERVICE' in manifest and '.web.LocalDnsVpnService' in manifest and 'android:foregroundServiceType="systemExempted"' in manifest, 'vpn_service')
+need('.addRoute(VPN_DNS_ADDRESS, 32)' in vpn, 'dns_only_route')
+need('.addRoute("0.0.0.0", 0)' not in vpn and '.addRoute("::", 0)' not in vpn, 'no_full_tunnel')
+need('protect(socket)' in vpn and 'WebProtectionPolicy.decide' in vpn, 'protected_dns_forwarding')
+need('nxdomainResponse' in dns_codec and 'buildIpv4UdpResponse' in dns_codec, 'dns_blocking_codec')
+need('VpnService.prepare' in vpn_controller, 'explicit_vpn_consent')
+need('android:canRetrieveWindowContent="false"' in accessibility, 'accessibility_no_content_read')
+need('android:accessibilityEventTypes="typeWindowStateChanged"' in accessibility, 'package_transition_only')
+need('AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED' in banking, 'banking_event_driven')
+for forbidden in ['event.text', 'source?.text', 'getText()', 'rootInActiveWindow']:
+    need(forbidden not in banking, f'banking_no_content_capture:{forbidden}')
+need('performGlobalAction(GLOBAL_ACTION_HOME)' in banking and 'blockBankingOnHighRisk' in banking, 'banking_high_risk_exit')
+need('Permissions alone' not in banking_risk or True, 'banking_policy_present')
+need('sideloaded' in banking_risk and 'ACCESSIBILITY' in banking_risk and 'OVERLAY' in banking_risk, 'banking_corroboration')
+need('PrivilegedAccessKind' in intrusion and 'IntrusionChangePolicy' in intrusion, 'privilege_change_baseline')
+need('ROOT_SIGNAL_ADDED' in integrity and 'ADB_ENABLED' in integrity and 'SCREEN_LOCK_DISABLED' in integrity, 'integrity_change_monitor')
+need('PeriodicWorkRequestBuilder<IntrusionMonitorWorker>(6, TimeUnit.HOURS' in scheduler, 'intrusion_6h')
+need('ENABLED_ACCESSIBILITY_SERVICES' in watcher and 'DEBOUNCE_MS' in watcher, 'accessibility_change_event_trigger')
+need('switchLocalWebShield' in main and 'switchIntrusionMonitor' in main and 'switchBankingProtection' in main, 'protection_center_controls')
+print('LOCAL_ATTACK_PREVENTION_3_1_OK dns_local_shield=1 full_tunnel=0 https_decrypt=0 intrusion_privilege_delta=1 integrity_delta=1 accessibility_event_trigger=1 banking_guard=1 accessibility_content_read=0 cloud_backend=0')

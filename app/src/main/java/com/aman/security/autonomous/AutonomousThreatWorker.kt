@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.aman.security.protection.ProtectionPreferences
 import com.aman.security.protection.ProtectionScheduler
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.web.LocalWebShieldController
 
 class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Worker(appContext, params) {
     override fun doWork(): Result {
@@ -16,6 +17,7 @@ class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Wo
             is AutonomousUpdateResult.Partial -> {
                 if (ProtectionPreferences(applicationContext).enabled) {
                     ProtectionScheduler.recheckCachedReputationNow(applicationContext)
+                    LocalWebShieldController.refresh(applicationContext)
                 }
                 Result.success()
             }

@@ -104,6 +104,74 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getInt(KEY_LAST_CACHED_SWEEP_COUNT, 0)
         set(value) = prefs.edit().putInt(KEY_LAST_CACHED_SWEEP_COUNT, value.coerceAtLeast(0)).apply()
 
+    var localWebShieldEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LOCAL_WEB_SHIELD_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_LOCAL_WEB_SHIELD_ENABLED, value).apply()
+
+    var localWebShieldHeartbeatAt: Long
+        get() = prefs.getLong(KEY_LOCAL_WEB_SHIELD_HEARTBEAT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LOCAL_WEB_SHIELD_HEARTBEAT_AT, value).apply()
+
+    var localWebShieldPrivateDnsAtStart: Boolean
+        get() = prefs.getBoolean(KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS, false)
+        set(value) = prefs.edit().putBoolean(KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS, value).apply()
+
+    var lastWebBlockedHost: String?
+        get() = prefs.getString(KEY_LAST_WEB_BLOCKED_HOST, null)
+        set(value) = prefs.edit().putString(KEY_LAST_WEB_BLOCKED_HOST, value).apply()
+
+    var lastWebBlockedAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_BLOCKED_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_BLOCKED_AT, value).apply()
+
+    var totalWebThreatsBlocked: Long
+        get() = prefs.getLong(KEY_TOTAL_WEB_THREATS_BLOCKED, 0L)
+        set(value) = prefs.edit().putLong(KEY_TOTAL_WEB_THREATS_BLOCKED, value.coerceAtLeast(0L)).apply()
+
+    var intrusionMonitorEnabled: Boolean
+        get() = prefs.getBoolean(KEY_INTRUSION_MONITOR_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_INTRUSION_MONITOR_ENABLED, value).apply()
+
+    var lastIntrusionCheckAt: Long
+        get() = prefs.getLong(KEY_LAST_INTRUSION_CHECK_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_INTRUSION_CHECK_AT, value).apply()
+
+    var lastIntrusionReviewCount: Int
+        get() = prefs.getInt(KEY_LAST_INTRUSION_REVIEW_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_INTRUSION_REVIEW_COUNT, value.coerceAtLeast(0)).apply()
+
+    var lastIntrusionHighCount: Int
+        get() = prefs.getInt(KEY_LAST_INTRUSION_HIGH_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_INTRUSION_HIGH_COUNT, value.coerceAtLeast(0)).apply()
+
+    var bankingProtectionEnabled: Boolean
+        get() = prefs.getBoolean(KEY_BANKING_PROTECTION_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_BANKING_PROTECTION_ENABLED, value).apply()
+
+    var blockBankingOnHighRisk: Boolean
+        get() = prefs.getBoolean(KEY_BANKING_BLOCK_HIGH_RISK, true)
+        set(value) = prefs.edit().putBoolean(KEY_BANKING_BLOCK_HIGH_RISK, value).apply()
+
+    var autoProtectFinanceApps: Boolean
+        get() = prefs.getBoolean(KEY_BANKING_AUTO_FINANCE_APPS, true)
+        set(value) = prefs.edit().putBoolean(KEY_BANKING_AUTO_FINANCE_APPS, value).apply()
+
+    var protectedBankingPackages: Set<String>
+        get() = prefs.getStringSet(KEY_BANKING_PACKAGES, emptySet())?.toSet().orEmpty()
+        set(value) = prefs.edit().putStringSet(KEY_BANKING_PACKAGES, value.toSet()).apply()
+
+    var bankingAccessibilityHeartbeatAt: Long
+        get() = prefs.getLong(KEY_BANKING_ACCESSIBILITY_HEARTBEAT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_BANKING_ACCESSIBILITY_HEARTBEAT_AT, value).apply()
+
+    var lastBankingCheckAt: Long
+        get() = prefs.getLong(KEY_LAST_BANKING_CHECK_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_BANKING_CHECK_AT, value).apply()
+
+    var lastBankingRiskLevel: String?
+        get() = prefs.getString(KEY_LAST_BANKING_RISK_LEVEL, null)
+        set(value) = prefs.edit().putString(KEY_LAST_BANKING_RISK_LEVEL, value).apply()
+
     @Synchronized
     fun downloadLedger(): MutableMap<String, String> {
         val raw = prefs.getString(KEY_DOWNLOAD_LEDGER, null) ?: return linkedMapOf()
@@ -223,6 +291,23 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LAST_CACHED_SWEEP_AT = "last_cached_reputation_sweep_at"
         private const val KEY_LAST_CACHED_SWEEP_COUNT = "last_cached_reputation_sweep_count"
         private const val KEY_DOWNLOAD_LEDGER = "downloads_file_ledger"
+        private const val KEY_LOCAL_WEB_SHIELD_ENABLED = "local_web_shield_enabled"
+        private const val KEY_LOCAL_WEB_SHIELD_HEARTBEAT_AT = "local_web_shield_heartbeat_at"
+        private const val KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS = "local_web_shield_private_dns"
+        private const val KEY_LAST_WEB_BLOCKED_HOST = "last_web_blocked_host"
+        private const val KEY_LAST_WEB_BLOCKED_AT = "last_web_blocked_at"
+        private const val KEY_TOTAL_WEB_THREATS_BLOCKED = "total_web_threats_blocked"
+        private const val KEY_INTRUSION_MONITOR_ENABLED = "intrusion_monitor_enabled"
+        private const val KEY_LAST_INTRUSION_CHECK_AT = "last_intrusion_check_at"
+        private const val KEY_LAST_INTRUSION_REVIEW_COUNT = "last_intrusion_review_count"
+        private const val KEY_LAST_INTRUSION_HIGH_COUNT = "last_intrusion_high_count"
+        private const val KEY_BANKING_PROTECTION_ENABLED = "banking_protection_enabled"
+        private const val KEY_BANKING_BLOCK_HIGH_RISK = "banking_block_high_risk"
+        private const val KEY_BANKING_AUTO_FINANCE_APPS = "banking_auto_finance_apps"
+        private const val KEY_BANKING_PACKAGES = "banking_packages"
+        private const val KEY_BANKING_ACCESSIBILITY_HEARTBEAT_AT = "banking_accessibility_heartbeat_at"
+        private const val KEY_LAST_BANKING_CHECK_AT = "last_banking_check_at"
+        private const val KEY_LAST_BANKING_RISK_LEVEL = "last_banking_risk_level"
         private const val MAX_LEDGER_ENTRIES = 2000
         private const val MAX_APP_LEDGER_ENTRIES = 1500
         private const val MAX_DOWNLOAD_LEDGER_ENTRIES = 4000

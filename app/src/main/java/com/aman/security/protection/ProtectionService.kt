@@ -27,6 +27,7 @@ class ProtectionService : Service() {
     private lateinit var activityStore: ProtectionActivityStore
     private val handler = Handler(Looper.getMainLooper())
     private var downloadsObserver: FileObserver? = null
+    private var securityControlWatcher: SecurityControlChangeWatcher? = null
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -37,6 +38,7 @@ class ProtectionService : Service() {
             preferences.serviceHeartbeatAt = System.currentTimeMillis()
             ProtectionNotifier.updateProtectionStatus(this@ProtectionService)
             ensureDownloadsObserver()
+            ensureSecurityControlWatcher()
             handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
@@ -46,6 +48,11 @@ class ProtectionService : Service() {
         preferences = ProtectionPreferences(this)
         activityStore = ProtectionActivityStore(this)
         ProtectionNotifier.ensureChannels(this)
+        securityControlWatcher = SecurityControlChangeWatcher(this) {
+            if (preferences.enabled && preferences.intrusionMonitorEnabled) {
+                ProtectionScheduler.intrusionCheckNow(applicationContext)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -87,6 +94,7 @@ class ProtectionService : Service() {
         )
 
         ensureDownloadsObserver()
+        ensureSecurityControlWatcher()
         handler.removeCallbacks(heartbeat)
         handler.postDelayed(heartbeat, HEARTBEAT_MS)
         return START_STICKY
@@ -96,10 +104,20 @@ class ProtectionService : Service() {
         handler.removeCallbacksAndMessages(null)
         downloadsObserver?.stopWatching()
         downloadsObserver = null
+        securityControlWatcher?.stop()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+
+    private fun ensureSecurityControlWatcher() {
+        if (preferences.enabled && preferences.intrusionMonitorEnabled) {
+            securityControlWatcher?.start()
+        } else {
+            securityControlWatcher?.stop()
+        }
+    }
 
     private fun ensureDownloadsObserver() {
         if (!preferences.enabled || !preferences.downloadsProtectionEnabled ||
@@ -132,6 +150,7 @@ class ProtectionService : Service() {
         handler.removeCallbacksAndMessages(null)
         downloadsObserver?.stopWatching()
         downloadsObserver = null
+        securityControlWatcher?.stop()
         preferences.serviceHeartbeatAt = 0L
         preferences.serviceStartedAt = 0L
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
