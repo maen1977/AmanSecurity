@@ -8,7 +8,7 @@ The workflow starts automatically on every push to `main` and can also be starte
 
 Commit and push the 2.7 project to `main`. GitHub starts **Build Aman Security** automatically. A successful run uploads:
 
-- `AmanSecurity-3.3.0-Debug-APK` — installable test APK.
+- `AmanSecurity-3.3.0-DirectInstall-APK` — normal single installable test APK; extract once and open the APK with Android Package Installer.
 - `AmanSecurity-3.3.0-Unsigned-Release-AAB` — release bundle that still requires normal Android release signing/distribution configuration.
 - `AmanSecurity-3.3.0-Verification-Reports` — unit/lint/dependency reports and artifact SHA-256 checksums when available.
 

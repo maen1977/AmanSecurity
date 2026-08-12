@@ -4,6 +4,7 @@ import android.Manifest
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.role.RoleManager
 import android.content.Intent
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -269,6 +270,7 @@ class MainActivity : AppCompatActivity() {
             if (renderingProtectionControls) return@setOnCheckedChangeListener
             if (checked) requestBankingProtectionEnable() else {
                 protectionPreferences.bankingProtectionEnabled = false
+                setBankingAccessibilityComponentEnabled(false)
                 renderProtectionStatus()
             }
         }
@@ -781,6 +783,7 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel) { _, _ -> renderProtectionStatus() }
             .setPositiveButton(R.string.banking_open_accessibility_settings) { _, _ ->
                 protectionPreferences.bankingProtectionEnabled = true
+                setBankingAccessibilityComponentEnabled(true)
                 renderProtectionStatus()
                 if (!isBankingAccessibilityEnabled()) openBankingAccessibilitySettings()
             }
@@ -788,8 +791,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openBankingAccessibilitySettings() {
+        if (protectionPreferences.bankingProtectionEnabled) {
+            setBankingAccessibilityComponentEnabled(true)
+        }
         runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
             .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun setBankingAccessibilityComponentEnabled(enabled: Boolean) {
+        val component = ComponentName(this, BankingGuardAccessibilityService::class.java)
+        val state = if (enabled) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
+        runCatching {
+            packageManager.setComponentEnabledSetting(component, state, PackageManager.DONT_KILL_APP)
+        }.onFailure { error ->
+            Log.w("AmanSecurity", "Unable to change Banking Guard component state", error)
+        }
     }
 
     private fun isBankingAccessibilityEnabled(): Boolean {

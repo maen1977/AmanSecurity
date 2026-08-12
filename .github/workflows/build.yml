@@ -32,6 +32,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Restore stable CI debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: aman-security-ci-debug-keystore-v1
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
@@ -79,20 +85,26 @@ jobs:
       - name: Build installable debug APK
         run: gradle :app:assembleDebug --stacktrace
 
+      - name: Prepare direct-install APK
+        shell: bash
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk AmanSecurity-3.3.0-DirectInstall.apk
+          test -s AmanSecurity-3.3.0-DirectInstall.apk
+
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
 
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum AmanSecurity-3.3.0-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
-      - name: Upload installable APK
+      - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.3.0-Debug-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: AmanSecurity-3.3.0-DirectInstall-APK
+          path: AmanSecurity-3.3.0-DirectInstall.apk
           if-no-files-found: error
           retention-days: 14
 
