@@ -112,7 +112,6 @@ import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
 import com.aman.security.detection.ThreatFamily
 import com.aman.security.web.LocalWebShieldController
-import com.aman.security.web.LinkGuardActivity
 import com.aman.security.web.WebShieldSelfTestClient
 import com.aman.security.web.WebShieldSelfTestPolicy
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -147,6 +146,7 @@ class MainActivity : AppCompatActivity() {
     private var lastSecurityAuditAt: Long = 0L
     private var securityAuditRunning: Boolean = false
     private var pendingRestoreId: String? = null
+    private var pendingAmtsoRoleTest: Boolean = false
     @Volatile private var scanCancelRequested: Boolean = false
     private var activeScan: Boolean = false
     private var renderingProtectionControls: Boolean = false
@@ -229,6 +229,18 @@ class MainActivity : AppCompatActivity() {
 
     private val webGuardRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         renderWebGuardStatus()
+        if (pendingAmtsoRoleTest) {
+            pendingAmtsoRoleTest = false
+            if (isWebGuardActive()) {
+                launchAmtsoRoleInterceptionTest()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.amtso_role_required_title)
+                    .setMessage(R.string.amtso_role_required_body)
+                    .setPositiveButton(R.string.ok, null)
+                    .show()
+            }
+        }
     }
 
     private val localWebShieldPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -409,6 +421,7 @@ class MainActivity : AppCompatActivity() {
                 runCatching { LocalWebShieldController.start(this) }
             }
             renderProtectionStatus()
+            reconcilePendingWebGuardTest()
         }
         if (::binding.isInitialized) {
             renderWebGuardStatus()
@@ -708,14 +721,38 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.amtso_test_explanation_title)
             .setMessage(R.string.amtso_test_explanation_body)
             .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.amtso_test_continue) { _, _ ->
-                val intent = Intent(this, LinkGuardActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
-                    data = Uri.parse(OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_URL)
+            .setPositiveButton(if (isWebGuardActive()) R.string.amtso_test_continue else R.string.amtso_enable_and_test) { _, _ ->
+                if (isWebGuardActive()) {
+                    launchAmtsoRoleInterceptionTest()
+                } else {
+                    pendingAmtsoRoleTest = true
+                    configureWebGuard()
                 }
-                startActivity(intent)
             }
             .show()
+    }
+
+    /**
+     * Launches AMTSO as a normal system web intent. This deliberately does NOT
+     * target LinkGuardActivity directly: when Aman holds Android's browser role,
+     * the OS should route the link back through Link Guard. That makes the test a
+     * real verification of automatic external-link interception rather than only
+     * a unit/UI demonstration of the scanner.
+     */
+    private fun launchAmtsoRoleInterceptionTest() {
+        protectionPreferences.webGuardTestState = ProtectionPreferences.WEB_GUARD_TEST_RUNNING
+        protectionPreferences.lastWebGuardTestAt = System.currentTimeMillis()
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_URL)).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        runCatching { startActivity(intent) }.onFailure {
+            protectionPreferences.webGuardTestState = ProtectionPreferences.WEB_GUARD_TEST_FAILED
+            AlertDialog.Builder(this)
+                .setTitle(R.string.amtso_test_failed_title)
+                .setMessage(R.string.amtso_test_failed_body)
+                .setPositiveButton(R.string.ok, null)
+                .show()
+        }
     }
 
     private fun requestLocalWebShieldEnable() {
@@ -1070,7 +1107,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isCombinedWebProtectionActive(): Boolean =
-        LocalWebShieldController.isHealthy(this) || isWebGuardActive()
+        LocalWebShieldController.isHealthy(this) && isWebGuardActive()
 
     private fun configureWebGuard() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -1087,9 +1124,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun reconcilePendingWebGuardTest(now: Long = System.currentTimeMillis()) {
+        if (!::protectionPreferences.isInitialized) return
+        if (protectionPreferences.webGuardTestState != ProtectionPreferences.WEB_GUARD_TEST_RUNNING) return
+        val startedAt = protectionPreferences.lastWebGuardTestAt
+        if (startedAt <= 0L || now - startedAt < WEB_GUARD_TEST_RETURN_GRACE_MS) return
+        val intercepted = protectionPreferences.lastWebGuardTestInterceptAt >= startedAt
+        protectionPreferences.webGuardTestState = if (intercepted) {
+            ProtectionPreferences.WEB_GUARD_TEST_PASSED
+        } else {
+            ProtectionPreferences.WEB_GUARD_TEST_FAILED
+        }
+    }
+
     private fun renderWebGuardStatus() {
         val active = isWebGuardActive()
-        binding.txtWebGuardStatus.setText(if (active) R.string.web_guard_status_active else R.string.web_guard_status_optional)
+        val verified = ::protectionPreferences.isInitialized &&
+            protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_PASSED
+        val failed = ::protectionPreferences.isInitialized &&
+            protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_FAILED
+        binding.txtWebGuardStatus.setText(when {
+            active && verified -> R.string.web_guard_status_active_verified
+            active && failed -> R.string.web_guard_status_active_test_failed
+            active -> R.string.web_guard_status_active
+            else -> R.string.web_guard_status_optional
+        })
         binding.btnConfigureWebGuard.setText(if (active) R.string.web_guard_manage_action else R.string.web_guard_configure_action)
         if (::protectionPreferences.isInitialized) renderAdvancedProtectionStatus()
         if (::protectionPreferences.isInitialized && ::database.isInitialized) renderProtectionPosture()
@@ -1099,7 +1158,11 @@ class MainActivity : AppCompatActivity() {
         val roleManager = getSystemService(RoleManager::class.java)
         roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) && roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)
     } else {
-        false
+        val probe = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com/")).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        packageManager.resolveActivity(probe, PackageManager.MATCH_DEFAULT_ONLY)
+            ?.activityInfo?.packageName == packageName
     }
 
     private fun renderProtectionPosture() {
@@ -3215,6 +3278,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val WEB_GUARD_TEST_RETURN_GRACE_MS = 1_000L
         private const val TAG = "AmanSecurity"
         private const val PRIVACY_PREFERENCES = "privacy_preferences"
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"

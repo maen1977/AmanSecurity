@@ -282,8 +282,8 @@
     <string name="web_guard_no_browser_title">لا يوجد متصفح خارجي</string>
     <string name="web_guard_no_browser_body">ثبّت متصفح ويب أو فعّله ثم حاول مرة أخرى.</string>
     <string name="web_guard_privacy">يفحص حارس الويب الرابط محليًا قبل تحويله إلى متصفح آخر. لا يفك تشفير حركة الويب ولا يفحص محتوى الصفحات ولا يشغّل شبكة خاصة مخفية.</string>
-    <string name="web_guard_status_active">حارس الويب نشط بصفته ماسح الروابط في دور متصفح النظام.</string>
-    <string name="web_guard_status_optional">حارس الويب اختياري. يمكنك اختيار أمان للروابط أو تفعيله من إعدادات التطبيقات الافتراضية في النظام.</string>
+    <string name="web_guard_status_active">حارس الويب نشط للروابط التي يمررها أندرويد. يتم فحص الروابط المفتوحة من التطبيقات قبل تحويلها إلى متصفح خارجي، أما التنقل الذي يحدث داخل متصفح آخر فلا يستطيع أمان رؤية مسار الصفحة المشفّر بالكامل.</string>
+    <string name="web_guard_status_optional">حارس الويب ليس معالج روابط النظام حاليًا. فعّله لفحص روابط الويب الخارجية قبل فتحها في المتصفح. ويبقى درع أسماء النطاقات قادرًا على حجب النطاقات الضارة المعروفة بشكل مستقل.</string>
     <string name="web_guard_configure_action">تفعيل حارس الويب</string>
     <string name="web_guard_manage_action">إدارة حارس الويب</string>
 
@@ -792,8 +792,17 @@
     <string name="web_shield_self_test_failed_dialog_title">فشل اختبار درع الويب</string>
     <string name="web_shield_self_test_failed_dialog_body">خدمة الشبكة الخاصة مفعّلة، لكن اختبار نظام أسماء النطاقات المحلي لم يكتمل عبر أمان. أعد تشغيل درع الويب وكرر الاختبار قبل الاعتماد على حماية المتصفح.</string>
     <string name="amtso_test_explanation_title">دعم اختبار أمتسو</string>
-    <string name="amtso_test_explanation_body">اختبار التصيد الخاص بأندرويد من أمتسو صفحة اختبار آمنة. يستطيع أمان التعرف على رابطها الكامل عبر حارس الروابط. أمّا درع أسماء النطاقات وحده فلا يستطيع تمييز مسار صفحة ويب مشفّرة عن بقية صفحات النطاق نفسه، لذلك لا يحجب أمان موقع الاختبار كاملًا بشكل دائم. هل تريد متابعة اختبار الرابط المحدد عبر أمان؟</string>
+    <string name="amtso_test_explanation_body">هذا الاختبار يتحقق من اعتراض الروابط الخارجية تلقائيًا، وليس من الماسح فقط. يجب أن يحمل أمان دور متصفح أندرويد. سيُطلق رابط أمتسو كرابط ويب عادي، والمفروض أن يعيده أندرويد إلى أمان ليوقف رابط اختبار التصيد الآمن بدقة. درع أسماء النطاقات لا يستطيع رؤية مسار الصفحة المشفّر، لذلك كتابة هذا الرابط أو التنقل إليه من داخل متصفح آخر ليست ضمن اختبار الرابط الكامل.</string>
     <string name="amtso_test_continue">تشغيل الاختبار</string>
     <string name="timeline_web_shield_test_passed">نجح التحقق من درع الويب</string>
     <string name="timeline_web_shield_test_passed_detail">تم اعتراض اختبار محلي آمن لنظام أسماء النطاقات وحجبه، ولم يتم احتسابه كتهديد.</string>
+    <string name="web_guard_status_active_verified">حارس الويب نشط وقد نجح اختبار أمتسو لاعتراض الروابط الخارجية. الروابط التي يمررها أندرويد يتم فحصها قبل فتحها في المتصفح.</string>
+    <string name="amtso_enable_and_test">تفعيل حارس الويب والاختبار</string>
+    <string name="amtso_role_required_title">لم يتم تفعيل حارس الويب</string>
+    <string name="amtso_role_required_body">لم يمنح أندرويد أمان دور المتصفح، لذلك لا يمكن التحقق من اعتراض الروابط الخارجية تلقائيًا. فعّل أمان لروابط الويب ثم أعد اختبار أمتسو.</string>
+    <string name="amtso_test_failed_title">تعذر بدء اختبار اعتراض أمتسو</string>
+    <string name="amtso_test_failed_body">تعذر على أمان تشغيل اختبار رابط الويب العادي. تحقق من إعدادات التطبيقات الافتراضية ثم حاول مرة أخرى.</string>
+    <string name="timeline_web_guard_test_passed">تم التحقق من اعتراض رابط أمتسو</string>
+    <string name="timeline_web_guard_test_passed_detail">مرّر أندرويد رابط اختبار التصيد الآمن من أمتسو عبر أمان، وأوقف حارس الروابط رابط الاختبار المحدد قبل تحويله إلى متصفح آخر.</string>
+    <string name="web_guard_status_active_test_failed">حارس الويب محدد، لكن آخر اختبار أمتسو للرابط الخارجي لم يرجع عبر أمان. أعد الاختبار وتحقق من اختيار التطبيق الافتراضي في أندرويد.</string>
 </resources>

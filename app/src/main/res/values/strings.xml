@@ -282,8 +282,8 @@
     <string name="web_guard_no_browser_title">No external browser found</string>
     <string name="web_guard_no_browser_body">Install or enable a web browser, then try again.</string>
     <string name="web_guard_privacy">Web Guard scans the link locally before handing it to another browser. It does not decrypt web traffic, inspect page contents, or run a hidden VPN.</string>
-    <string name="web_guard_status_active">Web Guard is active as the system browser-role link scanner.</string>
-    <string name="web_guard_status_optional">Web Guard is optional. You can choose Aman for links or enable it from the system default-app settings.</string>
+    <string name="web_guard_status_active">Web Guard is active for web links routed by Android. Links opened from apps are checked before an external browser receives them; navigation already inside another browser is not visible at full HTTPS-path level.</string>
+    <string name="web_guard_status_optional">Web Guard is not the system link handler. Enable it to scan external web links before a browser opens them. The DNS shield still blocks known malicious domains independently.</string>
     <string name="web_guard_configure_action">Enable Web Guard</string>
     <string name="web_guard_manage_action">Manage Web Guard</string>
 
@@ -792,8 +792,17 @@
     <string name="web_shield_self_test_failed_dialog_title">Web Shield self-test failed</string>
     <string name="web_shield_self_test_failed_dialog_body">The VPN service is enabled, but the local DNS test did not complete through Aman. Restart Local Web Shield and retry before relying on browser protection.</string>
     <string name="amtso_test_explanation_title">AMTSO test support</string>
-    <string name="amtso_test_explanation_body">AMTSO’s Android phishing check is a harmless test page. Aman can recognize its exact URL through Link Guard. The DNS-only shield cannot distinguish an HTTPS page path from other pages on the same amtso.org domain, so Aman does not permanently block the whole AMTSO website. Continue to test the exact link through Aman?</string>
+    <string name="amtso_test_explanation_body">This verifies automatic external-link interception, not just the scanner. Aman must hold Android’s browser role. The test launches AMTSO as a normal system web link; Android should route it into Aman, where the exact harmless phishing-test URL is stopped. The DNS shield cannot see an encrypted HTTPS path, so typing or navigating to this test from inside another browser is outside this URL-level test.</string>
     <string name="amtso_test_continue">Run test</string>
     <string name="timeline_web_shield_test_passed">Web Shield verification passed</string>
     <string name="timeline_web_shield_test_passed_detail">A harmless on-device DNS test was intercepted and blocked. It was not counted as a threat.</string>
+    <string name="web_guard_status_active_verified">Web Guard is active and the AMTSO external-link interception test has passed. External links routed by Android are checked before a browser opens them.</string>
+    <string name="amtso_enable_and_test">Enable Web Guard &amp; test</string>
+    <string name="amtso_role_required_title">Web Guard was not enabled</string>
+    <string name="amtso_role_required_body">Android did not grant Aman the browser role, so automatic external-link interception cannot be verified. Enable Aman for web links, then run the AMTSO test again.</string>
+    <string name="amtso_test_failed_title">AMTSO interception test could not start</string>
+    <string name="amtso_test_failed_body">Aman could not launch the normal system web-link test. Check the default-app settings and try again.</string>
+    <string name="timeline_web_guard_test_passed">AMTSO link interception verified</string>
+    <string name="timeline_web_guard_test_passed_detail">Android routed the harmless AMTSO phishing-test link through Aman and Link Guard stopped the exact test URL before handing it to another browser.</string>
+    <string name="web_guard_status_active_test_failed">Web Guard is selected, but the last AMTSO external-link test did not return through Aman. Re-run the test and verify the Android default-app selection.</string>
 </resources>

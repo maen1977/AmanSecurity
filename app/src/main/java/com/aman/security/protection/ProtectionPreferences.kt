@@ -132,6 +132,18 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getLong(KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT, value).apply()
 
+    var webGuardTestState: Int
+        get() = prefs.getInt(KEY_WEB_GUARD_TEST_STATE, WEB_GUARD_TEST_NOT_RUN)
+        set(value) = prefs.edit().putInt(KEY_WEB_GUARD_TEST_STATE, value).apply()
+
+    var lastWebGuardTestAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_GUARD_TEST_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_GUARD_TEST_AT, value).apply()
+
+    var lastWebGuardTestInterceptAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_GUARD_TEST_INTERCEPT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_GUARD_TEST_INTERCEPT_AT, value).apply()
+
     var lastWebBlockedHost: String?
         get() = prefs.getString(KEY_LAST_WEB_BLOCKED_HOST, null)
         set(value) = prefs.edit().putString(KEY_LAST_WEB_BLOCKED_HOST, value).apply()
@@ -350,6 +362,9 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_WEB_SHIELD_SELF_TEST_STATE = "web_shield_self_test_state"
         private const val KEY_LAST_WEB_SHIELD_SELF_TEST_AT = "last_web_shield_self_test_at"
         private const val KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT = "last_web_shield_self_test_intercept_at"
+        private const val KEY_WEB_GUARD_TEST_STATE = "web_guard_test_state"
+        private const val KEY_LAST_WEB_GUARD_TEST_AT = "last_web_guard_test_at"
+        private const val KEY_LAST_WEB_GUARD_TEST_INTERCEPT_AT = "last_web_guard_test_intercept_at"
         private const val KEY_LAST_WEB_BLOCKED_HOST = "last_web_blocked_host"
         private const val KEY_LAST_WEB_BLOCKED_AT = "last_web_blocked_at"
         private const val KEY_TOTAL_WEB_THREATS_BLOCKED = "total_web_threats_blocked"
@@ -377,6 +392,10 @@ class ProtectionPreferences(context: Context) {
         const val WEB_SHIELD_SELF_TEST_RUNNING = 1
         const val WEB_SHIELD_SELF_TEST_PASSED = 2
         const val WEB_SHIELD_SELF_TEST_FAILED = 3
+        const val WEB_GUARD_TEST_NOT_RUN = 0
+        const val WEB_GUARD_TEST_RUNNING = 1
+        const val WEB_GUARD_TEST_PASSED = 2
+        const val WEB_GUARD_TEST_FAILED = 3
 
         private const val MAX_LEDGER_ENTRIES = 2000
         private const val MAX_APP_LEDGER_ENTRIES = 1500

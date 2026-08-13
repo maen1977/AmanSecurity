@@ -7,7 +7,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.aman.security.R
 import com.aman.security.databinding.ActivityLinkGuardBinding
+import com.aman.security.protection.ProtectionActivityKind
+import com.aman.security.protection.ProtectionActivityState
+import com.aman.security.protection.ProtectionActivityStore
+import com.aman.security.protection.ProtectionPreferences
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.scanner.OfficialWebTestIndicators
 import com.aman.security.scanner.UrlRiskLevel
 import com.aman.security.scanner.UrlRiskSignal
 import com.aman.security.scanner.UrlScanResult
@@ -37,6 +42,7 @@ class LinkGuardActivity : AppCompatActivity() {
         val scanned = scanner.scan(candidate)
         result = scanned
         render(scanned)
+        recordOfficialWebTestIfMatched(scanned)
 
         if (WebProtectionPolicy.decide(scanned.riskLevel) == WebProtectionDecision.ALLOW) {
             binding.root.post { openExternal(scanned) }
@@ -81,6 +87,26 @@ class LinkGuardActivity : AppCompatActivity() {
             }
         }
         binding.btnWebGuardOpen.visibility = if (WebProtectionPolicy.mayOpenAfterWarning(scan.riskLevel)) View.VISIBLE else View.GONE
+    }
+
+    private fun recordOfficialWebTestIfMatched(scan: UrlScanResult) {
+        if (scan.riskLevel != UrlRiskLevel.TEST_SIGNATURE ||
+            scan.threatReference != OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_REFERENCE
+        ) return
+
+        val now = System.currentTimeMillis()
+        ProtectionPreferences(this).apply {
+            webGuardTestState = ProtectionPreferences.WEB_GUARD_TEST_PASSED
+            lastWebGuardTestInterceptAt = now
+            if (lastWebGuardTestAt <= 0L) lastWebGuardTestAt = now
+        }
+        ProtectionActivityStore(this).add(
+            kind = ProtectionActivityKind.WEB_SHIELD,
+            state = ProtectionActivityState.SAFE,
+            title = getString(R.string.timeline_web_guard_test_passed),
+            detail = getString(R.string.timeline_web_guard_test_passed_detail),
+            dedupeKey = "web-guard:amtso:test"
+        )
     }
 
     private fun confirmOpen() {

@@ -1,0 +1,33 @@
+Aman Security 3.4.3 - Web Guard role interception patch validation
+Date: 2026-08-13
+
+Scope
+- Replaced the AMTSO button's direct LinkGuardActivity launch with a normal Android web intent.
+- Requires/validates Android browser role before automatic external-link AMTSO verification.
+- Records AMTSO interception PASS inside LinkGuardActivity.
+- Reconciles stale RUNNING state to FAIL when the link did not return through Aman.
+- Combined Web Protection now requires both DNS Shield and Web Guard role.
+- Added browser-only package visibility for Android 11+ safe handoff.
+- Kept DNS-only VPN architecture; no TLS/HTTPS decryption.
+- No AccessibilityService added.
+- No permanent amtso.org domain block added.
+
+Validation passed
+- LOCALIZATION_GATE_OK keys=770 languages=en,ar hardcoded_ui=0
+- ANDROID_KOTLIN_SANITY_GATE_OK
+- ANDROID_STRING_FORMAT_GATE_OK
+- XML_PARSE_OK
+- WEB_SHIELD_VERIFICATION_3_4_OK local_dns_self_test=1 amtso_role_interception_test=1 amtso_exact_link_test=1 permanent_amtso_domain_block=0 combined_layers_required=1 accessibility=0 test_not_counted_as_threat=1 dns_only=1
+- ANDROID_API_COMPAT_GATE_OK
+- PLAY_PROTECT_SIDELOAD_OK accessibility=0 verifier_bypass=0
+- WEB_PROTECTION_2_4_GATE_OK local_link_guard=1 known_block=1 self_loop_guard=1 local_dns_vpn=1 full_tunnel=0
+- LOCAL_ATTACK_PREVENTION_3_1_OK https_decrypt=0 accessibility_declared=0 cloud_backend=0
+- CORE_RUNTIME_3_4_OK
+- RELEASE_HARDENING_GATE_OK
+- DIRECT_INSTALL_3_3_OK
+- SCAN_FINDINGS_3_4_OK
+- THREAT_UPDATE_TRANSPARENCY_3_4_OK
+
+Environment limitation
+- This workspace does not include a Gradle wrapper/system Gradle Android build environment, so an APK was not compiled here.
+- Source/static project validation gates passed as listed above.
