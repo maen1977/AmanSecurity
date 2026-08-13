@@ -1,0 +1,99 @@
+{
+  "bundleBytes": 2385737,
+  "bundlePath": "aman-threat-db.zip",
+  "bundleSha256": "900b38d557a9f1efd499edef534d5ee1813633dd168aa966084e71fc06b2a326",
+  "files": {
+    "android_cves.txt": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "c2_hosts.sha256": {
+      "bytes": 65,
+      "entries": 1,
+      "sha256": "822b9c3c1b2caa844ee151115a6481bbe7d4d74f8580dbd71e42584bfa33080e"
+    },
+    "malware_files.sha256": {
+      "bytes": 585,
+      "entries": 9,
+      "sha256": "252d5994e69f26bced28e5765f35f6ab1c72019c7b585337802654bea8923b32"
+    },
+    "malware_url_hosts.sha256": {
+      "bytes": 4180410,
+      "entries": 64314,
+      "sha256": "482632bb4c947c2decc0774389eea4acea086023edbd03cbefc9bcf101dec1c1"
+    },
+    "phishing_community.sha256": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "phishing_openphish.sha256": {
+      "bytes": 36920,
+      "entries": 568,
+      "sha256": "38d8c079fed10620916d931f112298159bfde70477d2a31aca185b00c2009f10"
+    },
+    "phishing_primary.sha256": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "generatedAt": "2026-08-13T19:19:39Z",
+  "latestAndroidSecurityPatch": "",
+  "minAppVersionCode": 30,
+  "privacy": "hashes_only_no_raw_malicious_urls",
+  "schema": 1,
+  "serial": 1786648779,
+  "sources": [
+    {
+      "count": 9,
+      "detail": "MalwareBazaar Android browse metadata + bundled baseline",
+      "name": "malware_bazaar_android",
+      "ok": true
+    },
+    {
+      "count": 568,
+      "detail": "",
+      "name": "openphish",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 500: Internal Server Error",
+      "name": "primary_phishing",
+      "ok": false
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 500: Internal Server Error",
+      "name": "community_phishing",
+      "ok": false
+    },
+    {
+      "count": 64314,
+      "detail": "",
+      "name": "urlhaus",
+      "ok": true
+    },
+    {
+      "count": 1,
+      "detail": "",
+      "name": "feodo",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: ABUSECH_AUTH_KEY not configured",
+      "name": "threatfox",
+      "ok": false
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 404: Not Found",
+      "name": "android_security_bulletin",
+      "ok": false
+    }
+  ],
+  "version": "2026.08.13.1919"
+}

@@ -1,0 +1,61 @@
+{
+  "counts": {
+    "android_cves.txt": 0,
+    "c2_hosts.sha256": 1,
+    "malware_files.sha256": 9,
+    "malware_url_hosts.sha256": 64314,
+    "phishing_community.sha256": 0,
+    "phishing_openphish.sha256": 568,
+    "phishing_primary.sha256": 0
+  },
+  "sources": [
+    {
+      "count": 9,
+      "detail": "MalwareBazaar Android browse metadata + bundled baseline",
+      "name": "malware_bazaar_android",
+      "ok": true
+    },
+    {
+      "count": 568,
+      "detail": "",
+      "name": "openphish",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 500: Internal Server Error",
+      "name": "primary_phishing",
+      "ok": false
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 500: Internal Server Error",
+      "name": "community_phishing",
+      "ok": false
+    },
+    {
+      "count": 64314,
+      "detail": "",
+      "name": "urlhaus",
+      "ok": true
+    },
+    {
+      "count": 1,
+      "detail": "",
+      "name": "feodo",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: ABUSECH_AUTH_KEY not configured",
+      "name": "threatfox",
+      "ok": false
+    },
+    {
+      "count": 0,
+      "detail": "HTTP Error 404: Not Found",
+      "name": "android_security_bulletin",
+      "ok": false
+    }
+  ]
+}
