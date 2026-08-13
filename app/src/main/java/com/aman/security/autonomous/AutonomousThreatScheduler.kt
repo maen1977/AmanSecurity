@@ -13,11 +13,11 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 object AutonomousThreatScheduler {
-    private const val PERIODIC_WORK = "aman-autonomous-threat-intelligence-6h"
+    private const val PERIODIC_WORK = "aman-cloud-threat-intelligence-12h"
     private const val ON_DEMAND_WORK = "aman-autonomous-threat-intelligence-now"
 
     private fun periodicNetworkConstraints(): Constraints = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .setRequiredNetworkType(NetworkType.UNMETERED)
         .setRequiresBatteryNotLow(true)
         .build()
 
@@ -28,14 +28,14 @@ object AutonomousThreatScheduler {
     fun schedule(context: Context) {
         val app = context.applicationContext
         val network = periodicNetworkConstraints()
-        val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(6, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
+        val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(12, TimeUnit.HOURS, 60, TimeUnit.MINUTES)
             .setConstraints(network)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(app).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, periodic)
 
         val last = AutonomousThreatStore(app).info().lastSuccessfulUpdateEpochMs
-        if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(6)) {
+        if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(12)) {
             val state = ThreatUpdateStateStore(app)
             val snapshot = state.snapshot()
             if (!snapshot.isActive || snapshot.isStaleActive) state.queued()

@@ -1,0 +1,24 @@
+AMAN SECURITY 3.4.6 THREAT UPDATE VALIDATION
+
+Device-observed issue:
+- Update reached source 3/7, Primary phishing feed.
+- Download had completed.
+- UI stayed at Parsing source around 39% overall.
+
+Fix validation:
+- Byte-stream URL parser: PASS
+- Large-feed parse deadline: PASS
+- Indicator ceilings: PASS
+- Index-build deadline: PASS
+- Cap-aware shrink guard: PASS
+- Per-source success committed immediately: PASS
+- HTTP validators committed only after parse/apply: PASS
+- Fresh validator namespace v2: PASS
+- OpenPhish remains source 2/7: PASS
+- All project quality gates: PASS
+
+Standalone JVM parser smoke:
+- Synthetic ~4.18 MB / 100,000 URL feed -> 60,000 bounded indicators in ~290 ms in this validation environment.
+- OpenPhish public feed sample -> 442 normalized indicators from 15,255 bytes in ~80 ms in this validation environment.
+
+Note: timings are environment-specific and are not Android device performance guarantees. The hard parser/index deadlines are the product guarantee against an indefinite parsing stall.

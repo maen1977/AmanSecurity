@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove legacy threat-update GitHub Actions while preserving the build-only workflow."""
+"""Remove obsolete pre-3.5 threat-update material while preserving the single Aman pipeline."""
 from pathlib import Path
 import shutil, sys
 
@@ -8,7 +8,6 @@ APPLY = '--apply' in sys.argv[1:]
 
 LEGACY_PATHS = [
     'reputation',
-    'app/src/main/assets/keys',
     'app/src/main/assets/reputation',
     'app/src/main/assets/threat-db/manifest.sig',
     # Pre-2.6 GitHub/signed-reputation runtime classes. These paths no longer
@@ -33,6 +32,14 @@ LEGACY_PATHS = [
     'tools/build_reputation_shards.py',
     'tools/refresh_threat_intel.py',
     'tools/update_threat_intel.py',
+    'app/src/main/java/com/aman/security/autonomous/AutonomousThreatHttpClient.kt',
+    'app/src/main/java/com/aman/security/autonomous/AutonomousThreatParsers.kt',
+    'app/src/main/java/com/aman/security/autonomous/AutonomousSourcePolicy.kt',
+    'app/src/test/java/com/aman/security/autonomous/AutonomousThreatParsersTest.kt',
+    'tools/autonomous_threat_intel_2_6_gate.py',
+    'tools/threat_intel_policy_gate.py',
+    'tools/threat_update_reliability_3_4_5_gate.py',
+    'tools/threat_update_reliability_3_4_6_gate.py',
     'tools/sign_threat_db.py',
 ]
 

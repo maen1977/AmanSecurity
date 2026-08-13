@@ -2,30 +2,28 @@ package com.aman.security.autonomous
 
 import android.content.Context
 import com.aman.security.scanner.SignatureDatabase
-import com.aman.security.scanner.UrlScanner
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.Locale
+import java.util.zip.ZipInputStream
 
-private typealias SourceProgress = (phase: AutonomousUpdatePhase, phaseProgress: Int, downloaded: Long, totalBytes: Long) -> Unit
-
+/**
+ * Aman 3.5 cloud consumer: one signed, pre-normalized package replaces seven phone-side feed jobs.
+ * The handset never downloads or parses raw phishing/malware feeds.
+ */
 class AutonomousThreatUpdater(
-    context: Context,
+    private val context: Context,
     private val database: SignatureDatabase = SignatureDatabase(context)
 ) {
     private val store = database.autonomousStore
-    private val http = AutonomousThreatHttpClient(context)
+    private val http = CloudThreatHttpClient()
 
     fun update(onProgress: ((AutonomousUpdateProgress) -> Unit)? = null): AutonomousUpdateResult {
-        var changed = 0
-        var latestPatch: String? = null
-        var cveCount: Int? = null
-        val successfulSourceKeys = linkedSetOf<String>()
-        val failedSourceKeys = linkedSetOf<String>()
         val attemptAt = System.currentTimeMillis()
-        var completedSources = 0
-
         fun report(
-            key: String,
-            index: Int,
-            phase: AutonomousUpdatePhase = AutonomousUpdatePhase.CONNECTING,
+            phase: AutonomousUpdatePhase,
             phaseProgress: Int = 0,
             downloaded: Long = 0L,
             totalBytes: Long = -1L,
@@ -34,10 +32,10 @@ class AutonomousThreatUpdater(
         ) {
             onProgress?.invoke(
                 AutonomousUpdateProgress(
-                    sourceKey = key,
-                    sourceIndex = index,
+                    sourceKey = AutonomousThreatStore.SOURCE_CLOUD_BUNDLE,
+                    sourceIndex = 1,
                     totalSources = TOTAL_SOURCES,
-                    completedSources = completedSources,
+                    completedSources = if (finished) 1 else 0,
                     phase = phase,
                     phaseProgress = phaseProgress.coerceIn(0, 100),
                     downloadedBytes = downloaded.coerceAtLeast(0L),
@@ -48,362 +46,133 @@ class AutonomousThreatUpdater(
             )
         }
 
-        fun runSource(index: Int, key: String, block: (SourceProgress) -> Boolean) {
-            report(key, index, phase = AutonomousUpdatePhase.CONNECTING)
-            var succeeded = false
-            try {
-                val changedNow = block { phase, phaseProgress, downloaded, total ->
-                    report(key, index, phase, phaseProgress, downloaded, total)
-                }
-                successfulSourceKeys += key
-                succeeded = true
-                if (changedNow) changed++
-            } catch (_: Exception) {
-                // A failed or slow source must never hold the entire protection update hostage.
-                // Last-known-good data remains intact and the updater immediately continues.
-                failedSourceKeys += key
-            } finally {
-                completedSources++
-                report(
-                    key = key,
-                    index = index,
-                    phase = AutonomousUpdatePhase.APPLYING,
-                    phaseProgress = 100,
-                    finished = true,
-                    succeeded = succeeded
-                )
+        if (!http.configured()) {
+            store.recordCloudFailure(attemptAt)
+            report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = false)
+            return AutonomousUpdateResult.NoSourceAvailable
+        }
+
+        return try {
+            report(AutonomousUpdatePhase.CONNECTING, 5)
+            val manifestBytes = http.getSmall("manifest.json", 64 * 1024)
+            report(AutonomousUpdatePhase.CONNECTING, 45)
+            val signatureBytes = http.getSmall("manifest.sig", 4 * 1024)
+            report(AutonomousUpdatePhase.PARSING, 20)
+            if (!CloudThreatSignatureVerifier.verify(context, manifestBytes, signatureBytes)) {
+                throw SecurityException("Cloud threat manifest signature rejected")
             }
-        }
+            val manifest = CloudThreatManifest.parse(manifestBytes)
+            report(AutonomousUpdatePhase.PARSING, 100)
 
-        runSource(1, AutonomousThreatStore.SOURCE_MALWARE) { progress -> updateMalwareHashes(progress) }
-
-        // Fetch the compact first-party OpenPhish feed before the larger aggregate feeds so Aman
-        // can establish live phishing coverage quickly even if a later provider is slow or down.
-        runSource(2, AutonomousThreatStore.SOURCE_PHISH_OPENPHISH) { progress -> updateOpenPhish(progress) }
-        runSource(3, AutonomousThreatStore.SOURCE_PHISH_PRIMARY) { progress ->
-            updatePhishing(
-                AutonomousThreatStore.IndexKind.PHISHING_PRIMARY,
-                PRIMARY_PHISH,
-                "phish_primary",
-                AutonomousThreatStore.SOURCE_PHISH_PRIMARY,
-                progress
-            )
-        }
-        runSource(4, AutonomousThreatStore.SOURCE_PHISH_COMMUNITY) { progress ->
-            updatePhishing(
-                AutonomousThreatStore.IndexKind.PHISHING_COMMUNITY,
-                COMMUNITY_PHISH,
-                "phish_community",
-                AutonomousThreatStore.SOURCE_PHISH_COMMUNITY,
-                progress
-            )
-        }
-        runSource(5, AutonomousThreatStore.SOURCE_MALWARE_URLS) { progress -> updateMalwareUrls(progress) }
-        runSource(6, AutonomousThreatStore.SOURCE_C2) { progress -> updateC2(progress) }
-
-        val androidIndex = 7
-        report(AutonomousThreatStore.SOURCE_ANDROID_BULLETIN, androidIndex, phase = AutonomousUpdatePhase.CONNECTING)
-        var androidSucceeded = false
-        try {
-            val bulletin = updateAndroidBulletin { phase, phaseProgress, downloaded, total ->
-                report(
-                    AutonomousThreatStore.SOURCE_ANDROID_BULLETIN,
-                    androidIndex,
-                    phase,
-                    phaseProgress,
-                    downloaded,
-                    total
-                )
+            val installedSerial = store.installedSerial()
+            if (manifest.serial < installedSerial) throw SecurityException("Cloud threat rollback rejected")
+            if (manifest.serial == installedSerial) {
+                store.recordCloudUnchanged(manifest, attemptAt)
+                report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = true)
+                val info = store.info()
+                return AutonomousUpdateResult.Success(info, changedSources = 0)
             }
-            successfulSourceKeys += AutonomousThreatStore.SOURCE_ANDROID_BULLETIN
-            androidSucceeded = true
-            latestPatch = bulletin.first
-            cveCount = bulletin.second
-            if (bulletin.third) changed++
+
+            val staging = store.createStagingDirectory()
+            val bundle = File(staging, "package.tmp")
+            val download = http.downloadBundle(manifest, bundle) { downloaded, total ->
+                val percent = if (total > 0L) ((downloaded * 100L) / total).toInt().coerceIn(0, 100) else 0
+                report(AutonomousUpdatePhase.DOWNLOADING, percent, downloaded, total)
+            }
+            if (download.sha256 != manifest.bundleSha256) throw SecurityException("Cloud threat bundle hash rejected")
+
+            report(AutonomousUpdatePhase.PARSING, 5, download.bytes, manifest.bundleBytes)
+            extractAndVerify(bundle, staging, manifest) { percent ->
+                report(AutonomousUpdatePhase.INDEXING, percent, download.bytes, manifest.bundleBytes)
+            }
+            bundle.delete()
+
+            report(AutonomousUpdatePhase.APPLYING, 30, download.bytes, manifest.bundleBytes)
+            val changed = store.installVerifiedPackage(staging, manifestBytes, manifest, attemptAt)
+            database.reloadAutonomous()
+            report(AutonomousUpdatePhase.APPLYING, 100, download.bytes, manifest.bundleBytes, finished = true, succeeded = true)
+            val info = store.info()
+            AutonomousUpdateResult.Success(info, changedSources = if (changed) 1 else 0)
         } catch (_: Exception) {
-            failedSourceKeys += AutonomousThreatStore.SOURCE_ANDROID_BULLETIN
-        } finally {
-            completedSources++
-            report(
-                AutonomousThreatStore.SOURCE_ANDROID_BULLETIN,
-                androidIndex,
-                phase = AutonomousUpdatePhase.APPLYING,
-                phaseProgress = 100,
-                finished = true,
-                succeeded = androidSucceeded
-            )
-        }
-
-        // Persist source-level health even on a total outage. Last-known-good indicator files
-        // stay untouched for failed sources, while transient URL/C2 entries expire by TTL.
-        store.recordRun(
-            attemptAt = attemptAt,
-            successfulSourceKeys = successfulSourceKeys,
-            failedSourceKeys = failedSourceKeys,
-            latestPatch = latestPatch,
-            cveCount = cveCount
-        )
-        database.reloadAutonomous()
-        val info = store.info()
-        if (successfulSourceKeys.isEmpty()) return AutonomousUpdateResult.NoSourceAvailable
-        return if (successfulSourceKeys.size == TOTAL_SOURCES) {
-            AutonomousUpdateResult.Success(info, changed)
-        } else {
-            AutonomousUpdateResult.Partial(info, successfulSourceKeys.size, failedSourceKeys.size, changed)
+            store.recordCloudFailure(attemptAt)
+            report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = false)
+            AutonomousUpdateResult.NoSourceAvailable
         }
     }
 
-    private fun updateMalwareHashes(progress: SourceProgress): Boolean {
-        val response = http.get(
-            MALWARE_BAZAAR_ANDROID,
-            4 * 1024 * 1024,
-            "text/html",
-            "malware_android",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = SMALL_SOURCE_DEADLINE_MS
-        )
-        if (response.notModified) {
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return false
-        }
-        val bytes = requireNotNull(response.bytes)
-        progress(AutonomousUpdatePhase.PARSING, 10, bytes.size.toLong(), bytes.size.toLong())
-        val hashes = AutonomousThreatParsers.malwareBazaarAndroidHashes(bytes.toString(Charsets.UTF_8))
-        progress(AutonomousUpdatePhase.PARSING, 100, bytes.size.toLong(), bytes.size.toLong())
-        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_MALWARE, hashes.size)
-        progress(AutonomousUpdatePhase.APPLYING, 40, bytes.size.toLong(), bytes.size.toLong())
-        val changed = store.mergeFileHashes(hashes)
-        progress(AutonomousUpdatePhase.APPLYING, 100, bytes.size.toLong(), bytes.size.toLong())
-        return changed
-    }
+    private fun extractAndVerify(
+        bundle: File,
+        staging: File,
+        manifest: CloudThreatManifest,
+        onProgress: (Int) -> Unit
+    ) {
+        val allowed = CloudThreatManifest.REQUIRED_FILES
+        val seen = linkedSetOf<String>()
+        val totalExpected = manifest.files.values.sumOf { it.bytes }.coerceAtLeast(1L)
+        var completedBytes = 0L
+        val ioBuffer = ByteArray(32 * 1024)
 
-    private fun updatePhishing(
-        kind: AutonomousThreatStore.IndexKind,
-        url: String,
-        cacheKey: String,
-        sourceKey: String,
-        progress: SourceProgress
-    ): Boolean {
-        val response = http.get(
-            url,
-            24 * 1024 * 1024,
-            "application/json, text/plain",
-            cacheKey,
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = PHISHING_SOURCE_DEADLINE_MS
-        )
-        if (response.notModified) {
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return false
-        }
-        val bytes = requireNotNull(response.bytes)
-        val text = bytes.toString(Charsets.UTF_8)
-        val indicators = AutonomousThreatParsers.phishingIndicators(text) { percent ->
-            progress(AutonomousUpdatePhase.PARSING, percent, bytes.size.toLong(), bytes.size.toLong())
-        }
-        val hashes = hashIndicators(indicators, progress, bytes.size.toLong())
-        AutonomousFeedPolicy.validateCount(sourceKey, hashes.size)
-        progress(AutonomousUpdatePhase.APPLYING, 20, bytes.size.toLong(), bytes.size.toLong())
-        val changed = store.replaceHashes(
-            kind,
-            hashes,
-            minCount = AutonomousFeedPolicy.forKey(sourceKey).minEntries,
-            shrinkFloor = 0.25
-        )
-        progress(AutonomousUpdatePhase.APPLYING, 100, bytes.size.toLong(), bytes.size.toLong())
-        return changed
-    }
-
-    private fun updateOpenPhish(progress: SourceProgress): Boolean {
-        val response = http.get(
-            OPENPHISH_COMMUNITY,
-            8 * 1024 * 1024,
-            "text/plain",
-            "openphish_community",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = OPENPHISH_SOURCE_DEADLINE_MS
-        )
-        if (response.notModified) {
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return false
-        }
-        val bytes = requireNotNull(response.bytes)
-        val indicators = AutonomousThreatParsers.phishingIndicators(bytes.toString(Charsets.UTF_8)) { percent ->
-            progress(AutonomousUpdatePhase.PARSING, percent, bytes.size.toLong(), bytes.size.toLong())
-        }
-        val hashes = hashIndicators(indicators, progress, bytes.size.toLong())
-        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_PHISH_OPENPHISH, hashes.size)
-        progress(AutonomousUpdatePhase.APPLYING, 20, bytes.size.toLong(), bytes.size.toLong())
-        val changed = store.replaceHashes(
-            AutonomousThreatStore.IndexKind.PHISHING_OPENPHISH,
-            hashes,
-            minCount = AutonomousFeedPolicy.phishingOpenPhish.minEntries,
-            shrinkFloor = 0.20
-        )
-        progress(AutonomousUpdatePhase.APPLYING, 100, bytes.size.toLong(), bytes.size.toLong())
-        return changed
-    }
-
-    private fun updateMalwareUrls(progress: SourceProgress): Boolean {
-        val response = http.get(
-            URLHAUS_URLS,
-            32 * 1024 * 1024,
-            "text/plain",
-            "urlhaus_malware_urls",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = LARGE_SOURCE_DEADLINE_MS
-        )
-        if (response.notModified) {
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return false
-        }
-        val bytes = requireNotNull(response.bytes)
-        val indicators = AutonomousThreatParsers.urlhausIndicators(bytes.toString(Charsets.UTF_8)) { percent ->
-            progress(AutonomousUpdatePhase.PARSING, percent, bytes.size.toLong(), bytes.size.toLong())
-        }
-        val hashes = hashIndicators(indicators, progress, bytes.size.toLong())
-        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_MALWARE_URLS, hashes.size)
-        progress(AutonomousUpdatePhase.APPLYING, 20, bytes.size.toLong(), bytes.size.toLong())
-        val changed = store.replaceHashes(
-            AutonomousThreatStore.IndexKind.MALWARE_URL_HOSTS,
-            hashes,
-            minCount = AutonomousFeedPolicy.malwareUrls.minEntries,
-            shrinkFloor = 0.20
-        )
-        progress(AutonomousUpdatePhase.APPLYING, 100, bytes.size.toLong(), bytes.size.toLong())
-        return changed
-    }
-
-    private fun updateC2(progress: SourceProgress): Boolean {
-        val response = http.get(
-            FEODO_RECOMMENDED,
-            2 * 1024 * 1024,
-            "application/json",
-            "feodo_c2",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = SMALL_SOURCE_DEADLINE_MS
-        )
-        if (response.notModified) {
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return false
-        }
-        val bytes = requireNotNull(response.bytes)
-        progress(AutonomousUpdatePhase.PARSING, 15, bytes.size.toLong(), bytes.size.toLong())
-        val ips = AutonomousThreatParsers.feodoIps(bytes.toString(Charsets.UTF_8))
-        progress(AutonomousUpdatePhase.PARSING, 100, bytes.size.toLong(), bytes.size.toLong())
-        AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_C2, ips.size)
-        val hashes = linkedSetOf<String>()
-        val total = ips.size.coerceAtLeast(1)
-        var lastIndexPercent = -2
-        ips.forEachIndexed { index, ip ->
-            hashes += UrlScanner.sha256(ip)
-            val percent = (((index + 1).toLong() * 100L) / total.toLong()).toInt().coerceIn(0, 100)
-            if (percent >= lastIndexPercent + 2 || percent == 100) {
-                lastIndexPercent = percent
-                progress(AutonomousUpdatePhase.INDEXING, percent, bytes.size.toLong(), bytes.size.toLong())
+        ZipInputStream(bundle.inputStream().buffered(32 * 1024)).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                val name = entry.name
+                if (entry.isDirectory || name !in allowed || name.contains('/') || name.contains('\\') || !seen.add(name)) {
+                    throw SecurityException("Unexpected cloud threat package entry")
+                }
+                val meta = manifest.files.getValue(name)
+                val target = File(staging, name)
+                val digest = MessageDigest.getInstance("SHA-256")
+                var written = 0L
+                BufferedOutputStream(FileOutputStream(target), 32 * 1024).use { output ->
+                    while (true) {
+                        val read = zip.read(ioBuffer)
+                        if (read < 0) break
+                        written += read
+                        if (written > meta.bytes) throw SecurityException("Cloud threat index exceeded signed size")
+                        digest.update(ioBuffer, 0, read)
+                        output.write(ioBuffer, 0, read)
+                    }
+                    output.flush()
+                }
+                if (written != meta.bytes) throw SecurityException("Cloud threat index size mismatch")
+                val hash = digest.digest().joinToString("") { "%02x".format(it) }
+                if (hash != meta.sha256) throw SecurityException("Cloud threat index hash mismatch")
+                validateIndexFile(target, meta)
+                completedBytes += written
+                onProgress(((completedBytes * 100L) / totalExpected).toInt().coerceIn(0, 100))
+                zip.closeEntry()
             }
         }
-        progress(AutonomousUpdatePhase.APPLYING, 20, bytes.size.toLong(), bytes.size.toLong())
-        val changed = store.replaceHashes(
-            AutonomousThreatStore.IndexKind.C2_HOSTS,
-            hashes,
-            minCount = AutonomousFeedPolicy.c2.minEntries,
-            shrinkFloor = 0.10
-        )
-        progress(AutonomousUpdatePhase.APPLYING, 100, bytes.size.toLong(), bytes.size.toLong())
-        return changed
+        if (seen != allowed) throw SecurityException("Cloud threat package incomplete")
+        onProgress(100)
     }
 
-    private fun updateAndroidBulletin(progress: SourceProgress): Triple<String, Int, Boolean> {
-        val overview = http.get(
-            ANDROID_OVERVIEW,
-            2 * 1024 * 1024,
-            "text/html",
-            "android_overview",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = SMALL_SOURCE_DEADLINE_MS
-        )
-        val oldInfo = store.info()
-        if (overview.notModified) {
-            val patch = oldInfo.latestAndroidSecurityPatch ?: throw java.io.IOException("No cached Android bulletin")
-            progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-            return Triple(patch, oldInfo.androidCveCount, false)
-        }
-        val overviewBytes = requireNotNull(overview.bytes)
-        progress(AutonomousUpdatePhase.PARSING, 20, overviewBytes.size.toLong(), overviewBytes.size.toLong())
-        val overviewText = overviewBytes.toString(Charsets.UTF_8)
-        val patch = AutonomousThreatParsers.latestAndroidPatch(overviewText) ?: throw java.io.IOException("Patch level missing")
-        progress(AutonomousUpdatePhase.PARSING, 50, overviewBytes.size.toLong(), overviewBytes.size.toLong())
-        val monthStart = patch.substring(0, 7) + "-01"
-        val bulletinUrl = "https://source.android.com/docs/security/bulletin/$monthStart?hl=en"
-        val bulletin = http.get(
-            bulletinUrl,
-            4 * 1024 * 1024,
-            "text/html",
-            "android_bulletin_$monthStart",
-            onProgress = { downloaded, total -> progress(AutonomousUpdatePhase.DOWNLOADING, transferPercent(downloaded, total), downloaded, total) },
-            maxDurationMs = SMALL_SOURCE_DEADLINE_MS
-        )
-        val cveChanged: Boolean
-        val count: Int
-        if (bulletin.notModified) {
-            count = oldInfo.androidCveCount
-            cveChanged = false
-        } else {
-            val bulletinBytes = requireNotNull(bulletin.bytes)
-            progress(AutonomousUpdatePhase.PARSING, 65, bulletinBytes.size.toLong(), bulletinBytes.size.toLong())
-            val cves = AutonomousThreatParsers.cves(bulletinBytes.toString(Charsets.UTF_8))
-            progress(AutonomousUpdatePhase.PARSING, 100, bulletinBytes.size.toLong(), bulletinBytes.size.toLong())
-            AutonomousFeedPolicy.validateCount(AutonomousThreatStore.SOURCE_ANDROID_BULLETIN, cves.size)
-            count = cves.size
-            progress(AutonomousUpdatePhase.APPLYING, 30, bulletinBytes.size.toLong(), bulletinBytes.size.toLong())
-            cveChanged = store.replaceAndroidCves(cves)
-        }
-        progress(AutonomousUpdatePhase.APPLYING, 100, 0L, 0L)
-        val changed = oldInfo.latestAndroidSecurityPatch != patch || oldInfo.androidCveCount != count || cveChanged
-        return Triple(patch, count, changed)
-    }
-
-    private fun hashIndicators(
-        indicators: AutonomousThreatParsers.UrlIndicators,
-        progress: SourceProgress,
-        downloadedBytes: Long
-    ): List<String> {
-        val hashes = linkedSetOf<String>()
-        val total = (indicators.urls.size + indicators.hosts.size).coerceAtLeast(1)
-        var completed = 0
-        var lastIndexPercent = -2
-        fun add(value: String) {
-            hashes += UrlScanner.sha256(value)
-            completed++
-            val percent = ((completed.toLong() * 100L) / total.toLong()).toInt().coerceIn(0, 100)
-            if (percent >= lastIndexPercent + 2 || percent == 100) {
-                lastIndexPercent = percent
-                progress(AutonomousUpdatePhase.INDEXING, percent, downloadedBytes, downloadedBytes)
+    private fun validateIndexFile(file: File, meta: CloudThreatFileMeta) {
+        var count = 0
+        var previous: String? = null
+        file.bufferedReader(Charsets.US_ASCII, 16 * 1024).useLines { lines ->
+            lines.forEach { line ->
+                when {
+                    meta.name.endsWith(".sha256") -> {
+                        if (!HASH.matches(line)) throw SecurityException("Invalid cloud SHA-256 index")
+                        if (previous != null && previous!! >= line) throw SecurityException("Cloud SHA-256 index is not strictly sorted")
+                    }
+                    meta.name == AutonomousThreatStore.FILE_ANDROID_CVES -> {
+                        if (!CVE.matches(line)) throw SecurityException("Invalid Android CVE index")
+                        if (previous != null && previous!! >= line) throw SecurityException("Android CVE index is not strictly sorted")
+                    }
+                }
+                previous = line
+                count++
+                if (count > meta.entries) throw SecurityException("Cloud threat index entry overflow")
             }
         }
-        indicators.urls.forEach(::add)
-        indicators.hosts.forEach(::add)
-        progress(AutonomousUpdatePhase.INDEXING, 100, downloadedBytes, downloadedBytes)
-        return hashes.toList()
+        if (count != meta.entries) throw SecurityException("Cloud threat index count mismatch")
     }
-
-    private fun transferPercent(downloaded: Long, total: Long): Int =
-        if (total > 0L) ((downloaded.coerceAtLeast(0L) * 100L) / total).toInt().coerceIn(0, 100) else 0
 
     companion object {
-        val TOTAL_SOURCES: Int = AutonomousFeedPolicy.all.size
-        private const val MALWARE_BAZAAR_ANDROID = "https://bazaar.abuse.ch/browse/tag/Android/"
-        private const val PRIMARY_PHISH = "https://api.destroy.tools/v1/feed/primary_active"
-        private const val COMMUNITY_PHISH = "https://api.destroy.tools/v1/feed/community_active"
-        private const val OPENPHISH_COMMUNITY = "https://openphish.com/feed.txt"
-        private const val URLHAUS_URLS = "https://urlhaus.abuse.ch/downloads/text/"
-        private const val FEODO_RECOMMENDED = "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"
-        private const val ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overview?hl=en"
-
-        private const val SMALL_SOURCE_DEADLINE_MS = 45_000L
-        private const val OPENPHISH_SOURCE_DEADLINE_MS = 60_000L
-        private const val PHISHING_SOURCE_DEADLINE_MS = 75_000L
-        private const val LARGE_SOURCE_DEADLINE_MS = 120_000L
+        const val TOTAL_SOURCES = 1
+        private val HASH = Regex("^[a-f0-9]{64}$")
+        private val CVE = Regex("^CVE-20\\d{2}-\\d{4,8}$")
     }
 }

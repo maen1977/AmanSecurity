@@ -3,6 +3,11 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val expectedReleaseCertRaw = providers.gradleProperty("AMAN_RELEASE_CERT_SHA256").orNull.orEmpty().trim().lowercase()
 val expectedReleaseCert = expectedReleaseCertRaw.takeIf { Regex("^[a-f0-9]{64}$").matches(it) }.orEmpty()
 
+val cloudThreatDbBaseUrlRaw = providers.environmentVariable("AMAN_THREAT_DB_BASE_URL").orNull
+    ?: providers.gradleProperty("AMAN_THREAT_DB_BASE_URL").orNull
+    ?: ""
+val cloudThreatDbBaseUrl = cloudThreatDbBaseUrlRaw.trim().replace("\\", "\\\\").replace("\"", "\\\"")
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -16,10 +21,11 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 28
-        versionName = "3.4.5"
+        versionCode = 30
+        versionName = "3.5.0"
 
         buildConfigField("String", "EXPECTED_RELEASE_CERT_SHA256", "\"$expectedReleaseCert\"")
+        buildConfigField("String", "AMAN_THREAT_DB_BASE_URL", "\"$cloudThreatDbBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

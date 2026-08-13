@@ -3,7 +3,7 @@ import sys
 root=Path(__file__).resolve().parents[1]
 dir=root/'.github/workflows'
 files=sorted(p.relative_to(root).as_posix() for p in dir.glob('*') if p.is_file() and p.suffix.lower() in {'.yml','.yaml'})
-expected=['.github/workflows/main.yml']
+expected=['.github/workflows/build.yml']
 if files!=expected:
     print('SINGLE_WORKFLOW_GATE_FAILED'); print('Found:',*files,sep='\n - '); sys.exit(1)
 w=(root/expected[0]).read_text(encoding='utf-8')

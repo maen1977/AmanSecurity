@@ -2069,7 +2069,7 @@ class MainActivity : AppCompatActivity() {
     private fun threatUpdateTimingText(lastSuccessfulAt: Long): String {
         if (lastSuccessfulAt <= 0L) return getString(R.string.threat_update_never_success)
         val last = DateFormat.getDateTimeInstance().format(Date(lastSuccessfulAt))
-        val nextAt = lastSuccessfulAt + TimeUnit.HOURS.toMillis(6)
+        val nextAt = lastSuccessfulAt + TimeUnit.HOURS.toMillis(12)
         val nextLine = if (nextAt > System.currentTimeMillis()) {
             getString(R.string.threat_update_next_check, DateFormat.getDateTimeInstance().format(Date(nextAt)))
         } else {
@@ -2120,13 +2120,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun threatSourceLabel(source: String): String = getString(when (source) {
         "starting", "queued", "complete" -> R.string.threat_source_starting
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE -> R.string.threat_source_malware
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_PRIMARY -> R.string.threat_source_phishing_primary
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_OPENPHISH -> R.string.threat_source_phishing_openphish
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_COMMUNITY -> R.string.threat_source_phishing_community
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE_URLS -> R.string.threat_source_malware_urls
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_C2 -> R.string.threat_source_c2
-        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_ANDROID_BULLETIN -> R.string.threat_source_android
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_CLOUD_BUNDLE -> R.string.threat_source_cloud_bundle
         else -> R.string.threat_source_starting
     })
 

@@ -1,30 +1,22 @@
 package com.aman.security.autonomous
 
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class AutonomousFeedPolicyTest {
-    @Test fun communityFeedCannotIndependentlyConfirmThreat() {
-        assertFalse(AutonomousFeedPolicy.phishingCommunity.canConfirmThreat)
-        assertTrue(AutonomousFeedPolicy.phishingPrimary.canConfirmThreat)
-        assertTrue(AutonomousFeedPolicy.phishingOpenPhish.canConfirmThreat)
-        assertTrue(AutonomousFeedPolicy.c2.canConfirmThreat)
+    @Test fun phoneConsumesOneTrustedCloudBundle() {
+        assertEquals(1, AutonomousFeedPolicy.all.size)
+        assertEquals(AutonomousThreatStore.SOURCE_CLOUD_BUNDLE, AutonomousFeedPolicy.cloudBundle.key)
+        assertTrue(AutonomousFeedPolicy.cloudBundle.canConfirmThreat)
+        assertEquals(AutonomousFeedTrust.PRIMARY, AutonomousFeedPolicy.cloudBundle.trust)
     }
 
-    @Test fun immutableFileHashesRemainLookupPersistent() {
-        assertTrue(AutonomousFeedPolicy.malware.lookupTtlMs == Long.MAX_VALUE)
-    }
-
-    @Test fun transientInfrastructureHasBoundedTtl() {
-        assertTrue(AutonomousFeedPolicy.c2.lookupTtlMs < AutonomousFeedPolicy.phishingPrimary.lookupTtlMs)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun oversizedCommunitySnapshotIsRejected() {
-        AutonomousFeedPolicy.validateCount(
-            AutonomousThreatStore.SOURCE_PHISH_COMMUNITY,
-            AutonomousFeedPolicy.phishingCommunity.maxEntries + 1
-        )
+    @Test fun transientCloudIndicatorsHaveBoundedFreshness() {
+        assertTrue(AutonomousFeedPolicy.phishingOpenPhishTtlMs <= TimeUnit.DAYS.toMillis(2))
+        assertTrue(AutonomousFeedPolicy.malwareUrlsTtlMs <= TimeUnit.DAYS.toMillis(2))
+        assertTrue(AutonomousFeedPolicy.c2TtlMs <= TimeUnit.DAYS.toMillis(2))
+        assertTrue(AutonomousFeedPolicy.phishingPrimaryTtlMs <= TimeUnit.DAYS.toMillis(7))
     }
 }

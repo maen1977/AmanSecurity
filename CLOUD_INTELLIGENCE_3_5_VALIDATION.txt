@@ -1,0 +1,15 @@
+Aman Security 3.5.0 — Cloud Intelligence Factory validation
+
+PASS: one GitHub workflow owns both intelligence refresh and Android build.
+PASS: scheduled six-hour runs refresh intelligence only; Android APK build is skipped on schedule.
+PASS: mobile runtime contains no OpenPhish/URLhaus/MalwareBazaar/Feodo/destroy.tools/ThreatFox provider endpoints.
+PASS: signed RSA manifest verification and rollback rejection are enforced before package activation.
+PASS: exact ZIP allowlist, size, SHA-256, count, sorted-index and CVE validation are enforced.
+PASS: database activation uses verified staging + last-known-good atomic directory swap.
+PASS: large SHA-256 indexes use read-only memory mapping and binary search instead of managed-heap HashSets.
+PASS: periodic mobile update is 12h + unmetered network + battery-not-low; manual update uses connected network.
+PASS: offline factory fixture contains hashes/CVEs only; no raw HTTP/HTTPS URL.
+PASS: quality_gate.py passed after architecture migration.
+PASS: signing/verification smoke test passed with a 3072-bit RSA key pair.
+
+Android Gradle compilation was not executed in this container because neither Gradle nor a project Gradle wrapper is available. GitHub Actions is configured to run unit tests, release lint, debug APK build, and release AAB build.

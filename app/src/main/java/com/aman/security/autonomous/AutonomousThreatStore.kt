@@ -8,82 +8,164 @@ import com.aman.security.scanner.UrlThreatClassification
 import com.aman.security.scanner.UrlThreatIndicator
 import org.json.JSONObject
 import java.io.File
+import java.io.RandomAccessFile
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import java.security.MessageDigest
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+/**
+ * Compact cloud-intelligence store.
+ *
+ * SHA-256 indexes are sorted fixed-width files and are memory-mapped for binary search. This keeps
+ * large databases out of the managed Java heap on low-memory phones and avoids parsing feeds into
+ * Strings/HashSets during updates or startup.
+ */
 class AutonomousThreatStore(context: Context) {
-    private val directory = File(context.filesDir, "autonomous-intel-v1").apply { mkdirs() }
-    private val stateFile = File(directory, "state.json")
-    private val fileHashes = File(directory, "malware_files.sha256")
-    private val phishPrimary = File(directory, "phishing_primary.sha256")
-    private val phishOpenPhish = File(directory, "phishing_openphish.sha256")
-    private val phishCommunity = File(directory, "phishing_community.sha256")
-    private val malwareUrlHosts = File(directory, "malware_url_hosts.sha256")
-    private val c2Hosts = File(directory, "c2_hosts.sha256")
-    private val androidCves = File(directory, "android_cves.txt")
+    private val root = File(context.filesDir, "cloud-intel-v1").apply { mkdirs() }
+    private val currentDirectory = File(root, "current")
+    private val stateFile = File(root, "state.json")
 
-    @Volatile private var malwareIndex = FixedSha256Index.load(fileHashes)
-    @Volatile private var phishPrimaryIndex = FixedSha256Index.load(phishPrimary)
-    @Volatile private var phishOpenPhishIndex = FixedSha256Index.load(phishOpenPhish)
-    @Volatile private var phishCommunityIndex = FixedSha256Index.load(phishCommunity)
-    @Volatile private var malwareUrlIndex = FixedSha256Index.load(malwareUrlHosts)
-    @Volatile private var c2Index = FixedSha256Index.load(c2Hosts)
-    @Volatile private var sourceLastSuccess = readSourceSuccesses()
-    @Volatile private var sourceConsecutiveFailures = readSourceFailures()
+    private fun currentFile(name: String): File = File(currentDirectory, name)
+
+    @Volatile private var malwareIndex = FixedSha256Index.load(currentFile(FILE_MALWARE))
+    @Volatile private var phishPrimaryIndex = FixedSha256Index.load(currentFile(FILE_PHISH_PRIMARY))
+    @Volatile private var phishOpenPhishIndex = FixedSha256Index.load(currentFile(FILE_PHISH_OPENPHISH))
+    @Volatile private var phishCommunityIndex = FixedSha256Index.load(currentFile(FILE_PHISH_COMMUNITY))
+    @Volatile private var malwareUrlIndex = FixedSha256Index.load(currentFile(FILE_MALWARE_URLS))
+    @Volatile private var c2Index = FixedSha256Index.load(currentFile(FILE_C2))
 
     fun findFile(sha256: String): ThreatSignature? {
         val h = normalizeSha(sha256) ?: return null
-        // File SHA-256 indicators describe immutable file content, so a previously accepted
-        // malicious file hash remains useful even if the source is temporarily unavailable.
-        return if (malwareIndex.contains(h)) ThreatSignature(h, "AUTO_MALWARE_HASH", ScanClassification.KNOWN_THREAT) else null
+        // Immutable file hashes remain useful even when the cloud package becomes stale.
+        return if (malwareIndex.contains(h)) {
+            ThreatSignature(h, "CLOUD_MALWARE_HASH", ScanClassification.KNOWN_THREAT)
+        } else null
     }
 
     fun findUrl(kind: UrlIndicatorKind, sha256: String): UrlThreatIndicator? {
         val h = normalizeSha(sha256) ?: return null
-        val now = System.currentTimeMillis()
+        val age = packageAgeMs() ?: return null
         return when {
-            phishOpenPhishIndex.contains(h) && sourceFresh(SOURCE_PHISH_OPENPHISH, now, AutonomousFeedPolicy.phishingOpenPhish.lookupTtlMs) ->
-                UrlThreatIndicator(kind, h, "AUTO_OPENPHISH", UrlThreatClassification.PHISHING)
-            phishPrimaryIndex.contains(h) && sourceFresh(SOURCE_PHISH_PRIMARY, now, AutonomousFeedPolicy.phishingPrimary.lookupTtlMs) ->
-                UrlThreatIndicator(kind, h, "AUTO_PHISHING_PRIMARY", UrlThreatClassification.PHISHING)
-            malwareUrlIndex.contains(h) && sourceFresh(SOURCE_MALWARE_URLS, now, AutonomousFeedPolicy.malwareUrls.lookupTtlMs) ->
-                UrlThreatIndicator(kind, h, "AUTO_URLHAUS_MALWARE", UrlThreatClassification.MALWARE)
-            kind == UrlIndicatorKind.HOST && c2Index.contains(h) && sourceFresh(SOURCE_C2, now, AutonomousFeedPolicy.c2.lookupTtlMs) ->
-                UrlThreatIndicator(kind, h, "AUTO_C2_HOST", UrlThreatClassification.MALWARE)
-            phishCommunityIndex.contains(h) && sourceFresh(SOURCE_PHISH_COMMUNITY, now, AutonomousFeedPolicy.phishingCommunity.lookupTtlMs) ->
-                UrlThreatIndicator(kind, h, "AUTO_PHISHING_COMMUNITY", UrlThreatClassification.SUSPICIOUS_SOURCE)
+            phishOpenPhishIndex.contains(h) && age <= AutonomousFeedPolicy.phishingOpenPhishTtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_OPENPHISH", UrlThreatClassification.PHISHING)
+            phishPrimaryIndex.contains(h) && age <= AutonomousFeedPolicy.phishingPrimaryTtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_PHISHING_PRIMARY", UrlThreatClassification.PHISHING)
+            malwareUrlIndex.contains(h) && age <= AutonomousFeedPolicy.malwareUrlsTtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_MALWARE_URL", UrlThreatClassification.MALWARE)
+            kind == UrlIndicatorKind.HOST && c2Index.contains(h) && age <= AutonomousFeedPolicy.c2TtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_C2_HOST", UrlThreatClassification.MALWARE)
+            phishCommunityIndex.contains(h) && age <= AutonomousFeedPolicy.phishingCommunityTtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_PHISHING_COMMUNITY", UrlThreatClassification.SUSPICIOUS_SOURCE)
             else -> null
         }
     }
 
+    @Synchronized fun createStagingDirectory(): File {
+        val staging = File(root, "staging")
+        staging.deleteRecursively()
+        check(staging.mkdirs())
+        return staging
+    }
+
+    /** Atomically swaps a fully verified staging directory into service. */
+    @Synchronized fun installVerifiedPackage(
+        staging: File,
+        manifestBytes: ByteArray,
+        manifest: CloudThreatManifest,
+        completedAt: Long
+    ): Boolean {
+        require(staging.parentFile?.canonicalFile == root.canonicalFile)
+        require(CloudThreatManifest.REQUIRED_FILES.all { File(staging, it).isFile })
+        File(staging, "manifest.json").writeBytes(manifestBytes)
+
+        val state = readState()
+        val previousSerial = state.optLong("cloudSerial", 0L)
+        if (manifest.serial < previousSerial) throw IllegalArgumentException("Threat database rollback rejected")
+        if (manifest.serial == previousSerial && currentDirectory.isDirectory) {
+            staging.deleteRecursively()
+            recordCloudCheckSuccess(manifest, completedAt, changed = false)
+            return false
+        }
+
+        val backup = File(root, "previous")
+        backup.deleteRecursively()
+        val hadCurrent = currentDirectory.isDirectory
+        if (hadCurrent && !currentDirectory.renameTo(backup)) throw java.io.IOException("Could not stage current cloud intelligence")
+        if (!staging.renameTo(currentDirectory)) {
+            if (hadCurrent) backup.renameTo(currentDirectory)
+            throw java.io.IOException("Could not activate cloud intelligence")
+        }
+        backup.deleteRecursively()
+        recordCloudCheckSuccess(manifest, completedAt, changed = true)
+        reload()
+        return true
+    }
+
+    @Synchronized fun recordCloudUnchanged(manifest: CloudThreatManifest, checkedAt: Long) {
+        val state = readState()
+        val installedSerial = state.optLong("cloudSerial", 0L)
+        if (installedSerial == manifest.serial && currentDirectory.isDirectory) {
+            recordCloudCheckSuccess(manifest, checkedAt, changed = false)
+        }
+    }
+
+    @Synchronized fun recordCloudFailure(attemptAt: Long) {
+        val state = readState()
+        state.put("lastAttemptEpochMs", attemptAt)
+        state.put("successfulSourcesLastRun", 0)
+        state.put("failedSourcesLastRun", 1)
+        state.put("cloudConsecutiveFailures", (state.optInt("cloudConsecutiveFailures", 0) + 1).coerceAtMost(999))
+        atomicWrite(stateFile, state.toString().toByteArray(Charsets.UTF_8))
+    }
+
+    private fun recordCloudCheckSuccess(manifest: CloudThreatManifest, at: Long, changed: Boolean) {
+        val state = readState()
+        state.put("lastAttemptEpochMs", at)
+        state.put("lastSuccessfulUpdateEpochMs", at)
+        state.put("successfulSourcesLastRun", 1)
+        state.put("failedSourcesLastRun", 0)
+        state.put("cloudConsecutiveFailures", 0)
+        state.put("cloudLastSuccessEpochMs", at)
+        state.put("cloudSerial", manifest.serial)
+        state.put("cloudVersion", manifest.version)
+        state.put("cloudGeneratedAt", manifest.generatedAt)
+        state.put("cloudGeneratedAtEpochMs", manifest.generatedAtEpochMs)
+        state.put("latestAndroidSecurityPatch", manifest.latestAndroidSecurityPatch ?: "")
+        state.put("androidCveCount", manifest.files.getValue(FILE_ANDROID_CVES).entries)
+        state.put("lastRunChanged", if (changed) 1 else 0)
+        atomicWrite(stateFile, state.toString().toByteArray(Charsets.UTF_8))
+    }
+
     @Synchronized fun reload() {
-        malwareIndex = FixedSha256Index.load(fileHashes)
-        phishPrimaryIndex = FixedSha256Index.load(phishPrimary)
-        phishOpenPhishIndex = FixedSha256Index.load(phishOpenPhish)
-        phishCommunityIndex = FixedSha256Index.load(phishCommunity)
-        malwareUrlIndex = FixedSha256Index.load(malwareUrlHosts)
-        c2Index = FixedSha256Index.load(c2Hosts)
-        sourceLastSuccess = readSourceSuccesses()
-        sourceConsecutiveFailures = readSourceFailures()
+        malwareIndex = FixedSha256Index.load(currentFile(FILE_MALWARE))
+        phishPrimaryIndex = FixedSha256Index.load(currentFile(FILE_PHISH_PRIMARY))
+        phishOpenPhishIndex = FixedSha256Index.load(currentFile(FILE_PHISH_OPENPHISH))
+        phishCommunityIndex = FixedSha256Index.load(currentFile(FILE_PHISH_COMMUNITY))
+        malwareUrlIndex = FixedSha256Index.load(currentFile(FILE_MALWARE_URLS))
+        c2Index = FixedSha256Index.load(currentFile(FILE_C2))
     }
 
     fun info(): AutonomousIntelInfo {
         val state = readState()
         val now = System.currentTimeMillis()
-        val health = AutonomousFeedPolicy.all.map { descriptor ->
-            val last = sourceLastSuccess[descriptor.key] ?: 0L
-            val fresh = sourceFresh(descriptor.key, now, descriptor.statusFreshMs)
+        val generated = state.optLong("cloudGeneratedAtEpochMs", 0L)
+        val lastSuccess = state.optLong("cloudLastSuccessEpochMs", 0L)
+        val ageMs = if (generated > 0L && now >= generated) now - generated else Long.MAX_VALUE
+        val fresh = generated > 0L && ageMs <= AutonomousFeedPolicy.cloudBundle.statusFreshMs
+        val health = listOf(
             AutonomousSourceHealth(
-                key = descriptor.key,
-                trust = descriptor.trust,
-                lastSuccessEpochMs = last,
-                ageHours = if (last > 0L && now >= last) TimeUnit.MILLISECONDS.toHours(now - last) else null,
+                key = SOURCE_CLOUD_BUNDLE,
+                trust = AutonomousFeedTrust.PRIMARY,
+                lastSuccessEpochMs = lastSuccess,
+                ageHours = if (generated > 0L && now >= generated) TimeUnit.MILLISECONDS.toHours(ageMs) else null,
                 fresh = fresh,
-                itemCount = sourceItemCount(descriptor.key, state),
-                consecutiveFailures = sourceConsecutiveFailures[descriptor.key] ?: 0
+                itemCount = malwareIndex.count + phishPrimaryIndex.count + phishOpenPhishIndex.count +
+                    phishCommunityIndex.count + malwareUrlIndex.count + c2Index.count + state.optInt("androidCveCount", 0),
+                consecutiveFailures = state.optInt("cloudConsecutiveFailures", 0)
             )
-        }
+        )
         return AutonomousIntelInfo(
             lastSuccessfulUpdateEpochMs = state.optLong("lastSuccessfulUpdateEpochMs", 0L),
             lastAttemptEpochMs = state.optLong("lastAttemptEpochMs", 0L),
@@ -96,156 +178,47 @@ class AutonomousThreatStore(context: Context) {
             failedSourcesLastRun = state.optInt("failedSourcesLastRun", 0),
             freshSources = health.count { it.fresh },
             staleSources = health.count { !it.fresh },
-            totalSources = health.size,
+            totalSources = 1,
             sourceHealth = health
         )
     }
 
-    fun readHashes(kind: IndexKind): Set<String> = indexFile(kind).takeIf(File::isFile)?.readLines()
-        ?.asSequence()?.map(String::trim)?.filter { HASH.matches(it) }?.toCollection(linkedSetOf()) ?: emptySet()
+    fun installedSerial(): Long = readState().optLong("cloudSerial", 0L)
+    fun installedVersion(): String? = readState().optString("cloudVersion", "").takeIf(String::isNotBlank)
 
-    fun count(kind: IndexKind): Int = when (kind) {
-        IndexKind.MALWARE_FILES -> malwareIndex.count
-        IndexKind.PHISHING_PRIMARY -> phishPrimaryIndex.count
-        IndexKind.PHISHING_OPENPHISH -> phishOpenPhishIndex.count
-        IndexKind.PHISHING_COMMUNITY -> phishCommunityIndex.count
-        IndexKind.MALWARE_URL_HOSTS -> malwareUrlIndex.count
-        IndexKind.C2_HOSTS -> c2Index.count
+    private fun packageAgeMs(): Long? {
+        val generated = readState().optLong("cloudGeneratedAtEpochMs", 0L)
+        val now = System.currentTimeMillis()
+        if (generated <= 0L || now < generated) return null
+        return now - generated
     }
 
-    @Synchronized fun replaceHashes(kind: IndexKind, hashes: Collection<String>, minCount: Int = 1, shrinkFloor: Double? = null): Boolean {
-        val clean = hashes.asSequence().mapNotNull(::normalizeSha).distinct().sorted().toList()
-        val sourceKey = sourceKey(kind)
-        AutonomousFeedPolicy.validateCount(sourceKey, clean.size)
-        require(clean.size >= minCount)
-        val target = indexFile(kind)
-        val oldCount = FixedSha256Index.load(target).count
-        if (shrinkFloor != null && oldCount >= 100 && clean.size < (oldCount * shrinkFloor).toInt()) {
-            throw IllegalArgumentException("Unexpected source shrink")
-        }
-        val newText = clean.joinToString(separator = "\n", postfix = "\n")
-        if (target.isFile && target.readText() == newText) return false
-        atomicWrite(target, newText.toByteArray(Charsets.US_ASCII))
-        reload()
-        return true
-    }
-
-    @Synchronized fun mergeFileHashes(newHashes: Collection<String>, maxEntries: Int = AutonomousFeedPolicy.malware.maxEntries): Boolean {
-        val cleanNew = newHashes.asSequence().mapNotNull(::normalizeSha).distinct().toList()
-        require(cleanNew.size >= AutonomousFeedPolicy.malware.minEntries)
-        require(cleanNew.size <= AutonomousFeedPolicy.malware.maxEntries)
-        val merged = linkedSetOf<String>()
-        merged += readHashes(IndexKind.MALWARE_FILES)
-        merged += cleanNew
-        val bounded = if (merged.size <= maxEntries) merged else merged.toList().takeLast(maxEntries).toCollection(linkedSetOf())
-        return replaceHashes(IndexKind.MALWARE_FILES, bounded, minCount = 1)
-    }
-
-    @Synchronized fun replaceAndroidCves(cves: Collection<String>): Boolean {
-        val clean = cves.asSequence().map { it.trim().uppercase(Locale.ROOT) }
-            .filter(CVE::matches).distinct().sorted().toList()
-        AutonomousFeedPolicy.validateCount(SOURCE_ANDROID_BULLETIN, clean.size)
-        val newText = if (clean.isEmpty()) "" else clean.joinToString(separator = "\n", postfix = "\n")
-        if (androidCves.isFile && androidCves.readText() == newText) return false
-        atomicWrite(androidCves, newText.toByteArray(Charsets.US_ASCII))
-        return true
-    }
-
-    /** Records both successes and failures without replacing last-known-good indicator files. */
-    @Synchronized fun recordRun(
-        attemptAt: Long,
-        successfulSourceKeys: Set<String>,
-        failedSourceKeys: Set<String>,
-        latestPatch: String? = null,
-        cveCount: Int? = null
-    ) {
-        val state = readState()
-        state.put("lastAttemptEpochMs", attemptAt)
-        state.put("successfulSourcesLastRun", successfulSourceKeys.size)
-        state.put("failedSourcesLastRun", failedSourceKeys.size)
-        if (successfulSourceKeys.isNotEmpty()) state.put("lastSuccessfulUpdateEpochMs", attemptAt)
-
-        successfulSourceKeys.filter(SOURCE_KEYS::contains).forEach { key ->
-            state.put("source_${key}_lastSuccessEpochMs", attemptAt)
-            state.put("source_${key}_consecutiveFailures", 0)
-        }
-        failedSourceKeys.filter(SOURCE_KEYS::contains).forEach { key ->
-            val current = state.optInt("source_${key}_consecutiveFailures", 0)
-            state.put("source_${key}_consecutiveFailures", (current + 1).coerceAtMost(999))
-        }
-        latestPatch?.let { current ->
-            val old = state.optString("latestAndroidSecurityPatch", "")
-            if (old.isBlank() || current >= old) state.put("latestAndroidSecurityPatch", current)
-        }
-        cveCount?.let { state.put("androidCveCount", it.coerceAtLeast(0)) }
-        atomicWrite(stateFile, state.toString().toByteArray(Charsets.UTF_8))
-        sourceLastSuccess = readSourceSuccesses()
-        sourceConsecutiveFailures = readSourceFailures()
-    }
-
-    private fun readSourceSuccesses(): Map<String, Long> {
-        val state = readState()
-        return SOURCE_KEYS.associateWith { key -> state.optLong("source_${key}_lastSuccessEpochMs", 0L) }
-    }
-
-    private fun readSourceFailures(): Map<String, Int> {
-        val state = readState()
-        return SOURCE_KEYS.associateWith { key -> state.optInt("source_${key}_consecutiveFailures", 0) }
-    }
-
-    private fun sourceFresh(key: String, now: Long, ttlMs: Long): Boolean {
-        val last = sourceLastSuccess[key] ?: 0L
-        if (last <= 0L || now < last) return false
-        return ttlMs == Long.MAX_VALUE || now - last <= ttlMs
-    }
-
-    enum class IndexKind { MALWARE_FILES, PHISHING_PRIMARY, PHISHING_OPENPHISH, PHISHING_COMMUNITY, MALWARE_URL_HOSTS, C2_HOSTS }
-
-    private fun indexFile(kind: IndexKind): File = when (kind) {
-        IndexKind.MALWARE_FILES -> fileHashes
-        IndexKind.PHISHING_PRIMARY -> phishPrimary
-        IndexKind.PHISHING_OPENPHISH -> phishOpenPhish
-        IndexKind.PHISHING_COMMUNITY -> phishCommunity
-        IndexKind.MALWARE_URL_HOSTS -> malwareUrlHosts
-        IndexKind.C2_HOSTS -> c2Hosts
-    }
-
-    private fun sourceKey(kind: IndexKind): String = when (kind) {
-        IndexKind.MALWARE_FILES -> SOURCE_MALWARE
-        IndexKind.PHISHING_PRIMARY -> SOURCE_PHISH_PRIMARY
-        IndexKind.PHISHING_OPENPHISH -> SOURCE_PHISH_OPENPHISH
-        IndexKind.PHISHING_COMMUNITY -> SOURCE_PHISH_COMMUNITY
-        IndexKind.MALWARE_URL_HOSTS -> SOURCE_MALWARE_URLS
-        IndexKind.C2_HOSTS -> SOURCE_C2
-    }
-
-    private fun sourceItemCount(key: String, state: JSONObject): Int = when (key) {
-        SOURCE_MALWARE -> malwareIndex.count
-        SOURCE_PHISH_PRIMARY -> phishPrimaryIndex.count
-        SOURCE_PHISH_OPENPHISH -> phishOpenPhishIndex.count
-        SOURCE_PHISH_COMMUNITY -> phishCommunityIndex.count
-        SOURCE_MALWARE_URLS -> malwareUrlIndex.count
-        SOURCE_C2 -> c2Index.count
-        SOURCE_ANDROID_BULLETIN -> state.optInt("androidCveCount", 0)
-        else -> 0
-    }
-
-    private fun readState(): JSONObject = runCatching { JSONObject(stateFile.readText()) }.getOrElse { JSONObject() }
+    private fun readState(): JSONObject = runCatching {
+        if (stateFile.isFile) JSONObject(stateFile.readText()) else JSONObject()
+    }.getOrElse { JSONObject() }
 
     private fun atomicWrite(target: File, bytes: ByteArray) {
-        val temp = File(directory, target.name + ".tmp")
-        temp.outputStream().use { it.write(bytes); it.fdSyncCompat() }
-        if (!temp.renameTo(target)) { target.delete(); check(temp.renameTo(target)) }
+        val temp = File(root, target.name + ".tmp")
+        temp.outputStream().use { output ->
+            output.write(bytes)
+            runCatching { output.fd.sync() }
+        }
+        if (!temp.renameTo(target)) {
+            target.delete()
+            check(temp.renameTo(target))
+        }
     }
-
-    private fun java.io.FileOutputStream.fdSyncCompat() = runCatching { fd.sync() }.getOrNull()
 
     private fun normalizeSha(value: String): String? = value.trim().lowercase(Locale.ROOT).takeIf(HASH::matches)
 
-    private class FixedSha256Index private constructor(private val bytes: ByteArray, val count: Int) {
+    private class FixedSha256Index private constructor(
+        private val mapped: MappedByteBuffer?,
+        val count: Int
+    ) {
         fun contains(hex: String): Boolean {
-            if (!HASH.matches(hex)) return false
-            var low = 0; var high = count - 1
+            if (mapped == null || !HASH.matches(hex)) return false
+            var low = 0
+            var high = count - 1
             while (low <= high) {
                 val mid = (low + high).ushr(1)
                 val cmp = compareAt(mid, hex)
@@ -254,41 +227,48 @@ class AutonomousThreatStore(context: Context) {
             }
             return false
         }
+
         private fun compareAt(index: Int, hex: String): Int {
             val offset = index * 65
+            val buffer = requireNotNull(mapped)
             for (i in 0 until 64) {
-                val a = bytes[offset + i].toInt() and 0xff
+                val a = buffer.get(offset + i).toInt() and 0xff
                 val b = hex[i].code
                 if (a != b) return a - b
             }
             return 0
         }
+
         companion object {
             fun load(file: File): FixedSha256Index {
-                if (!file.isFile) return FixedSha256Index(ByteArray(0), 0)
-                val data = runCatching { file.readBytes() }.getOrElse { return FixedSha256Index(ByteArray(0), 0) }
-                if (data.isEmpty() || data.size % 65 != 0) return FixedSha256Index(ByteArray(0), 0)
-                val count = data.size / 65
+                if (!file.isFile || file.length() == 0L || file.length() % 65L != 0L) return FixedSha256Index(null, 0)
+                val length = file.length()
+                if (length > Int.MAX_VALUE) return FixedSha256Index(null, 0)
+                val mapped = runCatching {
+                    RandomAccessFile(file, "r").use { raf ->
+                        raf.channel.map(FileChannel.MapMode.READ_ONLY, 0L, length)
+                    }
+                }.getOrNull() ?: return FixedSha256Index(null, 0)
+                val count = (length / 65L).toInt()
+                // Structural validation is constant-memory and happens once per mapped version.
                 for (i in 0 until count) {
-                    val offset = i * 65
-                    if (data[offset + 64] != '\n'.code.toByte()) return FixedSha256Index(ByteArray(0), 0)
+                    if (mapped.get(i * 65 + 64) != '\n'.code.toByte()) return FixedSha256Index(null, 0)
                 }
-                return FixedSha256Index(data, count)
+                return FixedSha256Index(mapped, count)
             }
         }
     }
 
     companion object {
-        const val SOURCE_MALWARE = "malware"
-        const val SOURCE_PHISH_PRIMARY = "phish_primary"
-        const val SOURCE_PHISH_OPENPHISH = "phish_openphish"
-        const val SOURCE_PHISH_COMMUNITY = "phish_community"
-        const val SOURCE_MALWARE_URLS = "malware_urls"
-        const val SOURCE_C2 = "c2"
-        const val SOURCE_ANDROID_BULLETIN = "android_bulletin"
-        val SOURCE_KEYS = listOf(SOURCE_MALWARE, SOURCE_PHISH_PRIMARY, SOURCE_PHISH_OPENPHISH, SOURCE_PHISH_COMMUNITY, SOURCE_MALWARE_URLS, SOURCE_C2, SOURCE_ANDROID_BULLETIN)
+        const val SOURCE_CLOUD_BUNDLE = "cloud_bundle"
+        const val FILE_MALWARE = "malware_files.sha256"
+        const val FILE_PHISH_PRIMARY = "phishing_primary.sha256"
+        const val FILE_PHISH_OPENPHISH = "phishing_openphish.sha256"
+        const val FILE_PHISH_COMMUNITY = "phishing_community.sha256"
+        const val FILE_MALWARE_URLS = "malware_url_hosts.sha256"
+        const val FILE_C2 = "c2_hosts.sha256"
+        const val FILE_ANDROID_CVES = "android_cves.txt"
         private val HASH = Regex("^[a-f0-9]{64}$")
-        private val CVE = Regex("^CVE-20\\d{2}-\\d{4,8}$")
         fun sha256(text: String): String = MessageDigest.getInstance("SHA-256")
             .digest(text.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     }

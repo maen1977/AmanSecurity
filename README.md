@@ -1,11 +1,20 @@
-# Aman Security 3.4.5
+# Aman Security 3.5.0
 
-Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, signed cloud threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
 
+## 3.5.0 cloud intelligence factory
 
-## 3.4.5 threat-update reliability
+Aman 3.5.0 moves heavy threat-feed collection and normalization off the phone. The single GitHub Actions pipeline has a scheduled **threat-intelligence** job that gathers bounded public/authorized feeds, normalizes them, discards raw feed payloads, builds compact sorted SHA-256 indexes, signs a small manifest with an RSA key held only in GitHub Actions secrets, verifies the package, and publishes only the latest package to the `aman-threat-db` branch. Scheduled runs refresh intelligence without rebuilding the Android app.
 
-Aman 3.4.5 fixes the device-observed update that could appear frozen at 19% when a feed omitted Content-Length or streamed too slowly. Unknown-length downloads now use an indeterminate progress bar instead of a fabricated percentage, update phases are visible (connecting, downloading, parsing, indexing, applying), and parser/index work reports progress. Each remote feed has a bounded wall-clock download deadline; a slow or stalled provider is marked failed for that run, last-known-good data is preserved, and the updater continues to the next source. OpenPhish is fetched before the larger aggregate phishing feeds so live phishing coverage can become available sooner.
+The Android app is now a lightweight consumer. It contacts only the configured Aman package endpoint, verifies the signed manifest and rollback serial, streams the compact ZIP to disk, validates every entry/hash/count, and atomically swaps the last-known-good database. Large SHA-256 indexes are memory-mapped and binary-searched instead of being expanded into large Java `String`/`HashSet` collections. Periodic refresh is every 12 hours on unmetered network with battery-not-low; an explicit manual refresh works on any connected network.
+
+No upstream phishing/malware provider URL is embedded in the phone runtime, no raw malicious URL feed is shipped to the phone, and no malware binary is downloaded by the intelligence factory. The app continues to make malware/file/link decisions locally. See `docs/CLOUD_INTELLIGENCE_FACTORY_3_5.md`.
+
+## 3.4.6 threat-update parsing fix
+
+Aman 3.4.6 fixes the second device-observed stall: a large phishing feed could finish downloading and then spend minutes in **Parsing source** on a low-end phone. Large URL feeds are now scanned directly from their UTF-8 bytes with bounded memory, an indicator ceiling, and a hard parsing deadline; SHA-256 index construction has its own deadline as well. The large aggregate phishing sources keep a bounded working set instead of attempting to materialize hundreds of thousands of full URL objects in RAM. A slow/pathological source is skipped while last-known-good data remains intact.
+
+The updater also commits source freshness immediately after each accepted feed, so a successful OpenPhish update becomes usable even if a later provider fails. HTTP ETag/Last-Modified validators are now transactional: they are saved only after parsing and applying the source succeeds, preventing a failed parse from causing a false `304 Not Modified` on the next run. The validator namespace was bumped to v2 to discard validators left by the affected 3.4.5 build. Unknown-length downloads remain indeterminate and OpenPhish is still fetched before the larger aggregate phishing feeds.
 
 ## 3.4.4 web reputation hardening
 
@@ -65,7 +74,7 @@ For release self-integrity, a distributor can provide the **public** SHA-256 fin
 
 ## Upgrading an older GitHub repository
 
-Do not only overlay the ZIP on top of old repository files: Git does not remove legacy files that are absent from a new ZIP. Aman 2.8 has no GitHub threat-update workflow. It keeps one build-only workflow at `.github/workflows/build.yml`.
+Do not only overlay the ZIP on top of old repository files: Git does not remove legacy files that are absent from a new ZIP. Aman 3.5 keeps exactly one workflow at `.github/workflows/build.yml`; that workflow contains both the scheduled cloud intelligence factory job and the normal Android build job. Scheduled runs do **not** rebuild the APK.
 
 Use the cleanup helper before committing an overlay onto an old clone:
 
@@ -74,4 +83,4 @@ python3 tools/repository_cleanup_2_6.py        # preview
 python3 tools/repository_cleanup_2_6.py --apply
 ```
 
-If GitHub still reports `minimumSignedReputationEntries`, the old pre-2.6 pipeline is still present in the repository. Remove the stale workflow/gates rather than restoring the retired signed-reputation configuration.
+If GitHub still reports legacy direct-feed classes such as `AutonomousThreatParsers.kt` or `AutonomousSourcePolicy.kt`, run the cleanup helper and commit their deletion. Aman 3.5 must not keep the old phone-side raw-feed engine alongside the cloud consumer.

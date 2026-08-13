@@ -25,9 +25,9 @@ checks={
  'full_smart_scan':'requestSmartScan' in activity and 'renderSmartFullResult' in activity and 'SecurityAuditSummary' in activity,
  'security_audit':'runStandaloneSecurityAudit' in activity and 'renderSecurityAudit' in activity and 'PrivacyControlActivity::class.java' in activity,
  'auto_build':'push:' in workflow and 'branches: [ "main" ]' in workflow and 'workflow_dispatch:' in workflow,
- 'no_schedule':'schedule:' not in workflow,
+ 'scheduled_intel_only':'schedule:' in workflow and "if: github.event_name != 'schedule'" in workflow,
 }
 failed=[k for k,v in checks.items() if not v]
 if missing or failed:
     raise SystemExit(f'SMART_UI_GATE_FAILED missing={missing} failed={failed}')
-print('SMART_UI_GATE_OK dashboard=1 scan_state=1 results=1 protection_center=1 quick_actions=6 navigation_safe=1 smart_scan_layers=5 security_audit=1 auto_build=1 schedule=0')
+print('SMART_UI_GATE_OK dashboard=1 scan_state=1 results=1 protection_center=1 quick_actions=6 navigation_safe=1 smart_scan_layers=5 security_audit=1 auto_build=1 scheduled_intel_only=1')
