@@ -761,8 +761,15 @@
 
 
     <string name="threat_update_running_detailed">تحديث الحماية • المصدر %1$d من %2$d • %3$d%% • %4$s</string>
+    <string name="threat_update_running_stage_detailed">تحديث الحماية • المصدر %1$d من %2$d • %3$d%% إجمالًا • %4$s • %5$s</string>
+    <string name="threat_update_running_unknown_size">تحديث الحماية • المصدر %1$d من %2$d • %3$s • %4$s</string>
+    <string name="threat_update_phase_connecting">جارٍ الاتصال</string>
+    <string name="threat_update_phase_downloading">جارٍ التنزيل</string>
+    <string name="threat_update_phase_parsing">جارٍ تحليل المصدر</string>
+    <string name="threat_update_phase_indexing">جارٍ بناء مؤشرات الحماية</string>
+    <string name="threat_update_phase_applying">جارٍ تطبيق التحديث</string>
     <string name="threat_update_transfer_known">تم تنزيل %1$s من %2$s للمصدر الحالي</string>
-    <string name="threat_update_transfer_unknown">تم تنزيل %1$s للمصدر الحالي</string>
+    <string name="threat_update_transfer_unknown">تم تنزيل %1$s • المصدر لم يعلن الحجم الإجمالي</string>
     <string name="threat_update_last_success">آخر تحديث ناجح: %1$s</string>
     <string name="threat_update_next_check">الفحص التلقائي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
     <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
@@ -777,7 +784,7 @@
     <string name="threat_source_phishing_openphish">مصدر روابط التصيد الحي</string>
     <string name="threat_source_phishing_community">مصدر التصيد المجتمعي</string>
 
-    <string name="threat_update_stalled_retry">لم يرسل التحديث أي تقدم منذ مدة طويلة. يمكنك الضغط على تحديث الحماية الآن لإعادة تشغيله بأمان.</string>
+    <string name="threat_update_stalled_retry">لم يرسل المصدر الحالي أي تقدم منذ مدة طويلة. سيتخطى أمان المصادر البطيئة تلقائيًا؛ ويمكنك أيضًا إعادة تشغيل التحديث بأمان.</string>
     <string name="update_in_progress_button">جارٍ تحديث الحماية…</string>
     <string name="update_retry_button">إعادة محاولة تحديث الحماية</string>
     <string name="web_shield_diagnostics_not_tested">التحقق: لم يتم الاختبار بعد • اختبار نظام أسماء النطاقات يبقى بالكامل داخل هذا الجهاز</string>

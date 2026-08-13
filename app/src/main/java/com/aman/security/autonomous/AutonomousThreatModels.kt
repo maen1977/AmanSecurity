@@ -27,12 +27,16 @@ data class AutonomousIntelInfo(
 )
 
 
+enum class AutonomousUpdatePhase { CONNECTING, DOWNLOADING, PARSING, INDEXING, APPLYING }
+
 /** Fine-grained, lightweight progress for one threat-intelligence source. */
 data class AutonomousUpdateProgress(
     val sourceKey: String,
     val sourceIndex: Int,
     val totalSources: Int,
     val completedSources: Int,
+    val phase: AutonomousUpdatePhase = AutonomousUpdatePhase.CONNECTING,
+    val phaseProgress: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = -1L,
     val sourceFinished: Boolean = false,

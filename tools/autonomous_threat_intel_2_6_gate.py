@@ -33,8 +33,8 @@ def main():
     stale=[rel for rel in legacy if (ROOT/rel).exists()]
     if stale: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED legacy_github_pipeline={stale}')
     gradle=(ROOT/'app/build.gradle.kts').read_text()
-    need(gradle,['versionName = "3.4.4"','versionCode = 27'],'AUTONOMOUS_3_2_VERSION')
-    forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','raw.githubusercontent.com','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
+    need(gradle,['versionName = "3.4.5"','versionCode = 28'],'AUTONOMOUS_3_2_VERSION')
+    forbidden=['THREAT_DB_BASE_URL','REPUTATION_SHARD_BASE_URL','ABUSECH_AUTH_KEY','THREAT_DB_PRIVATE_KEY_BASE64']
     scan_paths=[ROOT/'app/src/main', ROOT/'app/build.gradle.kts', ROOT/'README.md']
     hits={x:[] for x in forbidden}
     for base in scan_paths:
@@ -46,6 +46,14 @@ def main():
                     hits[marker].append(str(path.relative_to(ROOT)))
     found={k:v for k,v in hits.items() if v}
     if found: raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED forbidden_paths={found}')
+    raw_hits=[]
+    for path in (ROOT/'app/src/main').rglob('*'):
+        if path.is_file() and path.stat().st_size < 2_000_000 and 'raw.githubusercontent.com' in path.read_text(errors='ignore'):
+            raw_hits.append(str(path.relative_to(ROOT)))
+    if raw_hits != ['app/src/main/java/com/aman/security/autonomous/AutonomousSourcePolicy.kt']:
+        raise SystemExit(f'AUTONOMOUS_2_6_GATE_FAILED raw_github_scope={raw_hits}')
+    source_policy=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousSourcePolicy.kt').read_text()
+    need(source_policy,['"raw.githubusercontent.com" -> query == null && path == "/openphish/public_feed/refs/heads/main/feed.txt"','allowedRedirect','from.path == "/feed.txt"','to.path == "/openphish/public_feed/refs/heads/main/feed.txt"'],'AUTONOMOUS_OPENPHISH_REDIRECT')
     scheduler=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatScheduler.kt').read_text()
     updater=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatUpdater.kt').read_text()
     http=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatHttpClient.kt').read_text()

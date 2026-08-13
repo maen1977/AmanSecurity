@@ -31,9 +31,10 @@ object AutonomousThreatParsers {
      * points at the host root. That avoids blocking an entire legitimate shared host because one
      * path on it was abused. Feeds that contain only domain names retain the legacy host behavior.
      */
-    fun phishingIndicators(text: String): UrlIndicators = parseWebIndicators(
+    fun phishingIndicators(text: String, onProgress: ((Int) -> Unit)? = null): UrlIndicators = parseWebIndicators(
         text = text,
-        excludedHosts = setOf("api.destroy.tools", "openphish.com")
+        excludedHosts = setOf("api.destroy.tools", "openphish.com"),
+        onProgress = onProgress
     )
 
     /** Legacy helper retained for tests/callers that explicitly need only host indicators. */
@@ -46,9 +47,10 @@ object AutonomousThreatParsers {
         phishingIndicators(text).hosts
     }
 
-    fun urlhausIndicators(text: String): UrlIndicators = parseWebIndicators(
+    fun urlhausIndicators(text: String, onProgress: ((Int) -> Unit)? = null): UrlIndicators = parseWebIndicators(
         text = text.lineSequence().filterNot { it.trimStart().startsWith("#") }.joinToString("\n"),
-        excludedHosts = setOf("urlhaus.abuse.ch")
+        excludedHosts = setOf("urlhaus.abuse.ch"),
+        onProgress = onProgress
     )
 
     /** Legacy host view used by existing unit tests and diagnostics. */
@@ -70,36 +72,74 @@ object AutonomousThreatParsers {
 
     fun cves(text: String): Set<String> = cveRegex.findAll(text).map { it.value.uppercase(Locale.ROOT) }.toSet()
 
-    private fun parseWebIndicators(text: String, excludedHosts: Set<String>): UrlIndicators {
-        val normalizedUrls = extractNormalizedUrls(text)
+    private fun parseWebIndicators(
+        text: String,
+        excludedHosts: Set<String>,
+        onProgress: ((Int) -> Unit)? = null
+    ): UrlIndicators {
+        onProgress?.invoke(0)
+        val normalizedUrls = extractNormalizedUrls(text) { percent ->
+            onProgress?.invoke((percent * 70 / 100).coerceIn(0, 70))
+        }
         if (normalizedUrls.isEmpty()) {
-            val hosts = domainRegex.findAll(text)
-                .mapNotNull { normalizeHost(it.value) }
-                .filterNot { host -> excludedHosts.any { host == it || host.endsWith(".$it") } }
-                .toCollection(linkedSetOf())
+            val hosts = linkedSetOf<String>()
+            var lastReported = 70
+            val textSize = text.length.coerceAtLeast(1)
+            domainRegex.findAll(text).forEach { match ->
+                normalizeHost(match.value)
+                    ?.takeUnless { host -> excludedHosts.any { host == it || host.endsWith(".$it") } }
+                    ?.let(hosts::add)
+                val percent = 70 + ((match.range.last.coerceAtLeast(0).toLong() * 30L) / textSize.toLong()).toInt()
+                if (percent >= lastReported + 2) {
+                    lastReported = percent.coerceAtMost(99)
+                    onProgress?.invoke(lastReported)
+                }
+            }
+            onProgress?.invoke(100)
             return UrlIndicators(emptySet(), hosts)
         }
 
         val urls = linkedSetOf<String>()
         val hosts = linkedSetOf<String>()
-        normalizedUrls.forEach { normalized ->
-            if (excludedHosts.any { normalized.host == it || normalized.host.endsWith(".$it") }) return@forEach
-            urls += normalized.url
-            stripQuery(normalized.url)?.let(urls::add)
-            if (isRootUrl(normalized.url)) hosts += normalized.host
+        var lastReported = 70
+        val totalUrls = normalizedUrls.size.coerceAtLeast(1)
+        normalizedUrls.forEachIndexed { index, normalized ->
+            if (!excludedHosts.any { normalized.host == it || normalized.host.endsWith(".$it") }) {
+                urls += normalized.url
+                stripQuery(normalized.url)?.let(urls::add)
+                if (isRootUrl(normalized.url)) hosts += normalized.host
+            }
+            val percent = 70 + (((index + 1).toLong() * 30L) / totalUrls.toLong()).toInt()
+            if (percent >= lastReported + 2 || index + 1 == totalUrls) {
+                lastReported = percent.coerceAtMost(100)
+                onProgress?.invoke(lastReported)
+            }
         }
+        onProgress?.invoke(100)
         return UrlIndicators(urls, hosts)
     }
 
-    private fun extractNormalizedUrls(text: String): List<UrlNormalizer.Normalized> {
+    private fun extractNormalizedUrls(
+        text: String,
+        onProgress: ((Int) -> Unit)? = null
+    ): List<UrlNormalizer.Normalized> {
         // JSON feeds commonly escape slashes as `\/`; decoding only that harmless representation
         // is enough for URL extraction and avoids interpreting arbitrary JSON escape sequences.
         val prepared = text.replace("\\/", "/")
-        return httpUrlRegex.findAll(prepared)
-            .map { match -> match.value.trimEnd(',', ';', '.', ')', ']', '}') }
-            .mapNotNull(UrlNormalizer::normalize)
-            .distinctBy { it.url }
-            .toList()
+        val unique = linkedMapOf<String, UrlNormalizer.Normalized>()
+        val textSize = prepared.length.coerceAtLeast(1)
+        var lastReported = -2
+        httpUrlRegex.findAll(prepared).forEach { match ->
+            val raw = match.value.trimEnd(',', ';', '.', ')', ']', '}')
+            UrlNormalizer.normalize(raw)?.let { unique.putIfAbsent(it.url, it) }
+            val percent = ((match.range.last.coerceAtLeast(0).toLong() * 100L) / textSize.toLong()).toInt().coerceIn(0, 99)
+            if (percent >= lastReported + 2) {
+                lastReported = percent
+                onProgress?.invoke(percent)
+            }
+        }
+        onProgress?.invoke(100)
+        return unique.values.toList()
     }
 
     private fun stripQuery(url: String): String? {

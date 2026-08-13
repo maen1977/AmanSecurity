@@ -14,12 +14,25 @@ object AutonomousSourcePolicy {
             "bazaar.abuse.ch" -> query == null && path == "/browse/tag/Android/"
             "api.destroy.tools" -> query == null && (path == "/v1/feed/primary_active" || path == "/v1/feed/community_active")
             "openphish.com" -> query == null && path == "/feed.txt"
+            "raw.githubusercontent.com" -> query == null && path == "/openphish/public_feed/refs/heads/main/feed.txt"
             "feodotracker.abuse.ch" -> query == null && path == "/downloads/ipblocklist_recommended.json"
             "urlhaus.abuse.ch" -> query == null && path == "/downloads/text/"
             "source.android.com" -> (query == null || query == "hl=en") &&
                 (path == "/docs/security/bulletin/asb-overview" || path.matches(Regex("^/docs/security/bulletin/20\\d{2}-\\d{2}-01$")))
             else -> false
         }
+    }
+
+    fun allowedRedirect(fromUrl: String, toUrl: String): Boolean {
+        val from = runCatching { URI(fromUrl) }.getOrNull() ?: return false
+        val to = runCatching { URI(toUrl) }.getOrNull() ?: return false
+        if (from.scheme?.lowercase(Locale.ROOT) != "https" || to.scheme?.lowercase(Locale.ROOT) != "https") return false
+        if (from.userInfo != null || to.userInfo != null || from.fragment != null || to.fragment != null) return false
+        return from.host?.lowercase(Locale.ROOT) == "openphish.com" &&
+            from.path == "/feed.txt" && from.rawQuery == null &&
+            to.host?.lowercase(Locale.ROOT) == "raw.githubusercontent.com" &&
+            to.path == "/openphish/public_feed/refs/heads/main/feed.txt" && to.rawQuery == null &&
+            allowed(toUrl)
     }
 
     fun textPayloadAllowed(bytes: ByteArray): Boolean {

@@ -28,6 +28,7 @@ import com.aman.security.databinding.ItemExclusionBinding
 import com.aman.security.databinding.ItemHistoryBinding
 import com.aman.security.databinding.ItemQuarantineBinding
 import com.aman.security.autonomous.AutonomousThreatScheduler
+import com.aman.security.autonomous.AutonomousUpdatePhase
 import com.aman.security.autonomous.ThreatUpdateState
 import com.aman.security.autonomous.ThreatUpdateStateStore
 import com.aman.security.protection.ProtectedFolderScanner
@@ -1998,8 +1999,10 @@ class MainActivity : AppCompatActivity() {
             else -> R.string.update_database
         })
         binding.progressThreatUpdate.visibility = if (state.isActive) View.VISIBLE else View.GONE
-        binding.progressThreatUpdate.isIndeterminate = state.state == ThreatUpdateState.QUEUED
-        binding.progressThreatUpdate.progress = state.progress
+        val unknownLengthDownload = state.state == ThreatUpdateState.RUNNING &&
+            state.currentPhase == AutonomousUpdatePhase.DOWNLOADING && state.currentTotalBytes <= 0L
+        binding.progressThreatUpdate.isIndeterminate = state.state == ThreatUpdateState.QUEUED || unknownLengthDownload
+        if (!binding.progressThreatUpdate.isIndeterminate) binding.progressThreatUpdate.progress = state.progress
 
         if (state.finishedAt > 0L && state.finishedAt > lastRenderedThreatUpdateCompletion &&
             state.state in setOf(ThreatUpdateState.SUCCESS, ThreatUpdateState.PARTIAL, ThreatUpdateState.FAILED)
@@ -2020,14 +2023,23 @@ class MainActivity : AppCompatActivity() {
             ThreatUpdateState.RUNNING -> {
                 binding.txtUpdateStatus.text = if (state.isStaleActive) {
                     getString(R.string.threat_update_stalled_retry)
+                } else if (unknownLengthDownload) {
+                    getString(
+                        R.string.threat_update_running_unknown_size,
+                        state.currentSourceIndex.coerceAtLeast(1),
+                        state.totalSources,
+                        threatUpdatePhaseLabel(state.currentPhase),
+                        threatSourceLabel(state.currentSource)
+                    )
                 } else getString(
-                    R.string.threat_update_running_detailed,
+                    R.string.threat_update_running_stage_detailed,
                     state.currentSourceIndex.coerceAtLeast(1),
                     state.totalSources,
                     state.progress,
+                    threatUpdatePhaseLabel(state.currentPhase),
                     threatSourceLabel(state.currentSource)
                 )
-                if (state.currentDownloadedBytes > 0L) {
+                if (state.currentPhase == AutonomousUpdatePhase.DOWNLOADING && state.currentDownloadedBytes > 0L) {
                     binding.txtUpdateTransfer.visibility = View.VISIBLE
                     binding.txtUpdateTransfer.text = if (state.currentTotalBytes > 0L) {
                         getString(
@@ -2097,6 +2109,14 @@ class MainActivity : AppCompatActivity() {
         val mb = kb / 1024.0
         return String.format(java.util.Locale.US, "%.1f MB", mb)
     }
+
+    private fun threatUpdatePhaseLabel(phase: AutonomousUpdatePhase): String = getString(when (phase) {
+        AutonomousUpdatePhase.CONNECTING -> R.string.threat_update_phase_connecting
+        AutonomousUpdatePhase.DOWNLOADING -> R.string.threat_update_phase_downloading
+        AutonomousUpdatePhase.PARSING -> R.string.threat_update_phase_parsing
+        AutonomousUpdatePhase.INDEXING -> R.string.threat_update_phase_indexing
+        AutonomousUpdatePhase.APPLYING -> R.string.threat_update_phase_applying
+    })
 
     private fun threatSourceLabel(source: String): String = getString(when (source) {
         "starting", "queued", "complete" -> R.string.threat_source_starting

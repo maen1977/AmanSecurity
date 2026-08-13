@@ -1,0 +1,29 @@
+Aman Security 3.4.5 - Threat update reliability validation
+Date: 2026-08-13
+
+Device issue reproduced from screenshot:
+- Source 2 of 7 showed 19% indefinitely while total source size was unknown.
+- 3.4.4 used a fixed 35% source fraction for unknown-length transfers.
+
+Fixes:
+- Removed fabricated unknown-length progress.
+- Unknown-length transfer => indeterminate bar + downloaded byte count.
+- Added CONNECTING / DOWNLOADING / PARSING / INDEXING / APPLYING phases.
+- Parser and indicator hashing report progress.
+- Per-feed wall-clock download deadlines; timeout skips only that provider.
+- Last-known-good source data retained after source failure.
+- OpenPhish moved ahead of larger phishing feeds.
+- Exactly one narrowly allowlisted OpenPhish public-feed redirect supported; all other redirects rejected.
+- Stale detection uses last-progress heartbeat.
+
+Validation results:
+QUALITY_GATE_OK version=3.4.5
+THREAT_UPDATE_RELIABILITY_3_4_5_OK deadline_skip=1 openphish_priority=1 openphish_redirect=1 unknown_length_indeterminate=1 parsing_progress=1 indexing_progress=1 heartbeat=1 fake_19_removed=1
+THREAT_UPDATE_TRANSPARENCY_3_4_OK phases=1 heartbeat=1
+WEB_REPUTATION_3_4_4_OK openphish_redirect_allowlisted=1 google_test_hardcode=0 accessibility=0
+PURE_KOTLIN_PARSER_COMPILE_OK
+OPENPHISH_REDIRECT_POLICY_SMOKE_OK
+
+Build identity:
+versionName=3.4.5
+versionCode=28

@@ -1,6 +1,11 @@
-# Aman Security 3.4.4
+# Aman Security 3.4.5
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+
+## 3.4.5 threat-update reliability
+
+Aman 3.4.5 fixes the device-observed update that could appear frozen at 19% when a feed omitted Content-Length or streamed too slowly. Unknown-length downloads now use an indeterminate progress bar instead of a fabricated percentage, update phases are visible (connecting, downloading, parsing, indexing, applying), and parser/index work reports progress. Each remote feed has a bounded wall-clock download deadline; a slow or stalled provider is marked failed for that run, last-known-good data is preserved, and the updater continues to the next source. OpenPhish is fetched before the larger aggregate phishing feeds so live phishing coverage can become available sooner.
 
 ## 3.4.4 web reputation hardening
 

@@ -26,6 +26,7 @@ main_tree = '\n'.join(
 
 need('https://openphish.com/feed.txt' in updater, 'OpenPhish live source missing')
 need('"openphish.com" -> query == null && path == "/feed.txt"' in source_policy, 'OpenPhish source is not narrowly allowlisted')
+need('"raw.githubusercontent.com" -> query == null && path == "/openphish/public_feed/refs/heads/main/feed.txt"' in source_policy and 'allowedRedirect' in source_policy, 'OpenPhish public-feed redirect is not narrowly allowlisted')
 need('phishingIndicators' in parser and 'stripQuery' in parser, 'full URL phishing ingestion missing')
 need('isRootUrl' in parser, 'host-wide promotion guard missing')
 need('kind == UrlIndicatorKind.HOST && c2Index.contains' in store, 'C2 indicators must remain host-only')
@@ -43,4 +44,4 @@ if errors:
         print(' - ' + error)
     sys.exit(1)
 
-print('WEB_REPUTATION_3_4_4_OK openphish_live=1 full_url_hashes=1 queryless_match=1 conservative_host_promotion=1 browser_handoff_no_prequery=1 google_test_hardcode=0 accessibility=0')
+print('WEB_REPUTATION_3_4_4_OK openphish_live=1 openphish_redirect_allowlisted=1 full_url_hashes=1 queryless_match=1 conservative_host_promotion=1 browser_handoff_no_prequery=1 google_test_hardcode=0 accessibility=0')

@@ -761,8 +761,15 @@
 
 
     <string name="threat_update_running_detailed">Updating protection • source %1$d of %2$d • %3$d%% • %4$s</string>
+    <string name="threat_update_running_stage_detailed">Updating protection • source %1$d of %2$d • %3$d%% overall • %4$s • %5$s</string>
+    <string name="threat_update_running_unknown_size">Updating protection • source %1$d of %2$d • %3$s • %4$s</string>
+    <string name="threat_update_phase_connecting">Connecting</string>
+    <string name="threat_update_phase_downloading">Downloading</string>
+    <string name="threat_update_phase_parsing">Parsing source</string>
+    <string name="threat_update_phase_indexing">Building protection indicators</string>
+    <string name="threat_update_phase_applying">Applying update</string>
     <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the current source</string>
-    <string name="threat_update_transfer_unknown">Downloaded %1$s for the current source</string>
+    <string name="threat_update_transfer_unknown">Downloaded %1$s • source did not report a total size</string>
     <string name="threat_update_last_success">Last successful update: %1$s</string>
     <string name="threat_update_next_check">Next automatic check: around %1$s (Android may delay background work)</string>
     <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
@@ -777,7 +784,7 @@
     <string name="threat_source_phishing_openphish">OpenPhish live URL feed</string>
     <string name="threat_source_phishing_community">Community phishing feed</string>
 
-    <string name="threat_update_stalled_retry">The update has not reported progress for too long. You can tap Update protection now to restart it safely.</string>
+    <string name="threat_update_stalled_retry">The current source has not reported progress for too long. Aman will skip slow sources automatically; you can also restart the update safely.</string>
     <string name="update_in_progress_button">Updating protection…</string>
     <string name="update_retry_button">Retry protection update</string>
     <string name="web_shield_diagnostics_not_tested">Verification: not tested yet • the DNS self-test stays entirely on this device</string>

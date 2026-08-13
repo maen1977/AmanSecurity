@@ -8,3 +8,5 @@ Runtime sources are documented in `docs/AUTONOMOUS_THREAT_INTELLIGENCE_2_6.md`. 
 
 
 Runtime web-reputation note (3.4.4): the app also refreshes the first-party OpenPhish community feed from `https://openphish.com/feed.txt`. Only normalized URL/host SHA-256 indicators are kept in app-private storage. The feed is data-only and cannot add executable code.
+
+Runtime update reliability note (3.4.5): remote feed downloads have bounded per-source deadlines. A slow provider is skipped for that run while last-known-good indicators are retained; OpenPhish is attempted before the larger aggregate phishing feeds.
