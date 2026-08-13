@@ -9,7 +9,7 @@ def text(p): return (ROOT/p).read_text(encoding='utf-8')
 build=text('app/build.gradle.kts'); models=text('app/src/main/java/com/aman/security/detection/DetectionModels.kt'); engine=text('app/src/main/java/com/aman/security/detection/ZeroDayHeuristicEngine.kt'); analyzer=text('app/src/main/java/com/aman/security/scanner/ApkStaticAnalyzer.kt'); verdict=text('app/src/main/java/com/aman/security/detection/VerdictEngine.kt')
 rules=[x.strip() for x in text('threat-db/detection_rules.csv').splitlines() if x.strip() and not x.lstrip().startswith('#')]
 m=json.loads(text('threat-db/manifest.json'))
-need('versionCode = 25' in build and 'versionName = "3.4.2"' in build,'version 3.4.2/code25')
+need('versionCode = 26' in build and 'versionName = "3.4.3"' in build,'version 3.4.3/code26')
 need('ZERO_DAY_HEURISTIC' in models and 'ZeroDayProfile' in models,'zero-day models')
 need('ZERO_DAY_HIDDEN_DEX_LOADER' in engine and 'ZERO_DAY_STEALTH_ANTI_ANALYSIS' in engine,'zero-day chains')
 need('HIDDEN_DEX_PAYLOAD' in analyzer and 'HIDDEN_ELF_PAYLOAD' in analyzer,'hidden payload inspection')

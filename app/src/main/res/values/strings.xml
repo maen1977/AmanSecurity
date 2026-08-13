@@ -779,4 +779,21 @@
     <string name="threat_update_stalled_retry">The update has not reported progress for too long. You can tap Update protection now to restart it safely.</string>
     <string name="update_in_progress_button">Updating protection…</string>
     <string name="update_retry_button">Retry protection update</string>
+    <string name="web_shield_diagnostics_not_tested">Verification: not tested yet • the DNS self-test stays entirely on this device</string>
+    <string name="web_shield_diagnostics_running">Verification: running the local DNS interception test…</string>
+    <string name="web_shield_diagnostics_passed">Verification: PASS • VPN/DNS block path verified at %1$s</string>
+    <string name="web_shield_diagnostics_failed">Verification: FAIL • Aman did not observe its local test query. Restart Web Shield and try again.</string>
+    <string name="web_shield_diagnostics_off">Verification unavailable while Local Web Shield is off</string>
+    <string name="web_shield_self_test_action">Run Web Shield self-test</string>
+    <string name="web_shield_amtso_test_action">Run AMTSO phishing test through Aman</string>
+    <string name="web_shield_self_test_requires_shield">Enable Local Web Shield first, then run the self-test.</string>
+    <string name="web_shield_self_test_passed_dialog_title">Web Shield self-test passed</string>
+    <string name="web_shield_self_test_passed_dialog_body">Aman intercepted a harmless local DNS test request and blocked it inside the VPN. No external test site was contacted.</string>
+    <string name="web_shield_self_test_failed_dialog_title">Web Shield self-test failed</string>
+    <string name="web_shield_self_test_failed_dialog_body">The VPN service is enabled, but the local DNS test did not complete through Aman. Restart Local Web Shield and retry before relying on browser protection.</string>
+    <string name="amtso_test_explanation_title">AMTSO test support</string>
+    <string name="amtso_test_explanation_body">AMTSO’s Android phishing check is a harmless test page. Aman can recognize its exact URL through Link Guard. The DNS-only shield cannot distinguish an HTTPS page path from other pages on the same amtso.org domain, so Aman does not permanently block the whole AMTSO website. Continue to test the exact link through Aman?</string>
+    <string name="amtso_test_continue">Run test</string>
+    <string name="timeline_web_shield_test_passed">Web Shield verification passed</string>
+    <string name="timeline_web_shield_test_passed_detail">A harmless on-device DNS test was intercepted and blocked. It was not counted as a threat.</string>
 </resources>

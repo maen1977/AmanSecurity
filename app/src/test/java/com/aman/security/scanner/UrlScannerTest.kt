@@ -90,6 +90,20 @@ class UrlScannerTest {
     }
 
     @Test
+    fun officialAmtsoAndroidPhishingPageIsRecognizedAsHarmlessTest() {
+        val result = scanner().scan(OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_URL)
+        assertEquals(UrlRiskLevel.TEST_SIGNATURE, result.riskLevel)
+        assertEquals(0, result.riskScore)
+        assertEquals(OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_REFERENCE, result.threatReference)
+    }
+
+    @Test
+    fun normalAmtsoPagesAreNotPermanentlyBlockedAsTests() {
+        val result = scanner().scan("https://www.amtso.org/security-features-check/")
+        assertFalse(result.riskLevel == UrlRiskLevel.TEST_SIGNATURE)
+    }
+
+    @Test
     fun reservedTestIndicatorRemainsTestOnly() {
         val hostHash = UrlScanner.sha256("phishing.test")
         val scanner = UrlScanner { kind, hash ->

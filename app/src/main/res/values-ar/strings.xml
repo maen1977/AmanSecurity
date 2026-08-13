@@ -779,4 +779,21 @@
     <string name="threat_update_stalled_retry">لم يرسل التحديث أي تقدم منذ مدة طويلة. يمكنك الضغط على تحديث الحماية الآن لإعادة تشغيله بأمان.</string>
     <string name="update_in_progress_button">جارٍ تحديث الحماية…</string>
     <string name="update_retry_button">إعادة محاولة تحديث الحماية</string>
+    <string name="web_shield_diagnostics_not_tested">التحقق: لم يتم الاختبار بعد • اختبار نظام أسماء النطاقات يبقى بالكامل داخل هذا الجهاز</string>
+    <string name="web_shield_diagnostics_running">التحقق: جارٍ اختبار اعتراض نظام أسماء النطاقات المحلي…</string>
+    <string name="web_shield_diagnostics_passed">التحقق: ناجح • تم التأكد من مسار الحجب عبر الشبكة الخاصة المحلية ونظام أسماء النطاقات في %1$s</string>
+    <string name="web_shield_diagnostics_failed">التحقق: فشل • لم يرصد أمان طلب الاختبار المحلي. أعد تشغيل درع الويب وحاول مرة أخرى.</string>
+    <string name="web_shield_diagnostics_off">التحقق غير متاح بينما درع الويب المحلي متوقف</string>
+    <string name="web_shield_self_test_action">تشغيل اختبار درع الويب</string>
+    <string name="web_shield_amtso_test_action">تشغيل اختبار أمتسو للتصيد عبر أمان</string>
+    <string name="web_shield_self_test_requires_shield">فعّل درع الويب المحلي أولًا ثم شغّل الاختبار.</string>
+    <string name="web_shield_self_test_passed_dialog_title">نجح اختبار درع الويب</string>
+    <string name="web_shield_self_test_passed_dialog_body">اعترض أمان طلب نظام أسماء نطاقات محليًا وآمنًا وحجبه داخل الشبكة الخاصة المحلية. لم يتم الاتصال بأي موقع اختبار خارجي.</string>
+    <string name="web_shield_self_test_failed_dialog_title">فشل اختبار درع الويب</string>
+    <string name="web_shield_self_test_failed_dialog_body">خدمة الشبكة الخاصة مفعّلة، لكن اختبار نظام أسماء النطاقات المحلي لم يكتمل عبر أمان. أعد تشغيل درع الويب وكرر الاختبار قبل الاعتماد على حماية المتصفح.</string>
+    <string name="amtso_test_explanation_title">دعم اختبار أمتسو</string>
+    <string name="amtso_test_explanation_body">اختبار التصيد الخاص بأندرويد من أمتسو صفحة اختبار آمنة. يستطيع أمان التعرف على رابطها الكامل عبر حارس الروابط. أمّا درع أسماء النطاقات وحده فلا يستطيع تمييز مسار صفحة ويب مشفّرة عن بقية صفحات النطاق نفسه، لذلك لا يحجب أمان موقع الاختبار كاملًا بشكل دائم. هل تريد متابعة اختبار الرابط المحدد عبر أمان؟</string>
+    <string name="amtso_test_continue">تشغيل الاختبار</string>
+    <string name="timeline_web_shield_test_passed">نجح التحقق من درع الويب</string>
+    <string name="timeline_web_shield_test_passed_detail">تم اعتراض اختبار محلي آمن لنظام أسماء النطاقات وحجبه، ولم يتم احتسابه كتهديد.</string>
 </resources>

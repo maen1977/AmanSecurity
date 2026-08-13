@@ -169,14 +169,23 @@ class LocalDnsVpnService : VpnService() {
                 val query = DnsPacketCodec.parseIpv4UdpDns(buffer, length) ?: continue
                 if (query.destinationPort != DNS_PORT || query.destinationAddress.hostAddress != VPN_DNS_ADDRESS) continue
                 val host = query.host
-                if (host != null) recordDnsObservation(query, host)
-                val blocked = host != null && isBlockedHost(host)
+                val normalizedHost = host?.trim()?.trimEnd('.')?.lowercase()
+                if (normalizedHost != null) {
+                    preferences.lastWebShieldDnsQueryAt = System.currentTimeMillis()
+                    if (!WebShieldSelfTestPolicy.isSelfTestHost(normalizedHost)) {
+                        recordDnsObservation(query, normalizedHost)
+                    }
+                }
+                val decision = normalizedHost?.let(::decisionForHost) ?: WebProtectionDecision.ALLOW
+                val blocked = decision == WebProtectionDecision.BLOCK || decision == WebProtectionDecision.TEST
                 val dnsResponse = when {
                     blocked -> DnsPacketCodec.nxdomainResponse(query.dnsPayload)
                     else -> forwardDns(query.dnsPayload) ?: DnsPacketCodec.servFailResponse(query.dnsPayload)
                 }
                 output.write(DnsPacketCodec.buildIpv4UdpResponse(query, dnsResponse))
-                if (blocked && host != null) recordBlockedHost(host)
+                if (blocked && normalizedHost != null) {
+                    if (decision == WebProtectionDecision.TEST) recordTestHost(normalizedHost) else recordBlockedHost(normalizedHost)
+                }
                 preferences.localWebShieldHeartbeatAt = System.currentTimeMillis()
             }
         } catch (_: Exception) {
@@ -254,19 +263,33 @@ class LocalDnsVpnService : VpnService() {
         synchronized(verdictCache) { verdictCache.clear() }
     }
 
-    private fun isBlockedHost(host: String): Boolean {
+    private fun decisionForHost(host: String): WebProtectionDecision {
         val normalized = host.trim().trimEnd('.').lowercase()
+        if (WebShieldSelfTestPolicy.isSelfTestHost(normalized)) return WebProtectionDecision.TEST
         val now = System.currentTimeMillis()
         synchronized(verdictCache) {
             verdictCache[normalized]?.takeIf { now - it.checkedAt <= VERDICT_CACHE_TTL_MS }?.let {
-                return it.blocked
+                return it.decision
             }
         }
-        val blocked = WebProtectionPolicy.decide(
-            scanner.scan("https://$normalized/").riskLevel
-        ) == WebProtectionDecision.BLOCK
-        synchronized(verdictCache) { verdictCache[normalized] = CachedVerdict(blocked, now) }
-        return blocked
+        val decision = WebProtectionPolicy.decide(scanner.scan("https://$normalized/").riskLevel)
+        synchronized(verdictCache) { verdictCache[normalized] = CachedVerdict(decision, now) }
+        return decision
+    }
+
+    private fun recordTestHost(host: String) {
+        val now = System.currentTimeMillis()
+        if (WebShieldSelfTestPolicy.isSelfTestHost(host)) {
+            preferences.lastWebShieldSelfTestInterceptAt = now
+            preferences.webShieldSelfTestState = ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED
+        }
+        activityStore.add(
+            kind = ProtectionActivityKind.WEB_SHIELD,
+            state = ProtectionActivityState.SAFE,
+            title = getString(R.string.timeline_web_shield_test_passed),
+            detail = getString(R.string.timeline_web_shield_test_passed_detail),
+            dedupeKey = "web-shield:test:${host.substringAfterLast('.', host)}"
+        )
     }
 
     private fun recordBlockedHost(host: String) {
@@ -319,15 +342,17 @@ class LocalDnsVpnService : VpnService() {
         stopSelf()
     }
 
-    private data class CachedVerdict(val blocked: Boolean, val checkedAt: Long)
+    private data class CachedVerdict(val decision: WebProtectionDecision, val checkedAt: Long)
 
     companion object {
         const val ACTION_START = "com.aman.security.action.START_LOCAL_WEB_SHIELD"
         const val ACTION_STOP = "com.aman.security.action.STOP_LOCAL_WEB_SHIELD"
         const val ACTION_REFRESH = "com.aman.security.action.REFRESH_LOCAL_WEB_SHIELD"
         private const val VPN_ADDRESS = "10.73.0.1"
-        private const val VPN_DNS_ADDRESS = "10.73.0.2"
-        private const val DNS_PORT = 53
+        const val SYNTHETIC_DNS_ADDRESS = "10.73.0.2"
+        const val DNS_PORT_PUBLIC = 53
+        private const val VPN_DNS_ADDRESS = SYNTHETIC_DNS_ADDRESS
+        private const val DNS_PORT = DNS_PORT_PUBLIC
         private const val DNS_TIMEOUT_MS = 2500
         private const val MAX_PACKET_SIZE = 32767
         private const val MAX_DNS_SIZE = 8192

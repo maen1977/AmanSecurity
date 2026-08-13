@@ -19,6 +19,11 @@ class WebProtectionPolicyTest {
         assertTrue(WebProtectionPolicy.mayOpenAfterWarning(UrlRiskLevel.HIGH))
     }
 
+    @Test fun harmlessTestSignaturesAreStoppedWithoutBeingMalware() {
+        assertEquals(WebProtectionDecision.TEST, WebProtectionPolicy.decide(UrlRiskLevel.TEST_SIGNATURE))
+        assertFalse(WebProtectionPolicy.mayOpenAfterWarning(UrlRiskLevel.TEST_SIGNATURE))
+    }
+
     @Test fun lowRiskCanBeForwarded() {
         assertEquals(WebProtectionDecision.ALLOW, WebProtectionPolicy.decide(UrlRiskLevel.LOW))
     }

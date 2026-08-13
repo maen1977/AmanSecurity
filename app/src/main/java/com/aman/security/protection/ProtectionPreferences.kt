@@ -116,6 +116,22 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS, false)
         set(value) = prefs.edit().putBoolean(KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS, value).apply()
 
+    var lastWebShieldDnsQueryAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_SHIELD_DNS_QUERY_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_SHIELD_DNS_QUERY_AT, value).apply()
+
+    var webShieldSelfTestState: Int
+        get() = prefs.getInt(KEY_WEB_SHIELD_SELF_TEST_STATE, WEB_SHIELD_SELF_TEST_NOT_RUN)
+        set(value) = prefs.edit().putInt(KEY_WEB_SHIELD_SELF_TEST_STATE, value).apply()
+
+    var lastWebShieldSelfTestAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_SHIELD_SELF_TEST_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_SHIELD_SELF_TEST_AT, value).apply()
+
+    var lastWebShieldSelfTestInterceptAt: Long
+        get() = prefs.getLong(KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT, value).apply()
+
     var lastWebBlockedHost: String?
         get() = prefs.getString(KEY_LAST_WEB_BLOCKED_HOST, null)
         set(value) = prefs.edit().putString(KEY_LAST_WEB_BLOCKED_HOST, value).apply()
@@ -330,6 +346,10 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LOCAL_WEB_SHIELD_ENABLED = "local_web_shield_enabled"
         private const val KEY_LOCAL_WEB_SHIELD_HEARTBEAT_AT = "local_web_shield_heartbeat_at"
         private const val KEY_LOCAL_WEB_SHIELD_PRIVATE_DNS = "local_web_shield_private_dns"
+        private const val KEY_LAST_WEB_SHIELD_DNS_QUERY_AT = "last_web_shield_dns_query_at"
+        private const val KEY_WEB_SHIELD_SELF_TEST_STATE = "web_shield_self_test_state"
+        private const val KEY_LAST_WEB_SHIELD_SELF_TEST_AT = "last_web_shield_self_test_at"
+        private const val KEY_LAST_WEB_SHIELD_SELF_TEST_INTERCEPT_AT = "last_web_shield_self_test_intercept_at"
         private const val KEY_LAST_WEB_BLOCKED_HOST = "last_web_blocked_host"
         private const val KEY_LAST_WEB_BLOCKED_AT = "last_web_blocked_at"
         private const val KEY_TOTAL_WEB_THREATS_BLOCKED = "total_web_threats_blocked"
@@ -353,6 +373,11 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LAST_DATA_EXFIL_HIGH_COUNT = "last_data_exfil_high_count"
         private const val KEY_LAST_DATA_EXFIL_TOP_PACKAGE = "last_data_exfil_top_package"
         private const val KEY_LAST_DATA_EXFIL_TOP_BYTES = "last_data_exfil_top_bytes"
+        const val WEB_SHIELD_SELF_TEST_NOT_RUN = 0
+        const val WEB_SHIELD_SELF_TEST_RUNNING = 1
+        const val WEB_SHIELD_SELF_TEST_PASSED = 2
+        const val WEB_SHIELD_SELF_TEST_FAILED = 3
+
         private const val MAX_LEDGER_ENTRIES = 2000
         private const val MAX_APP_LEDGER_ENTRIES = 1500
         private const val MAX_DOWNLOAD_LEDGER_ENTRIES = 4000

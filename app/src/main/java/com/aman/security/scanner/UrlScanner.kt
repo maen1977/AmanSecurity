@@ -9,6 +9,19 @@ class UrlScanner(
         val normalized = UrlNormalizer.normalize(input)
             ?: return UrlScanResult(input, null, null, UrlRiskLevel.INVALID, 0, emptySet())
 
+        OfficialWebTestIndicators.match(normalized.url, normalized.host)?.let { reference ->
+            return UrlScanResult(
+                originalInput = input,
+                normalizedUrl = normalized.url,
+                host = normalized.host,
+                riskLevel = UrlRiskLevel.TEST_SIGNATURE,
+                riskScore = 0,
+                signals = emptySet(),
+                threatReference = reference,
+                matchedKind = UrlIndicatorKind.URL
+            )
+        }
+
         val urlHash = sha256(normalized.url)
         val hostHash = sha256(normalized.host)
         val known = lookup(UrlIndicatorKind.URL, urlHash)

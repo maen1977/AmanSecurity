@@ -74,6 +74,7 @@ import java.util.concurrent.CancellationException
 import com.aman.security.scanner.InstalledAppScanResult
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
+import com.aman.security.scanner.OfficialWebTestIndicators
 import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanDetectionReason
 import com.aman.security.scanner.ScanResult
@@ -111,10 +112,15 @@ import com.aman.security.security.ScanHistoryEntry
 import com.aman.security.security.SecurityRecordStore
 import com.aman.security.detection.ThreatFamily
 import com.aman.security.web.LocalWebShieldController
+import com.aman.security.web.LinkGuardActivity
+import com.aman.security.web.WebShieldSelfTestClient
+import com.aman.security.web.WebShieldSelfTestPolicy
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
@@ -264,6 +270,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
         binding.btnConfigureWebGuard.setOnClickListener { configureWebGuard() }
+        binding.btnWebShieldSelfTest.setOnClickListener { runWebShieldSelfTest() }
+        binding.btnAmtsoWebTest.setOnClickListener { runAmtsoWebTest() }
         binding.switchLocalWebShield.setOnCheckedChangeListener { _, checked ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
             if (checked) requestLocalWebShieldEnable() else {
@@ -658,6 +666,58 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
     }
 
+    private fun runWebShieldSelfTest() {
+        if (!protectionPreferences.enabled || !protectionPreferences.localWebShieldEnabled ||
+            !LocalWebShieldController.isHealthy(this)
+        ) {
+            showInfo(R.string.web_shield_self_test_requires_shield)
+            renderProtectionStatus()
+            return
+        }
+
+        val startedAt = System.currentTimeMillis()
+        val host = WebShieldSelfTestPolicy.createHost(startedAt)
+        protectionPreferences.lastWebShieldSelfTestAt = startedAt
+        protectionPreferences.lastWebShieldSelfTestInterceptAt = 0L
+        protectionPreferences.webShieldSelfTestState = ProtectionPreferences.WEB_SHIELD_SELF_TEST_RUNNING
+        renderProtectionStatus()
+
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val responseWasNxdomain = withContext(Dispatchers.IO) {
+                withTimeoutOrNull(4_000L) { WebShieldSelfTestClient.run(host) } ?: false
+            }
+            delay(150L)
+            val intercepted = protectionPreferences.lastWebShieldSelfTestInterceptAt >= startedAt
+            val passed = responseWasNxdomain && intercepted
+            protectionPreferences.webShieldSelfTestState = if (passed) {
+                ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED
+            } else {
+                ProtectionPreferences.WEB_SHIELD_SELF_TEST_FAILED
+            }
+            renderProtectionStatus()
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(if (passed) R.string.web_shield_self_test_passed_dialog_title else R.string.web_shield_self_test_failed_dialog_title)
+                .setMessage(if (passed) R.string.web_shield_self_test_passed_dialog_body else R.string.web_shield_self_test_failed_dialog_body)
+                .setPositiveButton(R.string.ok, null)
+                .show()
+        }
+    }
+
+    private fun runAmtsoWebTest() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.amtso_test_explanation_title)
+            .setMessage(R.string.amtso_test_explanation_body)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.amtso_test_continue) { _, _ ->
+                val intent = Intent(this, LinkGuardActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    data = Uri.parse(OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_URL)
+                }
+                startActivity(intent)
+            }
+            .show()
+    }
+
     private fun requestLocalWebShieldEnable() {
         if (!protectionPreferences.enabled) {
             renderProtectionStatus()
@@ -895,6 +955,19 @@ class MainActivity : AppCompatActivity() {
                 else -> R.string.local_web_shield_status_starting
             }
         )
+        binding.txtWebShieldDiagnostics.text = when {
+            !localShieldHealthy -> getString(R.string.web_shield_diagnostics_off)
+            protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_RUNNING ->
+                getString(R.string.web_shield_diagnostics_running)
+            protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED ->
+                getString(R.string.web_shield_diagnostics_passed, formatDate(protectionPreferences.lastWebShieldSelfTestInterceptAt))
+            protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_FAILED ->
+                getString(R.string.web_shield_diagnostics_failed)
+            else -> getString(R.string.web_shield_diagnostics_not_tested)
+        }
+        binding.btnWebShieldSelfTest.isEnabled = localShieldHealthy &&
+            protectionPreferences.webShieldSelfTestState != ProtectionPreferences.WEB_SHIELD_SELF_TEST_RUNNING
+        binding.btnAmtsoWebTest.isEnabled = enabled
 
         val intrusionEnabled = enabled && protectionPreferences.intrusionMonitorEnabled
         binding.txtIntrusionStatus.text = when {
