@@ -29,7 +29,7 @@ jobs:
         shell: bash
         env:
           AMAN_THREAT_DB_PRIVATE_KEY_B64: ${{ secrets.AMAN_THREAT_DB_PRIVATE_KEY_B64 }}
-          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
+          AMAN_THREAT_DEPLOY_KEY: ${{ secrets.AMAN_THREAT_DEPLOY_KEY }}
           ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
         run: |
           set -euo pipefail
@@ -37,8 +37,8 @@ jobs:
             echo "::error::AMAN_THREAT_DB_PRIVATE_KEY_B64 is not configured. Add the signing secret before running the intelligence factory."
             exit 1
           fi
-          if [ -z "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
-            echo "::error::AMAN_THREAT_PUBLISH_TOKEN is not configured. Add a fine-grained token with Contents: Read and write only on AmanSecurity-Threat-DB."
+          if [ -z "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
+            echo "::error::AMAN_THREAT_DEPLOY_KEY is not configured. Add the SSH private deploy key for AmanSecurity-Threat-DB as an Actions secret."
             exit 1
           fi
           python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 30
@@ -52,9 +52,14 @@ jobs:
         if: steps.intel.outcome == 'success'
         shell: bash
         env:
-          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
+          AMAN_THREAT_DEPLOY_KEY: ${{ secrets.AMAN_THREAT_DEPLOY_KEY }}
         run: |
           set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/aman-threat-deploy"
+          chmod 600 "$HOME/.ssh/aman-threat-deploy"
+          ssh-keyscan -t ed25519 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aman-threat-deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           mkdir -p /tmp/aman-cloud-intel/latest
           cp dist/cloud-threat-db/manifest.json /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/manifest.sig /tmp/aman-cloud-intel/latest/
@@ -70,7 +75,7 @@ jobs:
           touch .nojekyll
           git add .nojekyll latest
           git commit -m "Aman threat intelligence $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git remote add threat-public "https://x-access-token:${AMAN_THREAT_PUBLISH_TOKEN}@github.com/maen1977/AmanSecurity-Threat-DB.git"
+          git remote add threat-public "git@github.com:maen1977/AmanSecurity-Threat-DB.git"
           git push --force threat-public HEAD:main
           git remote remove threat-public
 
