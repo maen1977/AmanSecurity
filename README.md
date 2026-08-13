@@ -1,6 +1,12 @@
-# Aman Security 3.3.0
+# Aman Security 3.4.4
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, autonomous threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+## 3.4.4 web reputation hardening
+
+Aman 3.4.4 fixes the external-browser handoff exposed by device testing and strengthens URL reputation without hard-coding the Google Safe Browsing test page. Link Guard now consumes full normalized phishing/malware URLs from live feeds (plus a query-stripped form for per-user tracking tokens), while host-wide DNS promotion is conservative for path-specific feed entries. The updater also adds the official OpenPhish community feed as an independent live phishing source. Clean links are forwarded with a system chooser that explicitly excludes Aman itself and no longer depends on a PackageManager browser pre-query.
+
+The local VPN remains DNS-only: no HTTPS decryption, no full-tunnel proxy, no Accessibility service, and no user browsing content is uploaded by Aman.
 
 ## 3.1 local attack prevention
 

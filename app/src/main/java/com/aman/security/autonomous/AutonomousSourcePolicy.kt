@@ -13,6 +13,7 @@ object AutonomousSourcePolicy {
         return when (host) {
             "bazaar.abuse.ch" -> query == null && path == "/browse/tag/Android/"
             "api.destroy.tools" -> query == null && (path == "/v1/feed/primary_active" || path == "/v1/feed/community_active")
+            "openphish.com" -> query == null && path == "/feed.txt"
             "feodotracker.abuse.ch" -> query == null && path == "/downloads/ipblocklist_recommended.json"
             "urlhaus.abuse.ch" -> query == null && path == "/downloads/text/"
             "source.android.com" -> (query == null || query == "hl=en") &&

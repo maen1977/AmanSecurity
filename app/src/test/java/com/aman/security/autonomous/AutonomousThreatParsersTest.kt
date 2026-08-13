@@ -31,6 +31,30 @@ class AutonomousThreatParsersTest {
         assertEquals(2, result.size)
     }
 
+    @Test fun preservesExactPhishingUrlsAndAvoidsWholeHostBlockingForPathOnlyEntries() {
+        val text = """
+            https://shared.example/users/alice/login?token=abc
+            https://dedicated-phish.example/
+        """.trimIndent()
+        val result = AutonomousThreatParsers.phishingIndicators(text)
+        assertTrue("https://shared.example/users/alice/login?token=abc" in result.urls)
+        assertTrue("https://shared.example/users/alice/login" in result.urls)
+        assertFalse("shared.example" in result.hosts)
+        assertTrue("dedicated-phish.example" in result.hosts)
+    }
+
+    @Test fun queryOnlyRootDoesNotBecomeAHostWideEquivalentUrl() {
+        val result = AutonomousThreatParsers.phishingIndicators("https://short.example/?id=one-malicious-target")
+        assertTrue("https://short.example/?id=one-malicious-target" in result.urls)
+        assertFalse("https://short.example/" in result.urls)
+        assertFalse("short.example" in result.hosts)
+    }
+
+    @Test fun sourcePolicyAllowsOnlyTheOfficialOpenPhishCommunityPath() {
+        assertTrue(AutonomousSourcePolicy.allowed("https://openphish.com/feed.txt"))
+        assertFalse(AutonomousSourcePolicy.allowed("https://openphish.com/other-feed.txt"))
+    }
+
     @Test fun validatesFeodoIps() {
         val text = "[{\"ip_address\":\"192.0.2.7\"},{\"ip_address\":\"999.0.0.1\"}]"
         assertEquals(setOf("192.0.2.7"), AutonomousThreatParsers.feodoIps(text))

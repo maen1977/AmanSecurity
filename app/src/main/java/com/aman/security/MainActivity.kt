@@ -2102,6 +2102,7 @@ class MainActivity : AppCompatActivity() {
         "starting", "queued", "complete" -> R.string.threat_source_starting
         com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE -> R.string.threat_source_malware
         com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_PRIMARY -> R.string.threat_source_phishing_primary
+        com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_OPENPHISH -> R.string.threat_source_phishing_openphish
         com.aman.security.autonomous.AutonomousThreatStore.SOURCE_PHISH_COMMUNITY -> R.string.threat_source_phishing_community
         com.aman.security.autonomous.AutonomousThreatStore.SOURCE_MALWARE_URLS -> R.string.threat_source_malware_urls
         com.aman.security.autonomous.AutonomousThreatStore.SOURCE_C2 -> R.string.threat_source_c2

@@ -76,6 +76,21 @@ class UrlScannerTest {
     }
 
     @Test
+    fun querySpecificLinkCanMatchAQuerylessLiveFeedIndicator() {
+        val canonical = "https://shared.example/account/verify"
+        val urlHash = UrlScanner.sha256(canonical)
+        val scanner = UrlScanner { kind, hash ->
+            if (kind == UrlIndicatorKind.URL && hash == urlHash) {
+                UrlThreatIndicator(kind, hash, "LIVE_FEED_URL", UrlThreatClassification.PHISHING)
+            } else null
+        }
+        val result = scanner.scan("https://shared.example/account/verify?session=unique-user-token")
+        assertEquals(UrlRiskLevel.KNOWN_PHISHING, result.riskLevel)
+        assertEquals(UrlIndicatorKind.URL, result.matchedKind)
+        assertEquals("LIVE_FEED_URL", result.threatReference)
+    }
+
+    @Test
     fun bundledReservedTestHashesMatchNormalizerContract() {
         val host = UrlNormalizer.normalize("phishing.test") ?: error("normalization failed")
         val url = UrlNormalizer.normalize("https://malware.test/download") ?: error("normalization failed")

@@ -38,7 +38,7 @@
     <string name="update_idle">Protection intelligence updates automatically about every six hours when internet is available, with no API keys or sign-in.</string>
     <string name="update_checking">Fetching the latest threat intelligence from public sources…</string>
     <string name="update_up_to_date">Sources were checked and no newer indicators were found.</string>
-    <string name="update_success">Updated: %1$s malware file hashes • %2$s phishing hosts • %3$s command-and-control hosts • %4$s Android CVEs in the latest bulletin.</string>
+    <string name="update_success">Updated: %1$s malware file hashes • %2$s phishing indicators • %3$s command-and-control hosts • %4$s Android CVEs in the latest bulletin.</string>
     <string name="update_network_error">No public source could be reached now. Aman kept the last valid data and will retry automatically.</string>
     <string name="safe_wording_note">A clean result only means no known signature was found. It is not a guarantee that a file is safe.</string>
     <string name="installed_apps_title">Installed apps</string>
@@ -288,7 +288,7 @@
     <string name="web_guard_manage_action">Manage Web Guard</string>
 
     <string name="autonomous_intel_note">Autonomous updates from public threat-intelligence sources. No API keys, secrets, or file uploads.</string>
-    <string name="autonomous_intel_stats">Autonomous intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s command-and-control hosts • %4$s CVEs in the latest bulletin.</string>
+    <string name="autonomous_intel_stats">Autonomous intelligence: %1$s malware hashes • %2$s phishing indicators • %3$s command-and-control hosts • %4$s CVEs in the latest bulletin.</string>
     <string name="autonomous_last_update_never">Autonomous intelligence has not completed its first online update yet.</string>
     <string name="autonomous_last_update">Last autonomous update: %1$s • sources reached: %2$d/%3$d • currently fresh: %4$d/%3$d.</string>
     <string name="url_signal_community_feed">This host appears in a community threat feed and should be reviewed before opening.</string>
@@ -767,13 +767,14 @@
     <string name="threat_update_next_check">Next automatic check: around %1$s (Android may delay background work)</string>
     <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
     <string name="threat_update_never_success">No successful online threat-intelligence update yet.</string>
-    <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s C2 hosts • %4$s Android CVEs</string>
+    <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing indicators • %3$s C2 hosts • %4$s Android CVEs</string>
     <string name="threat_update_source_ok">✓ %1$s — updated</string>
     <string name="threat_update_source_failed">⚠ %1$s — failed; last-known-good data kept</string>
     <string name="threat_update_source_waiting">• %1$s — waiting for first successful update</string>
     <string name="threat_update_source_fresh">✓ %1$s — current</string>
     <string name="threat_update_source_stale">⚠ %1$s — stale / retry needed</string>
     <string name="threat_source_phishing_primary">Primary phishing feed</string>
+    <string name="threat_source_phishing_openphish">OpenPhish live URL feed</string>
     <string name="threat_source_phishing_community">Community phishing feed</string>
 
     <string name="threat_update_stalled_retry">The update has not reported progress for too long. You can tap Update protection now to restart it safely.</string>

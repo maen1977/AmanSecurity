@@ -8,7 +8,9 @@ def need(path, token, msg):
 need('app/src/main/AndroidManifest.xml','.web.LinkGuardActivity','LinkGuardActivity missing')
 need('app/src/main/AndroidManifest.xml','android.intent.category.BROWSABLE','BROWSABLE missing')
 need('app/src/main/java/com/aman/security/web/LinkGuardActivity.kt','WebProtectionDecision.BLOCK','known-threat block missing')
-need('app/src/main/java/com/aman/security/web/BrowserForwarder.kt','it.activityInfo.packageName != context.packageName','self-loop guard missing')
+forwarder=(ROOT/'app/src/main/java/com/aman/security/web/BrowserForwarder.kt').read_text(encoding='utf-8')
+if not (('it.activityInfo.packageName != context.packageName' in forwarder) or ('Intent.EXTRA_EXCLUDE_COMPONENTS' in forwarder and 'LinkGuardActivity::class.java' in forwarder)):
+    errors.append('self-loop guard missing')
 need('app/src/main/java/com/aman/security/scanner/UrlScanner.kt','hostSuffixes(normalized.host)','boundary host matching missing')
 need('app/src/main/java/com/aman/security/scanner/UrlNormalizer.kt',"it == '\\\\'",'backslash rejection missing')
 manifest=(ROOT/'app/src/main/AndroidManifest.xml').read_text()

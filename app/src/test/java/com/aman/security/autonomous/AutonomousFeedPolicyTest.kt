@@ -8,6 +8,7 @@ class AutonomousFeedPolicyTest {
     @Test fun communityFeedCannotIndependentlyConfirmThreat() {
         assertFalse(AutonomousFeedPolicy.phishingCommunity.canConfirmThreat)
         assertTrue(AutonomousFeedPolicy.phishingPrimary.canConfirmThreat)
+        assertTrue(AutonomousFeedPolicy.phishingOpenPhish.canConfirmThreat)
         assertTrue(AutonomousFeedPolicy.c2.canConfirmThreat)
     }
 

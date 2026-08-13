@@ -1,0 +1,23 @@
+Aman Security 3.4.4 - Web reputation hardening validation
+Date: 2026-08-13
+
+Device findings addressed:
+- Browser handoff no longer pre-queries PackageManager.
+- System chooser excludes Aman LinkGuardActivity to avoid self-loop.
+- Live phishing/malware feeds preserve full URL hashes.
+- Path URLs with per-user query tokens can match a queryless path indicator.
+- Query-only root URLs are NOT generalized to all root queries.
+- OpenPhish first-party community feed added as an independent live phishing source.
+- Google Safe Browsing test URL is not hard-coded as a threat.
+- No Accessibility service, HTTPS decryption, or full-tunnel VPN added.
+
+Validation results:
+WEB_REPUTATION_3_4_4_OK
+PURE_WEB_REPUTATION_TEST_OK
+OPENPHISH_CURRENT_FEED_PARSE_OK urls=318 hostIndicators=124 total=442
+XML_PARSE_OK files=32
+All remaining quality-gate components after the container timeout were run individually and passed.
+
+Build identity:
+versionName=3.4.4
+versionCode=27

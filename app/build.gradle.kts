@@ -16,8 +16,8 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 26
-        versionName = "3.4.3"
+        versionCode = 27
+        versionName = "3.4.4"
 
         buildConfigField("String", "EXPECTED_RELEASE_CERT_SHA256", "\"$expectedReleaseCert\"")
 

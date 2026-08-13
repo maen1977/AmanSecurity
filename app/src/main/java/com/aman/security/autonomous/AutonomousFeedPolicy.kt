@@ -40,6 +40,15 @@ object AutonomousFeedPolicy {
         maxEntries = 250_000,
         canConfirmThreat = true
     )
+    val phishingOpenPhish = AutonomousFeedDescriptor(
+        key = AutonomousThreatStore.SOURCE_PHISH_OPENPHISH,
+        trust = AutonomousFeedTrust.PRIMARY,
+        lookupTtlMs = TimeUnit.HOURS.toMillis(36),
+        statusFreshMs = TimeUnit.HOURS.toMillis(30),
+        minEntries = 20,
+        maxEntries = 150_000,
+        canConfirmThreat = true
+    )
     val phishingCommunity = AutonomousFeedDescriptor(
         key = AutonomousThreatStore.SOURCE_PHISH_COMMUNITY,
         trust = AutonomousFeedTrust.COMMUNITY,
@@ -73,7 +82,7 @@ object AutonomousFeedPolicy {
         canConfirmThreat = false
     )
 
-    val all = listOf(malware, phishingPrimary, phishingCommunity, malwareUrls, c2, androidBulletin)
+    val all = listOf(malware, phishingPrimary, phishingOpenPhish, phishingCommunity, malwareUrls, c2, androidBulletin)
     private val byKey = all.associateBy { it.key }
 
     fun forKey(key: String): AutonomousFeedDescriptor = requireNotNull(byKey[key]) { "Unknown source key" }

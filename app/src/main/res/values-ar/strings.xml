@@ -38,7 +38,7 @@
     <string name="update_idle">تتحدث معلومات الحماية تلقائيًا كل نحو ست ساعات عند توفر الإنترنت، دون مفاتيح أو تسجيل دخول.</string>
     <string name="update_checking">جارٍ جلب أحدث معلومات التهديد من المصادر العامة…</string>
     <string name="update_up_to_date">تم فحص المصادر ولم تظهر مؤشرات أحدث.</string>
-    <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مضيف تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة أندرويد في أحدث نشرة.</string>
+    <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مؤشر تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة أندرويد في أحدث نشرة.</string>
     <string name="update_network_error">تعذر الوصول إلى أي مصدر الآن. احتفظ أمان بآخر بيانات سليمة وسيحاول مجددًا تلقائيًا.</string>
     <string name="safe_wording_note">النتيجة النظيفة تعني فقط عدم العثور على توقيع معروف، ولا تضمن أن الملف آمن.</string>
     <string name="installed_apps_title">التطبيقات المثبتة</string>
@@ -288,7 +288,7 @@
     <string name="web_guard_manage_action">إدارة حارس الويب</string>
 
     <string name="autonomous_intel_note">تحديث ذاتي من مصادر معلومات تهديد عامة. لا مفاتيح واجهات ولا أسرار ولا رفع للملفات.</string>
-    <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مضيف تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة في أحدث نشرة.</string>
+    <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مؤشر تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة في أحدث نشرة.</string>
     <string name="autonomous_last_update_never">لم يكتمل بعد أول تحديث ذاتي عبر الإنترنت.</string>
     <string name="autonomous_last_update">آخر تحديث ذاتي: %1$s • المصادر التي تم الوصول إليها: %2$d من %3$d • المصادر الحديثة حاليًا: %4$d من %3$d.</string>
     <string name="url_signal_community_feed">ظهر هذا المضيف في مصدر تهديد مجتمعي، لذلك يحتاج إلى مراجعة قبل فتحه.</string>
@@ -767,13 +767,14 @@
     <string name="threat_update_next_check">الفحص التلقائي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
     <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
     <string name="threat_update_never_success">لم ينجح بعد أي تحديث لمعلومات التهديدات عبر الإنترنت.</string>
-    <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مضيف تصيد • %3$s مضيف C2 • %4$s ثغرة أندرويد</string>
+    <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مؤشر تصيد • %3$s مضيف C2 • %4$s ثغرة أندرويد</string>
     <string name="threat_update_source_ok">✓ %1$s — تم التحديث</string>
     <string name="threat_update_source_failed">⚠ %1$s — فشل؛ تم الاحتفاظ بآخر بيانات صالحة</string>
     <string name="threat_update_source_waiting">• %1$s — بانتظار أول تحديث ناجح</string>
     <string name="threat_update_source_fresh">✓ %1$s — حديث</string>
     <string name="threat_update_source_stale">⚠ %1$s — قديم / يحتاج إعادة المحاولة</string>
     <string name="threat_source_phishing_primary">مصدر التصيد الأساسي</string>
+    <string name="threat_source_phishing_openphish">مصدر روابط التصيد الحي</string>
     <string name="threat_source_phishing_community">مصدر التصيد المجتمعي</string>
 
     <string name="threat_update_stalled_retry">لم يرسل التحديث أي تقدم منذ مدة طويلة. يمكنك الضغط على تحديث الحماية الآن لإعادة تشغيله بأمان.</string>

@@ -22,9 +22,11 @@ class UrlScanner(
             )
         }
 
-        val urlHash = sha256(normalized.url)
         val hostHash = sha256(normalized.host)
-        val known = lookup(UrlIndicatorKind.URL, urlHash)
+        val known = urlLookupCandidates(normalized.url)
+            .asSequence()
+            .mapNotNull { candidate -> lookup(UrlIndicatorKind.URL, sha256(candidate)) }
+            .firstOrNull()
             ?: lookup(UrlIndicatorKind.HOST, hostHash)
             ?: hostSuffixes(normalized.host)
                 .asSequence()
@@ -113,6 +115,13 @@ class UrlScanner(
             riskScore = score,
             signals = signals
         )
+    }
+
+    private fun urlLookupCandidates(url: String): List<String> {
+        val candidates = linkedSetOf(url)
+        val query = url.indexOf('?')
+        if (query > 0) candidates += url.substring(0, query)
+        return candidates.toList()
     }
 
     private fun hostSuffixes(host: String): List<String> {
