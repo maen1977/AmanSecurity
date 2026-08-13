@@ -1,47 +1,34 @@
-# GitHub Actions threat-intelligence updates
+# GitHub Actions threat updates
 
-Aman Security uses one workflow file, `.github/workflows/main.yml`, for both threat refresh and Android CI.
-
-## Schedule
-
-The workflow runs automatically every six hours and on pushes to `main`. `concurrency.cancel-in-progress` ensures a newer run replaces an older in-progress run for the same ref.
+Aman Security uses `.github/workflows/build.yml` for both the signed threat-intelligence factory and Android CI. The workflow runs on pushes to `main`, on manual dispatch, and every six hours. Scheduled runs publish intelligence without rebuilding the Android APK; push and manual runs also build and test the app.
 
 ## Secrets
 
-### Threat intelligence
+The private `AmanSecurity` repository requires the following Actions secrets:
 
-`THREAT_DB_PRIVATE_KEY_BASE64` must contain the base64-encoded RSA private key corresponding to `app/src/main/assets/keys/threat_update_public_key.pem`. The workflow decodes it only into the GitHub runner temporary directory and deletes it when the runner is destroyed.
+- `AMAN_THREAT_DB_PRIVATE_KEY_B64`: base64-encoded RSA private key corresponding to `app/src/main/assets/keys/aman-threat-db-public.pem`. It is used only on the ephemeral CI runner to sign the manifest.
+- `AMAN_THREAT_PUBLISH_TOKEN`: fine-grained token scoped only to the public `maen1977/AmanSecurity-Threat-DB` repository with **Contents: Read and write**. It is used only to publish the signed package mirror.
 
-`ABUSECH_AUTH_KEY` enables MalwareBazaar and URLhaus indicator imports. `PHISHING_FEED_URL` is optional and must be an HTTPS feed whose terms allow your use.
-
-### Release signing
-
-The Android release upload key remains separate from the threat-intelligence signing key and uses the `ANDROID_KEYSTORE_*` secrets documented in `RELEASE_SIGNING.md`.
+`ABUSECH_AUTH_KEY` is optional and enables authenticated MalwareBazaar/ThreatFox enrichment. The factory still has non-authenticated public sources when this secret is absent. No secret is bundled in the APK.
 
 ## Update sequence
 
-1. Checkout.
-2. Decode threat DB signing key into the runner temp directory.
-3. Import metadata/indicators only; never request malware sample binaries.
-4. Compact/deduplicate bounded mobile databases.
-5. Increment DB serial only when indicator content changed.
-6. Sign the threat DB manifest.
-7. Synchronize the same signed DB into Android assets.
-8. Generate and sign SHA-256 prefix reputation shards.
-9. Verify all signatures and hashes.
-10. Commit only `threat-db`, `reputation`, and bundled threat assets if changed.
-11. Build/test the Android app using exactly the refreshed data from the same workflow run.
+The workflow checks that both required secrets are present and fails fast when either is missing. It then fetches bounded provider metadata, normalizes indicators, discards raw provider payloads, builds the compact seven-file mobile ZIP, signs and verifies the manifest, and force-publishes only `latest/` to the public threat-package repository. The Android client downloads only the manifest, signature, and a newer signed package from the narrow public endpoint:
 
-A commit made by the workflow uses the repository `GITHUB_TOKEN`; GitHub prevents that token-generated push from recursively starting another normal workflow run, avoiding an update loop.
+```text
+https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+```
+
+The client verifies the RSA signature, rejects rollback serials, checks exact package names, sizes, hashes, and counts, and swaps the verified staging directory atomically. The last-known-good database remains active if a download, signature, package, or source update fails.
 
 ## Repository permissions
 
-The workflow default is `contents: read`. Only the `refresh-threat-intelligence` job requests `contents: write` so it can commit signed indicator updates.
+The private source workflow uses `contents: read`; it does not need write permission in the source repository. The publishing token is scoped to the public threat repository only. The public repository contains no application source, API credentials, private signing material, raw malicious URLs, or malware binaries.
 
-If branch protection prevents the Actions bot from pushing to `main`, allow the workflow's GitHub Actions identity to update the threat-data paths or use a reviewed pull-request process instead.
+## Source-health behavior
 
-## Version 2.1 fail-safe source handling
+External feeds are attempted independently. A transient provider failure is recorded in the signed build report while successful sources continue to update the package. The mobile package contains only normalized SHA-256 indicators and Android bulletin identifiers. It cannot add executable code, Kotlin/DEX rules, or dynamically loaded detection engines. A signed package remains acceptable only when its manifest, signature, size, hashes, schema, and rollback constraints pass on the device.
 
-External feeds are attempted independently. MalwareBazaar is filtered to Android/APK metadata before hashes are accepted. If one feed is temporarily unavailable, Actions records the failure in `threat-intel/source_status.json`, preserves the last verified signed database, and continues the Android verification/build path. Malformed local curated reputation or invalid signed data still fails CI because those are repository-integrity errors rather than transient network failures.
+## Validation
 
-The source-health JSON is uploaded as a workflow artifact and passed to the build job, but it is not committed on every scheduled run, avoiding repository churn solely from timestamps.
+After a manual run, verify that the public repository contains `latest/manifest.json`, `latest/manifest.sig`, `latest/aman-threat-db.zip`, and `latest/build-report.json`. Also verify that the two metadata URLs return HTTP 200 without authentication and inspect the uploaded diagnostics artifact before installing the resulting APK.

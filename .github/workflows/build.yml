@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: aman-security-${{ github.ref }}-${{ github.event_name }}
@@ -29,13 +29,17 @@ jobs:
         shell: bash
         env:
           AMAN_THREAT_DB_PRIVATE_KEY_B64: ${{ secrets.AMAN_THREAT_DB_PRIVATE_KEY_B64 }}
+          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
           ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
         run: |
           set -euo pipefail
           if [ -z "${AMAN_THREAT_DB_PRIVATE_KEY_B64:-}" ]; then
-            echo "::warning::AMAN_THREAT_DB_PRIVATE_KEY_B64 is not configured. App build will continue, but the cloud threat branch will not be published."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::AMAN_THREAT_DB_PRIVATE_KEY_B64 is not configured. Add the signing secret before running the intelligence factory."
+            exit 1
+          fi
+          if [ -z "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
+            echo "::error::AMAN_THREAT_PUBLISH_TOKEN is not configured. Add a fine-grained token with Contents: Read and write only on AmanSecurity-Threat-DB."
+            exit 1
           fi
           python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 30
           python3 tools/sign_cloud_threat_db.py \
@@ -44,9 +48,11 @@ jobs:
           python3 tools/verify_cloud_threat_db.py --dir dist/cloud-threat-db
           echo "publish=true" >> "$GITHUB_OUTPUT"
 
-      - name: Publish immutable-format latest package branch
-        if: steps.intel.outputs.publish == 'true'
+      - name: Publish immutable-format latest package to public threat repository
+        if: steps.intel.outcome == 'success'
         shell: bash
+        env:
+          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/aman-cloud-intel/latest
@@ -64,10 +70,12 @@ jobs:
           touch .nojekyll
           git add .nojekyll latest
           git commit -m "Aman threat intelligence $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push --force origin HEAD:aman-threat-db
+          git remote add threat-public "https://x-access-token:${AMAN_THREAT_PUBLISH_TOKEN}@github.com/maen1977/AmanSecurity-Threat-DB.git"
+          git push --force threat-public HEAD:main
+          git remote remove threat-public
 
       - name: Upload threat-package diagnostics
-        if: always() && steps.intel.outputs.publish == 'true'
+        if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: AmanSecurity-3.5.0-Cloud-Threat-Package
@@ -81,7 +89,7 @@ jobs:
     needs: threat-intelligence
     runs-on: ubuntu-latest
     env:
-      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/${{ github.repository }}/aman-threat-db/latest
+      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
 
     steps:
       - name: Checkout project

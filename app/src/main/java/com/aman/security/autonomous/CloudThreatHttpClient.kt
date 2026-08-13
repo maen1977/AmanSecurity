@@ -121,7 +121,7 @@ class CloudThreatHttpClient {
             return parts.size == 4 &&
                 parts[0].matches(Regex("^[A-Za-z0-9_.-]{1,100}$")) &&
                 parts[1].matches(Regex("^[A-Za-z0-9_.-]{1,100}$")) &&
-                parts[2] == "aman-threat-db" && parts[3] == "latest"
+                parts[2] == "AmanSecurity-Threat-DB" && parts[3] == "main"
         }
     }
 }

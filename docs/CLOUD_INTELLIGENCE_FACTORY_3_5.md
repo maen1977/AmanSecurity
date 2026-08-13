@@ -4,7 +4,7 @@
 
 **GitHub Actions is the intelligence factory. Aman on Android is the lightweight consumer and scanner.**
 
-The workflow runs the intelligence factory every six hours. It gathers bounded threat-indicator feeds, normalizes them in CI, converts URLs/hosts to SHA-256 indicators, discards raw provider payloads, creates a compact ZIP, signs the manifest, verifies the package, and force-publishes only the latest package to the `aman-threat-db` branch.
+The workflow runs the intelligence factory every six hours. It gathers bounded threat-indicator feeds, normalizes them in CI, converts URLs/hosts to SHA-256 indicators, discards raw provider payloads, creates a compact ZIP, signs the manifest, verifies the package, and force-publishes only the latest package to the separate public `AmanSecurity-Threat-DB` repository. The application source repository remains private.
 
 The Android app never parses the upstream provider feeds. It downloads only `manifest.json`, `manifest.sig`, and—only for a newer serial—the compact `aman-threat-db.zip` package from the configured Aman endpoint. It verifies the RSA signature before trusting package metadata, rejects rollback serials, streams the ZIP to disk, checks exact file names/sizes/hashes/counts, and swaps a verified staging directory into service atomically. The previous database remains active if any step fails.
 
@@ -31,9 +31,10 @@ The mobile ZIP contains only compact indicator indexes and Android CVE identifie
 
 ## GitHub secrets
 
-Required for publishing:
+Required for publishing in the private `AmanSecurity` repository:
 
 - `AMAN_THREAT_DB_PRIVATE_KEY_B64` — base64-encoded private RSA signing key. Never commit it to the repository or place it in the APK.
+- `AMAN_THREAT_PUBLISH_TOKEN` — a fine-grained token scoped only to `AmanSecurity-Threat-DB` with **Contents: Read and write**. It is used only by the CI runner to publish the signed package to the public mirror. Never place this token in the APK or source files.
 
 Optional enrichment:
 
@@ -43,14 +44,15 @@ The matching **public** RSA key is intentionally bundled at `app/src/main/assets
 
 ## First deployment
 
-1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` in **Repository Settings → Secrets and variables → Actions**.
+1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_PUBLISH_TOKEN` in **Repository Settings → Secrets and variables → Actions** of the private `AmanSecurity` repository.
 2. Optionally add `ABUSECH_AUTH_KEY`.
 3. Run **Aman Security Pipeline** manually once.
-4. Confirm the `aman-threat-db` branch contains `latest/manifest.json`, `latest/manifest.sig`, and `latest/aman-threat-db.zip`.
-5. The normal Android build gets `AMAN_THREAT_DB_BASE_URL` automatically from the repository name.
-6. Install the generated 3.5.0 APK and run **Settings → Protection updates → Update protection now**.
+4. Confirm the public `AmanSecurity-Threat-DB` repository contains `latest/manifest.json`, `latest/manifest.sig`, and `latest/aman-threat-db.zip`.
+5. Confirm these anonymous URLs return HTTP 200: `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.json` and `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.sig`.
+6. The normal Android build embeds `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest` and the client allowlist accepts only this host, owner, repository, and branch.
+7. Install the generated 3.5.0 APK and run **Settings → Protection updates → Update protection now**.
 
-The raw GitHub endpoint used by this build is anonymous HTTPS, so the intelligence branch/repository must be publicly readable. If the source repository is private, publish the `latest/` package to a separate public read-only repository/CDN and set `AMAN_THREAT_DB_BASE_URL` to the corresponding narrowly allowed endpoint in a future endpoint-policy change.
+The mobile client uses anonymous HTTPS, so only the signed package mirror is public. The source repository and both private signing/publishing credentials remain private.
 
 ## Validation
 
