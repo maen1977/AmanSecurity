@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -43,11 +44,17 @@ def main() -> int:
     parser.add_argument("base_url")
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
+    # GitHub raw can cache files from a force-pushed branch independently.
+    # Use one fresh query token for the whole package so manifest and ZIP agree.
+    cache_buster = str(time.time_ns())
+    def package_url(name: str) -> str:
+        return f"{base}/{name}?aman_refresh={cache_buster}"
+
     payloads = {
-        "manifest.json": fetch(f"{base}/manifest.json", MAX_MANIFEST_BYTES),
-        "manifest.sig": fetch(f"{base}/manifest.sig", MAX_SIGNATURE_BYTES),
-        "aman-threat-db.zip": fetch(f"{base}/aman-threat-db.zip", MAX_BUNDLE_BYTES),
-        "build-report.json": fetch(f"{base}/build-report.json", MAX_REPORT_BYTES),
+        "manifest.json": fetch(package_url("manifest.json"), MAX_MANIFEST_BYTES),
+        "manifest.sig": fetch(package_url("manifest.sig"), MAX_SIGNATURE_BYTES),
+        "aman-threat-db.zip": fetch(package_url("aman-threat-db.zip"), MAX_BUNDLE_BYTES),
+        "build-report.json": fetch(package_url("build-report.json"), MAX_REPORT_BYTES),
     }
     try:
         manifest = json.loads(payloads["manifest.json"])

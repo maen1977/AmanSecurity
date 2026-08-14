@@ -13,6 +13,9 @@ class CloudThreatHttpClient {
     data class DownloadResult(val bytes: Long, val sha256: String)
 
     private val baseUrl: String = BuildConfig.AMAN_THREAT_DB_BASE_URL.trim().trimEnd('/')
+    // GitHub raw can briefly cache manifest and bundle independently after a force-push.
+    // One per-client token makes all three files come from the same fresh cache generation.
+    private val cacheBuster: String = System.currentTimeMillis().toString()
 
     fun configured(): Boolean = validateBase(baseUrl)
 
@@ -106,7 +109,7 @@ class CloudThreatHttpClient {
     private fun urlFor(name: String): String {
         check(validateBase(baseUrl)) { "Aman cloud threat endpoint is not configured" }
         require(name.matches(Regex("^[a-z0-9.-]{3,64}$")))
-        return "$baseUrl/$name"
+        return "$baseUrl/$name?aman_refresh=$cacheBuster"
     }
 
     companion object {
