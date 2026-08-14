@@ -17,6 +17,8 @@ class FileScanner(
     private val database: SignatureDatabase,
     private val apkStaticAnalyzer: ApkStaticAnalyzer? = null
 ) {
+    private val archiveScanAnalyzer = ArchiveScanAnalyzer(database::find)
+
     fun scan(file: File, onProgress: ((FileScanProgress) -> Unit)? = null): ScanResult {
         require(file.isFile) { "Scan target is not a file" }
         val meta = FileMeta(file.name.ifBlank { "—" }, file.length())
@@ -35,6 +37,11 @@ class FileScanner(
         val looksLikeApk = meta.name.endsWith(".apk", ignoreCase = true)
         if (looksLikeApk) onProgress?.invoke(FileScanProgress(78, FileScanStage.APK_ANALYSIS, meta.name))
         val apkAnalysis = if (looksLikeApk) apkStaticAnalyzer?.analyzeInstalledFile(file, sha256) else null
+        val archiveFinding = if (isArchive(meta.name)) {
+            runCatching { FileInputStream(file).use { archiveScanAnalyzer.scan(it) } }.getOrNull()
+        } else {
+            null
+        }
         onProgress?.invoke(FileScanProgress(92, FileScanStage.FINALIZING, meta.name))
         val identityIndicator = apkAnalysis?.identityIndicator
         val doubleExtension = hasMisleadingDoubleExtension(meta.name)
@@ -62,6 +69,16 @@ class FileScanner(
                 classification = ScanClassification.KNOWN_THREAT
                 reason = ScanDetectionReason.APK_MULTI_ENGINE_KNOWN
                 signatureId = apkAnalysis.advancedVerdict.confirmedReference
+            }
+            archiveFinding?.knownThreat == true -> {
+                classification = ScanClassification.KNOWN_THREAT
+                reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                signatureId = archiveFinding.signatureId
+            }
+            archiveFinding?.misleadingExtension == true -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY
+                signatureId = null
             }
             doubleExtension -> {
                 classification = ScanClassification.SUSPICIOUS
@@ -97,7 +114,8 @@ class FileScanner(
             classification = classification,
             signatureId = signatureId,
             detectionReason = reason,
-            apkAnalysis = apkAnalysis
+            apkAnalysis = apkAnalysis,
+            archiveFinding = archiveFinding
         )
     }
 
@@ -118,6 +136,11 @@ class FileScanner(
         val looksLikeApk = meta.name.endsWith(".apk", ignoreCase = true)
         if (looksLikeApk) onProgress?.invoke(FileScanProgress(78, FileScanStage.APK_ANALYSIS, meta.name))
         val apkAnalysis = if (looksLikeApk) apkStaticAnalyzer?.analyze(uri, sha256) else null
+        val archiveFinding = if (isArchive(meta.name)) {
+            runCatching { resolver.openInputStream(uri)?.use { archiveScanAnalyzer.scan(it) } }.getOrNull()
+        } else {
+            null
+        }
         onProgress?.invoke(FileScanProgress(92, FileScanStage.FINALIZING, meta.name))
         val identityIndicator = apkAnalysis?.identityIndicator
         val doubleExtension = hasMisleadingDoubleExtension(meta.name)
@@ -151,6 +174,16 @@ class FileScanner(
                 reason = ScanDetectionReason.APK_MULTI_ENGINE_KNOWN
                 signatureId = apkAnalysis.advancedVerdict.confirmedReference
             }
+            archiveFinding?.knownThreat == true -> {
+                classification = ScanClassification.KNOWN_THREAT
+                reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                signatureId = archiveFinding.signatureId
+            }
+            archiveFinding?.misleadingExtension == true -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY
+                signatureId = null
+            }
             doubleExtension -> {
                 classification = ScanClassification.SUSPICIOUS
                 reason = ScanDetectionReason.DOUBLE_EXTENSION
@@ -186,7 +219,8 @@ class FileScanner(
             classification = classification,
             signatureId = signatureId,
             detectionReason = reason,
-            apkAnalysis = apkAnalysis
+            apkAnalysis = apkAnalysis,
+            archiveFinding = archiveFinding
         )
     }
 
@@ -203,6 +237,10 @@ class FileScanner(
                 }
             }
         return FileMeta(name, size)
+    }
+
+    private fun isArchive(name: String): Boolean = listOf(".zip", ".jar", ".apk").any {
+        name.endsWith(it, ignoreCase = true)
     }
 
     private fun hasMisleadingDoubleExtension(name: String): Boolean {

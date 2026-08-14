@@ -18,7 +18,9 @@ enum class ScanDetectionReason {
     APK_IDENTITY_MATCH,
     APK_IDENTITY_TEST,
     KNOWN_FILE_SIGNATURE,
-    TEST_SIGNATURE
+    TEST_SIGNATURE,
+    ARCHIVE_KNOWN_SIGNATURE,
+    ARCHIVE_MISLEADING_ENTRY
 }
 
 data class ThreatSignature(
@@ -34,5 +36,6 @@ data class ScanResult(
     val classification: ScanClassification,
     val signatureId: String? = null,
     val detectionReason: ScanDetectionReason = ScanDetectionReason.NO_SIGNATURE,
-    val apkAnalysis: ApkStaticAnalysis? = null
+    val apkAnalysis: ApkStaticAnalysis? = null,
+    val archiveFinding: ArchiveScanFinding? = null
 )

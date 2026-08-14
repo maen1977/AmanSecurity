@@ -11,13 +11,13 @@ def need(ok,label):
     if not ok: raise SystemExit('MANUAL_STORAGE_SCAN_3_5_FAILED '+label)
 
 need('ManualStorageFolderScanner' in scanner and 'DocumentsContract.buildChildDocumentsUriUsingTree' in scanner,'scanner_saf_tree_traversal')
-need('visited >= ProtectionPolicy.MAX_DOCUMENTS_PER_RUN' in scanner and 'scanned >= ProtectionPolicy.MAX_SCAN_FILES_PER_RUN' in scanner,'scanner_resource_limits')
+need('val limits = ProtectionPolicy.storageLimits(mode)' in scanner and 'visited >= limits.maxDocuments' in scanner and 'scanned >= limits.maxScanFiles' in scanner,'scanner_resource_limits')
 need('shouldCancel?.invoke() == true' in scanner and 'CancellationException' in scanner,'scanner_cancellation_support')
 need('recordStore.recordScan(result)' in scanner and 'eventStore.add' in scanner,'scanner_persistence_and_events')
 
 need('btnChooseStorageFolder' in layout and 'btnScanStorageFolder' in layout and 'txtStorageScanSelection' in layout and 'txtStorageScanResult' in layout,'ui_layout_elements')
 need('manualStorageFolderPicker' in main and 'selectedStorageTreeUri' in main,'ui_state_management')
-need('scanManualStorageFolder()' in main and 'ManualStorageFolderScanner' in main,'ui_scanner_integration')
+need('scanManualStorageFolder(' in main and 'ManualStorageFolderScanner' in main,'ui_scanner_integration')
 need('takePersistableUriPermission' in main and 'STORAGE_SCAN_PREFERENCES' in main,'ui_saf_persistence')
 need('scanCancelRequested = false' in main and 'activeScan = true' in main and 'setScanControlsEnabled(false)' in main,'ui_scan_lifecycle_lock')
 need('it is CancellationException' in main and 'scan_cancelled_detail' in main,'ui_cancellation_feedback')

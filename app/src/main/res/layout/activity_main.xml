@@ -237,7 +237,9 @@
                             <Space android:layout_width="8dp" android:layout_height="1dp" />
                             <com.google.android.material.button.MaterialButton android:id="@+id/btnScanStorageFolder" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:enabled="false" android:text="@string/storage_scan_action" />
                         </LinearLayout>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnQuickStorageFolder" style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:enabled="false" android:text="@string/storage_scan_quick_action" />
                         <TextView android:id="@+id/txtStorageScanResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:id="@+id/txtStorageScanFindings" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:textColor="@color/text_secondary" android:textSize="11sp" android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

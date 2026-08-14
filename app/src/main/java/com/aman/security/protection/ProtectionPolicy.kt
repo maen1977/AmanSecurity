@@ -11,6 +11,22 @@ object ProtectionPolicy {
     const val MAX_DOCUMENTS_PER_RUN = 1500
     const val MAX_SCAN_FILES_PER_RUN = 120
     const val MAX_TREE_DEPTH = 16
+    const val QUICK_MAX_DOCUMENTS_PER_RUN = 400
+    const val QUICK_MAX_SCAN_FILES_PER_RUN = 32
+    const val QUICK_MAX_TREE_DEPTH = 8
+
+    fun storageLimits(mode: ManualStorageScanMode): ManualStorageScanLimits = when (mode) {
+        ManualStorageScanMode.QUICK -> ManualStorageScanLimits(
+            maxDocuments = QUICK_MAX_DOCUMENTS_PER_RUN,
+            maxScanFiles = QUICK_MAX_SCAN_FILES_PER_RUN,
+            maxTreeDepth = QUICK_MAX_TREE_DEPTH
+        )
+        ManualStorageScanMode.FULL -> ManualStorageScanLimits(
+            maxDocuments = MAX_DOCUMENTS_PER_RUN,
+            maxScanFiles = MAX_SCAN_FILES_PER_RUN,
+            maxTreeDepth = MAX_TREE_DEPTH
+        )
+    }
 
     private val highInterestExtensions = setOf(
         "apk", "xapk", "apks", "apkm", "jar", "dex", "zip", "7z", "rar"

@@ -33,6 +33,8 @@ import com.aman.security.autonomous.ThreatUpdateState
 import com.aman.security.autonomous.ThreatUpdateStateStore
 import com.aman.security.protection.ProtectedFolderScanner
 import com.aman.security.protection.ManualStorageFolderScanner
+import com.aman.security.protection.ManualStorageScanCache
+import com.aman.security.protection.ManualStorageScanMode
 import com.aman.security.protection.ProtectedFolderScanSummary
 import com.aman.security.protection.DownloadProtectionScanner
 import com.aman.security.protection.LocalScanCacheStore
@@ -137,6 +139,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var database: SignatureDatabase
     private lateinit var scanner: FileScanner
+    private lateinit var manualStorageScanCache: ManualStorageScanCache
     private lateinit var apkStaticAnalyzer: ApkStaticAnalyzer
     private lateinit var installedAppScanner: InstalledAppScanner
     private lateinit var urlScanner: UrlScanner
@@ -271,6 +274,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         database = SignatureDatabase(this)
+        manualStorageScanCache = ManualStorageScanCache(
+            getSharedPreferences(MANUAL_STORAGE_SCAN_CACHE_PREFERENCES, MODE_PRIVATE)
+        )
         apkStaticAnalyzer = ApkStaticAnalyzer(this, database)
         scanner = FileScanner(contentResolver, database, apkStaticAnalyzer)
         installedAppScanner = InstalledAppScanner(this, database)
@@ -295,7 +301,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
         binding.btnChooseStorageFolder.setOnClickListener { manualStorageFolderPicker.launch(selectedStorageTreeUri) }
-        binding.btnScanStorageFolder.setOnClickListener { scanManualStorageFolder() }
+        binding.btnScanStorageFolder.setOnClickListener { scanManualStorageFolder(ManualStorageScanMode.FULL) }
+        binding.btnQuickStorageFolder.setOnClickListener { scanManualStorageFolder(ManualStorageScanMode.QUICK) }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
         binding.btnScanMessage.setOnClickListener { scanMessageInput() }
@@ -1507,6 +1514,7 @@ class MainActivity : AppCompatActivity() {
         if (uri == null) {
             binding.txtStorageScanSelection.setText(R.string.storage_scan_none_selected)
             binding.btnScanStorageFolder.isEnabled = false
+            binding.btnQuickStorageFolder.isEnabled = false
             return
         }
         val permissionPresent = contentResolver.persistedUriPermissions.any { permission ->
@@ -1515,6 +1523,7 @@ class MainActivity : AppCompatActivity() {
         if (!permissionPresent) {
             binding.txtStorageScanSelection.setText(R.string.storage_scan_permission_lost)
             binding.btnScanStorageFolder.isEnabled = false
+            binding.btnQuickStorageFolder.isEnabled = false
             return
         }
         binding.txtStorageScanSelection.text = getString(
@@ -1522,6 +1531,7 @@ class MainActivity : AppCompatActivity() {
             uri.lastPathSegment ?: uri.toString()
         )
         binding.btnScanStorageFolder.isEnabled = true
+        binding.btnQuickStorageFolder.isEnabled = true
     }
 
     private fun setManualStorageFolder(uri: Uri) {
@@ -1544,9 +1554,10 @@ class MainActivity : AppCompatActivity() {
         )
         binding.txtStorageScanResult.text = ""
         binding.btnScanStorageFolder.isEnabled = !activeScan
+        binding.btnQuickStorageFolder.isEnabled = !activeScan
     }
 
-    private fun scanManualStorageFolder() {
+    private fun scanManualStorageFolder(mode: ManualStorageScanMode = ManualStorageScanMode.FULL) {
         val treeUri = selectedStorageTreeUri
         if (treeUri == null) {
             showInfo(R.string.storage_scan_none_selected)
@@ -1557,7 +1568,11 @@ class MainActivity : AppCompatActivity() {
         activeScan = true
         binding.btnStopScan.isEnabled = true
         setScanControlsEnabled(false)
-        binding.txtStorageScanResult.setText(R.string.storage_scan_running)
+        binding.txtStorageScanResult.setText(
+            if (mode == ManualStorageScanMode.QUICK) R.string.storage_scan_running_quick
+            else R.string.storage_scan_running
+        )
+        binding.txtStorageScanFindings.visibility = View.GONE
         lifecycleScope.launch(uiCoroutineErrorHandler) {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
@@ -1566,14 +1581,18 @@ class MainActivity : AppCompatActivity() {
                         fileScanner = scanner,
                         eventStore = protectionEventStore,
                         recordStore = recordStore,
-                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) },
+                        cache = manualStorageScanCache,
+                        databaseVersion = "${database.info.version}:${database.info.serial}:${database.autonomousStore.installedSerial()}"
                     ).scan(
                         treeUri = treeUri,
+                        mode = mode,
                         onProgress = { scanned, fileName ->
                             runOnUiThread {
                                 if (!isFinishing && !isDestroyed) {
                                     binding.txtStorageScanResult.text = getString(
-                                        R.string.storage_scan_running
+                                        if (mode == ManualStorageScanMode.QUICK) R.string.storage_scan_running_quick
+                                        else R.string.storage_scan_running
                                     ) + "\\n" + fileName
                                 }
                             }
@@ -1590,6 +1609,8 @@ class MainActivity : AppCompatActivity() {
                 if (summary.permissionLost) {
                     binding.txtStorageScanResult.setText(R.string.storage_scan_permission_lost)
                     binding.btnScanStorageFolder.isEnabled = false
+                    binding.btnQuickStorageFolder.isEnabled = false
+                    binding.txtStorageScanFindings.visibility = View.GONE
                 } else {
                     val headline = getString(
                         R.string.storage_scan_result,
@@ -1602,7 +1623,39 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         getString(R.string.storage_scan_result_safe)
                     }
-                    binding.txtStorageScanResult.text = headline + "\\n" + detail
+                    val modeLabel = if (summary.mode == ManualStorageScanMode.QUICK) {
+                        getString(R.string.storage_scan_mode_quick)
+                    } else {
+                        getString(R.string.storage_scan_mode_full)
+                    }
+                    val truncation = if (summary.truncated) getString(R.string.storage_scan_truncated) else ""
+                    val limits = getString(
+                        R.string.storage_scan_result_limits,
+                        modeLabel,
+                        NumberFormat.getIntegerInstance().format(summary.knownThreats),
+                        NumberFormat.getIntegerInstance().format(summary.highRisk),
+                        NumberFormat.getIntegerInstance().format(summary.inaccessibleFiles),
+                        NumberFormat.getIntegerInstance().format(summary.reusedFiles),
+                        truncation
+                    )
+                    binding.txtStorageScanResult.text = headline + "\\n" + detail + "\\n" + limits
+                    if (summary.findings.isEmpty()) {
+                        binding.txtStorageScanFindings.visibility = View.GONE
+                    } else {
+                        val lines = summary.findings.take(MAX_VISIBLE_SCAN_FINDINGS).joinToString("\\n") { finding ->
+                            val severityLabel = if (finding.severity == ProtectionSeverity.KNOWN_THREAT) {
+                                getString(R.string.storage_scan_finding_known)
+                            } else {
+                                getString(R.string.storage_scan_finding_high)
+                            }
+                            val archiveDetail = finding.archiveEntryName?.let {
+                                getString(R.string.storage_scan_archive_entry_suffix, it)
+                            }.orEmpty()
+                            getString(R.string.storage_scan_finding_line, finding.displayName, severityLabel, archiveDetail)
+                        }
+                        binding.txtStorageScanFindings.text = getString(R.string.storage_scan_findings_title) + "\\n" + lines
+                        binding.txtStorageScanFindings.visibility = View.VISIBLE
+                    }
                 }
                 renderSecurityManagement()
                 renderProtectionStatus()
@@ -3628,6 +3681,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "AmanSecurity"
         private const val PRIVACY_PREFERENCES = "privacy_preferences"
         private const val STORAGE_SCAN_PREFERENCES = "storage_scan_preferences"
+        private const val MANUAL_STORAGE_SCAN_CACHE_PREFERENCES = "manual_storage_scan_cache"
         private const val STORAGE_SCAN_URI_KEY = "selected_tree_uri"
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"
         private const val INSTALLED_SCAN_DISCLOSURE_VERSION = 1
