@@ -12,12 +12,13 @@ import time
 import urllib.error
 import urllib.request
 
-
 BUNDLE_NAME = re.compile(r"^aman-threat-db-[0-9]+\.zip$")
 MAX_MANIFEST_BYTES = 128 * 1024
 MAX_SIGNATURE_BYTES = 128 * 1024
 MAX_REPORT_BYTES = 256 * 1024
 MAX_BUNDLE_BYTES = 8 * 1024 * 1024
+MAX_ATTEMPTS = 8
+RETRY_DELAY_SECONDS = 5
 
 
 def fetch(url: str, maximum: int) -> bytes:
@@ -25,7 +26,8 @@ def fetch(url: str, maximum: int) -> bytes:
         url,
         headers={
             "User-Agent": "AmanSecurity-public-mirror-gate/1.0",
-            "Accept": "application/octet-stream",
+            "Accept": "application/octet-stream,application/json;q=0.9",
+            "Cache-Control": "no-cache",
         },
     )
     try:
@@ -42,15 +44,7 @@ def fetch(url: str, maximum: int) -> bytes:
     return body
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("base_url")
-    args = parser.parse_args()
-    base = args.base_url.rstrip("/")
-    # GitHub raw can cache files from a force-pushed branch independently.
-    # Use one fresh query token for the whole package so manifest and ZIP agree.
-    cache_buster = str(time.time_ns())
-
+def verify_once(base: str, cache_buster: str) -> str:
     def package_url(name: str) -> str:
         return f"{base}/{name}?aman_refresh={cache_buster}"
 
@@ -75,7 +69,7 @@ def main() -> int:
         raise RuntimeError(f"bundleSha256 mismatch: manifest={expected_sha256} actual={actual_sha256}")
     if not report:
         raise RuntimeError("build-report.json is empty")
-    print(
+    return (
         "PUBLIC_THREAT_MIRROR_OK"
         f" files=manifest.json,manifest.sig,{bundle_path},build-report.json"
         f" serial={manifest.get('serial')}"
@@ -83,7 +77,24 @@ def main() -> int:
         f" bundle_sha256={actual_sha256}"
         f" signature_bytes={len(signature)}"
     )
-    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("base_url")
+    args = parser.parse_args()
+    base = args.base_url.rstrip("/")
+    last_error: RuntimeError | None = None
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            print(verify_once(base, f"{time.time_ns()}-{attempt}"))
+            return 0
+        except RuntimeError as exc:
+            last_error = exc
+            if attempt < MAX_ATTEMPTS:
+                print(f"PUBLIC_THREAT_MIRROR_RETRY attempt={attempt} reason={exc}", file=sys.stderr)
+                time.sleep(RETRY_DELAY_SECONDS)
+    raise last_error or RuntimeError("public mirror verification failed")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,12 @@ class CloudThreatHttpClient {
     private val baseUrl: String = BuildConfig.AMAN_THREAT_DB_BASE_URL.trim().trimEnd('/')
     // GitHub raw can briefly cache manifest and bundle independently after a force-push.
     // One per-client token makes all three files come from the same fresh cache generation.
-    private val cacheBuster: String = System.currentTimeMillis().toString()
+    @Volatile
+    private var cacheBuster: String = System.nanoTime().toString()
+
+    fun refreshCache() {
+        cacheBuster = System.nanoTime().toString()
+    }
 
     fun configured(): Boolean = validateBase(baseUrl)
 

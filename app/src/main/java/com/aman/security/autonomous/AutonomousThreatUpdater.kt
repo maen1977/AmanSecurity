@@ -53,51 +53,76 @@ class AutonomousThreatUpdater(
         }
 
         return try {
-            report(AutonomousUpdatePhase.CONNECTING, 5)
-            val manifestBytes = http.getSmall("manifest.json", 64 * 1024)
-            report(AutonomousUpdatePhase.CONNECTING, 45)
-            val signatureBytes = http.getSmall("manifest.sig", 4 * 1024)
-            report(AutonomousUpdatePhase.PARSING, 20)
-            if (!CloudThreatSignatureVerifier.verify(context, manifestBytes, signatureBytes)) {
-                throw SecurityException("Cloud threat manifest signature rejected")
-            }
-            val manifest = CloudThreatManifest.parse(manifestBytes)
-            report(AutonomousUpdatePhase.PARSING, 100)
+            var lastError: Exception? = null
+            var result: AutonomousUpdateResult? = null
+            for (attempt in 0 until MAX_CLOUD_ATTEMPTS) {
+                var staging: File? = null
+                try {
+                    if (attempt > 0) {
+                        http.refreshCache()
+                        report(AutonomousUpdatePhase.CONNECTING, 5)
+                        Thread.sleep(RETRY_DELAY_MS)
+                    }
+                    report(AutonomousUpdatePhase.CONNECTING, 5)
+                    val manifestBytes = http.getSmall("manifest.json", 64 * 1024)
+                    report(AutonomousUpdatePhase.CONNECTING, 45)
+                    val signatureBytes = http.getSmall("manifest.sig", 4 * 1024)
+                    report(AutonomousUpdatePhase.PARSING, 20)
+                    if (!CloudThreatSignatureVerifier.verify(context, manifestBytes, signatureBytes)) {
+                        throw SecurityException("Cloud threat manifest signature rejected")
+                    }
+                    val manifest = CloudThreatManifest.parse(manifestBytes)
+                    report(AutonomousUpdatePhase.PARSING, 100)
 
-            val installedSerial = store.installedSerial()
-            if (manifest.serial < installedSerial) throw SecurityException("Cloud threat rollback rejected")
-            if (manifest.serial == installedSerial) {
-                store.recordCloudUnchanged(manifest, attemptAt)
-                report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = true)
-                val info = store.info()
-                return AutonomousUpdateResult.Success(info, changedSources = 0)
-            }
+                    val installedSerial = store.installedSerial()
+                    if (manifest.serial < installedSerial) throw SecurityException("Cloud threat rollback rejected")
+                    if (manifest.serial == installedSerial) {
+                        store.recordCloudUnchanged(manifest, attemptAt)
+                        report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = true)
+                        val info = store.info()
+                        return AutonomousUpdateResult.Success(info, changedSources = 0)
+                    }
 
-            val staging = store.createStagingDirectory()
-            val bundle = File(staging, "package.tmp")
-            val download = http.downloadBundle(manifest, bundle) { downloaded, total ->
-                val percent = if (total > 0L) ((downloaded * 100L) / total).toInt().coerceIn(0, 100) else 0
-                report(AutonomousUpdatePhase.DOWNLOADING, percent, downloaded, total)
-            }
-            if (download.sha256 != manifest.bundleSha256) throw SecurityException("Cloud threat bundle hash rejected")
+                    staging = store.createStagingDirectory()
+                    val bundle = File(staging, "package.tmp")
+                    val download = http.downloadBundle(manifest, bundle) { downloaded, total ->
+                        val percent = if (total > 0L) ((downloaded * 100L) / total).toInt().coerceIn(0, 100) else 0
+                        report(AutonomousUpdatePhase.DOWNLOADING, percent, downloaded, total)
+                    }
+                    if (download.sha256 != manifest.bundleSha256) throw SecurityException("Cloud threat bundle hash rejected")
 
-            report(AutonomousUpdatePhase.PARSING, 5, download.bytes, manifest.bundleBytes)
-            extractAndVerify(bundle, staging, manifest) { percent ->
-                report(AutonomousUpdatePhase.INDEXING, percent, download.bytes, manifest.bundleBytes)
-            }
-            bundle.delete()
+                    report(AutonomousUpdatePhase.PARSING, 5, download.bytes, manifest.bundleBytes)
+                    extractAndVerify(bundle, staging, manifest) { percent ->
+                        report(AutonomousUpdatePhase.INDEXING, percent, download.bytes, manifest.bundleBytes)
+                    }
+                    bundle.delete()
 
-            report(AutonomousUpdatePhase.APPLYING, 30, download.bytes, manifest.bundleBytes)
-            val changed = store.installVerifiedPackage(staging, manifestBytes, manifest, attemptAt)
-            database.reloadAutonomous()
-            report(AutonomousUpdatePhase.APPLYING, 100, download.bytes, manifest.bundleBytes, finished = true, succeeded = true)
-            val info = store.info()
-            AutonomousUpdateResult.Success(info, changedSources = if (changed) 1 else 0)
+                    report(AutonomousUpdatePhase.APPLYING, 30, download.bytes, manifest.bundleBytes)
+                    val changed = store.installVerifiedPackage(staging, manifestBytes, manifest, attemptAt)
+                    database.reloadAutonomous()
+                    report(AutonomousUpdatePhase.APPLYING, 100, download.bytes, manifest.bundleBytes, finished = true, succeeded = true)
+                    val info = store.info()
+                    result = AutonomousUpdateResult.Success(info, changedSources = if (changed) 1 else 0)
+                    break
+                } catch (error: Exception) {
+                    staging?.deleteRecursively()
+                    lastError = error
+                    if (!isRetryable(error) || attempt == MAX_CLOUD_ATTEMPTS - 1) throw error
+                }
+            }
+            result ?: throw (lastError ?: IllegalStateException("Cloud threat update produced no result"))
         } catch (error: Exception) {
             store.recordCloudFailure(attemptAt)
             report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = false)
             AutonomousUpdateResult.NoSourceAvailable(failureReason(error))
         }
+    }
+
+    private fun isRetryable(error: Exception): Boolean {
+        val message = error.message.orEmpty()
+        return !message.contains("endpoint not configured", ignoreCase = true) &&
+            !message.contains("rollback rejected", ignoreCase = true) &&
+            !message.contains("requires a newer Aman version", ignoreCase = true)
     }
 
     private fun failureReason(error: Exception): String {
@@ -181,6 +206,8 @@ class AutonomousThreatUpdater(
 
     companion object {
         const val TOTAL_SOURCES = 1
+        private const val MAX_CLOUD_ATTEMPTS = 3
+        private const val RETRY_DELAY_MS = 1_500L
         private val HASH = Regex("^[a-f0-9]{64}$")
         private val CVE = Regex("^CVE-20\\d{2}-\\d{4,8}$")
     }
