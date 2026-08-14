@@ -69,7 +69,7 @@ class BackgroundActivityAuditor(private val context: Context) {
         val services = info.services.orEmpty()
         val requested = info.requestedPermissions?.toSet().orEmpty()
         val foregroundService = services.any { service ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) service.foregroundServiceType != 0
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) service.foregroundServiceType != 0
             else Manifest.permission.FOREGROUND_SERVICE in requested
         }
         val startsOnBoot = Manifest.permission.RECEIVE_BOOT_COMPLETED in requested
