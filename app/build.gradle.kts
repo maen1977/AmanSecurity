@@ -21,8 +21,8 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 32
-        versionName = "3.5.2"
+        versionCode = 33
+        versionName = "3.5.3"
 
         buildConfigField("String", "EXPECTED_RELEASE_CERT_SHA256", "\"$expectedReleaseCert\"")
         buildConfigField("String", "AMAN_THREAT_DB_BASE_URL", "\"$cloudThreatDbBaseUrl\"")

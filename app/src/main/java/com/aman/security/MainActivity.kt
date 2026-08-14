@@ -502,13 +502,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderDatabaseInfo() {
+        binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
+        binding.txtHomeVersion.text = BuildConfig.VERSION_NAME
+        renderCloudPackageCard()
+        renderAutonomousIntel()
+        renderThreatUpdateState(ThreatUpdateStateStore(this).snapshot())
+        renderProtectionPosture()
+    }
+
+    /**
+     * Renders the signed-cloud package identity independently so it can be refreshed immediately
+     * after a WorkManager update completes, without waiting for the activity to be recreated.
+     */
+    private fun renderCloudPackageCard() {
         val info = database.info
         val cloudStore = database.autonomousStore
         val cloudInfo = cloudStore.info()
         val cloudVersion = cloudStore.installedVersion()
         val cloudSerial = cloudStore.installedSerial()
-        binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
-        binding.txtHomeVersion.text = BuildConfig.VERSION_NAME
         binding.txtDatabaseVersion.text = if (cloudVersion != null) {
             getString(R.string.cloud_package_version, cloudVersion, cloudSerial)
         } else {
@@ -549,9 +560,6 @@ class MainActivity : AppCompatActivity() {
             append('\n')
             append(getString(R.string.database_baseline_date, formattedBaselineDate))
         }
-        renderAutonomousIntel()
-        renderThreatUpdateState(ThreatUpdateStateStore(this).snapshot())
-        renderProtectionPosture()
     }
 
     private fun updateThreatDatabase() {
@@ -2042,6 +2050,7 @@ class MainActivity : AppCompatActivity() {
         ) {
             lastRenderedThreatUpdateCompletion = state.finishedAt
             database.reloadAutonomous()
+            renderCloudPackageCard()
             renderAutonomousIntel()
         }
 

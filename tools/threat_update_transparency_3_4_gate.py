@@ -19,4 +19,6 @@ need('STALE_ACTIVE_MS = 3 * 60_000L' in state and 'lastProgressAt' in state and 
 need('progressThreatUpdate' in layout and 'txtUpdateTransfer' in layout and 'txtUpdateTiming' in layout and 'txtUpdateSourceDetails' in layout,'visible_update_details')
 need('threatUpdateTimingText' in main and 'buildThreatSourceStatusText' in main and 'formatByteCount' in main,'ui_details')
 need('lastRenderedThreatUpdateCompletion' in main,'no_repeat_reload')
-print('THREAT_UPDATE_TRANSPARENCY_3_5_OK periodic_daily_24h=1 manual_now=1 single_package_progress=1 transfer_bytes=1 phases=1 last_success=1 next_check=1 stale_retry=1')
+need('private fun renderCloudPackageCard()' in main,'cloud_package_card_renderer')
+need('database.reloadAutonomous()\n            renderCloudPackageCard()\n            renderAutonomousIntel()' in main,'cloud_package_card_refresh_after_completion')
+print('THREAT_UPDATE_TRANSPARENCY_3_5_OK periodic_daily_24h=1 manual_now=1 single_package_progress=1 transfer_bytes=1 phases=1 last_success=1 next_check=1 stale_retry=1 package_card_refresh=1')
