@@ -39,7 +39,7 @@ need('CloudThreatSignatureVerifier.verify' in updater and 'manifest.serial < ins
 need('TOTAL_SOURCES = 1' in updater and 'ZipInputStream' in updater and 'Unexpected cloud threat package entry' in updater,'single_bounded_package')
 need('MappedByteBuffer' in store and 'FileChannel.MapMode.READ_ONLY' in store and 'cloud-intel-v1' in store,'low_heap_mmap_indexes')
 need('previous' in store and 'renameTo(currentDirectory)' in store and 'recordCloudFailure' in store,'last_known_good_atomic_swap')
-need('raw.githubusercontent.com' in http and 'parts[2] == "AmanSecurity-Threat-DB"' in http and 'parts[3] == "main"' in http,'narrow_endpoint_allowlist')
+need('raw.githubusercontent.com' in http and 'parts[1] == "AmanSecurity-Threat-DB"' in http and 'parts[2] == "main"' in http and 'parts[3] == "latest"' in http,'narrow_endpoint_allowlist')
 need('instanceFollowRedirects = false' in http and 'MAX_BUNDLE_BYTES' in pkg and 'SHA256withRSA' in pkg,'transport_package_bounds')
 need('PeriodicWorkRequestBuilder<AutonomousThreatWorker>(12, TimeUnit.HOURS' in scheduler and 'NetworkType.UNMETERED' in scheduler and 'setRequiresBatteryNotLow(true)' in scheduler,'low_end_periodic_policy')
 need('NetworkType.CONNECTED' in scheduler,'manual_connected_update')

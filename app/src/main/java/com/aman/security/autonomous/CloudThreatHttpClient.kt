@@ -119,9 +119,9 @@ class CloudThreatHttpClient {
             if (uri.host?.lowercase(Locale.ROOT) != "raw.githubusercontent.com") return false
             val parts = uri.path.orEmpty().split('/').filter(String::isNotBlank)
             return parts.size == 4 &&
-                parts[0].matches(Regex("^[A-Za-z0-9_.-]{1,100}$")) &&
-                parts[1].matches(Regex("^[A-Za-z0-9_.-]{1,100}$")) &&
-                parts[2] == "AmanSecurity-Threat-DB" && parts[3] == "main"
+                parts[0] == "maen1977" &&
+                parts[1] == "AmanSecurity-Threat-DB" &&
+                parts[2] == "main" && parts[3] == "latest"
         }
     }
 }
