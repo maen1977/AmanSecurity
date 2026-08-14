@@ -2039,7 +2039,7 @@ class MainActivity : AppCompatActivity() {
             state.isActive -> R.string.update_in_progress_button
             else -> R.string.update_database
         })
-        binding.progressThreatUpdate.visibility = if (state.isActive) View.VISIBLE else View.GONE
+        binding.progressThreatUpdate.visibility = if (state.isActive && !state.isStaleActive) View.VISIBLE else View.GONE
         val unknownLengthDownload = state.state == ThreatUpdateState.RUNNING &&
             state.currentPhase == AutonomousUpdatePhase.DOWNLOADING && state.currentTotalBytes <= 0L
         binding.progressThreatUpdate.isIndeterminate = state.state == ThreatUpdateState.QUEUED || unknownLengthDownload
@@ -2061,7 +2061,13 @@ class MainActivity : AppCompatActivity() {
         binding.txtUpdateTransfer.visibility = View.GONE
         when (state.state) {
             ThreatUpdateState.IDLE -> binding.txtUpdateStatus.setText(R.string.update_idle)
-            ThreatUpdateState.QUEUED -> binding.txtUpdateStatus.setText(R.string.threat_update_queued)
+            ThreatUpdateState.QUEUED -> {
+                if (state.isStaleActive) {
+                    binding.txtUpdateStatus.setText(R.string.threat_update_stalled_retry)
+                } else {
+                    binding.txtUpdateStatus.setText(R.string.threat_update_queued)
+                }
+            }
             ThreatUpdateState.RUNNING -> {
                 binding.txtUpdateStatus.text = if (state.isStaleActive) {
                     getString(R.string.threat_update_stalled_retry)

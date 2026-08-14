@@ -1,10 +1,10 @@
-# Aman Security 3.5.4
+# Aman Security 3.5.5
 
 Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, confirmed-only automatic encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, signed cloud threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
 
-## 3.5.4 confirmed-threat automatic quarantine
+## 3.5.5 confirmed-threat automatic quarantine
 
-Aman 3.5.4 automatically moves a file into encrypted local quarantine only after an exact, non-excluded `KNOWN_THREAT` signature match. The source stays in place for suspicious, unknown, test-signature, and excluded results; those cases remain reviewable and user-controlled. The encrypted quarantine copy is hash-verified before source removal, retains a local audit record, and supports explicit restoration or permanent deletion from the existing quarantine flow. The feature runs only inside an already-triggered Downloads or manual shared-storage scan: it adds no service, poller, full-device scan, network request, or recurring job.
+Aman 3.5.5 automatically moves a file into encrypted local quarantine only after an exact, non-excluded `KNOWN_THREAT` signature match. The source stays in place for suspicious, unknown, test-signature, and excluded results; those cases remain reviewable and user-controlled. The encrypted quarantine copy is hash-verified before source removal, retains a local audit record, and supports explicit restoration or permanent deletion from the existing quarantine flow. The feature runs only inside an already-triggered Downloads or manual shared-storage scan: it adds no service, poller, full-device scan, network request, or recurring job.
 
 ## 3.5.0 cloud intelligence factory
 

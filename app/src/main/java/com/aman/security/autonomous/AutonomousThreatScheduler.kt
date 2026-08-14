@@ -45,13 +45,16 @@ object AutonomousThreatScheduler {
         if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(24)) {
             val state = ThreatUpdateStateStore(app)
             val snapshot = state.snapshot()
-            if (!snapshot.isActive || snapshot.isStaleActive) state.queued()
-            val initial = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
-                .setConstraints(network)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
-                .build()
-            val policy = if (snapshot.isStaleActive) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
-            WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, policy, initial)
+            // A queued manual request may run over mobile data. Never replace it from the
+            // Wi-Fi-only bootstrap path, even when it becomes stale; the UI will expose retry.
+            if (!snapshot.isActive) {
+                state.queued()
+                val initial = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
+                    .setConstraints(network)
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
+                    .build()
+                WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.KEEP, initial)
+            }
         }
     }
 

@@ -50,7 +50,7 @@ The matching **public** RSA key is intentionally bundled at `app/src/main/assets
 4. Confirm the public `AmanSecurity-Threat-DB` repository contains `latest/manifest.json`, `latest/manifest.sig`, and the dynamic `latest/aman-threat-db-{RUN_ID}.zip` referenced by the manifest.
 5. Confirm these anonymous URLs return HTTP 200: `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.json` and `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.sig`.
 6. The normal Android build embeds `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest` and the client allowlist accepts only this host, owner, repository, and branch.
-7. Install the generated 3.5.4 APK and run **Settings → Protection updates → Update protection now**.
+7. Install the generated 3.5.5 APK and run **Settings → Protection updates → Update protection now**.
 
 The mobile client uses anonymous HTTPS, so only the signed package mirror is public. The source repository and both private signing/publishing credentials remain private.
 
