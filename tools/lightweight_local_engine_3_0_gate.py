@@ -12,7 +12,7 @@ sweep=(ROOT/'app/src/main/java/com/aman/security/protection/CachedReputationSwee
 worker=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatWorker.kt').read_text()
 spy=(ROOT/'app/src/main/java/com/aman/security/security/SpywareRiskPolicy.kt').read_text()
 main=(ROOT/'app/src/main/java/com/aman/security/MainActivity.kt').read_text()
-need('versionName = "3.5.3"' in gradle and 'versionCode = 33' in gradle,'version')
+need('versionName = "3.5.4"' in gradle and 'versionCode = 34' in gradle,'version')
 need('10 * 60_000L' in service and '22 * 60 * 1000L' in controller,'relaxed_heartbeat')
 need('PeriodicWorkRequestBuilder<DownloadProtectionWorker>(2, TimeUnit.HOURS' in scheduler,'downloads_2h')
 need('PeriodicWorkRequestBuilder<ProtectedFolderWorker>(6, TimeUnit.HOURS' in scheduler,'folder_6h')

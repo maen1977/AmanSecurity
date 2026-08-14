@@ -8,6 +8,7 @@ import com.aman.security.scanner.ScanResult
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -29,7 +30,27 @@ class QuarantineManager(
         data object Failed : RestoreResult
     }
 
-    fun quarantine(uri: Uri, scan: ScanResult): QuarantineResult {
+    fun quarantine(uri: Uri, scan: ScanResult): QuarantineResult = quarantineFromSource(
+        scan = scan,
+        openSource = { context.contentResolver.openInputStream(uri) },
+        removeSource = { deleteSource(context.contentResolver, uri) }
+    )
+
+    /**
+     * Quarantines a regular file such as one discovered in the public Downloads folder.
+     * The source is removed only after encrypted storage and hash verification succeed.
+     */
+    fun quarantine(file: File, scan: ScanResult): QuarantineResult = quarantineFromSource(
+        scan = scan,
+        openSource = { if (file.isFile && file.canRead()) FileInputStream(file) else null },
+        removeSource = { !file.exists() || file.delete() }
+    )
+
+    private fun quarantineFromSource(
+        scan: ScanResult,
+        openSource: () -> InputStream?,
+        removeSource: () -> Boolean
+    ): QuarantineResult {
         val directory = File(context.filesDir, DIRECTORY).apply { mkdirs() }
         val id = UUID.randomUUID().toString()
         val blobName = "$id.aq"
@@ -37,14 +58,14 @@ class QuarantineManager(
         val digest = MessageDigest.getInstance("SHA-256")
 
         try {
-            context.contentResolver.openInputStream(uri)?.use { input ->
+            openSource()?.use { input ->
                 FileOutputStream(blob).use { output ->
                     crypto.encrypt(input, output) { bytes, count -> digest.update(bytes, 0, count) }
                 }
             } ?: return QuarantineResult.Failed
 
-            val encryptedPlainHash = digest.digest().toHex()
-            if (!encryptedPlainHash.equals(scan.sha256, ignoreCase = true)) {
+            val sourceHash = digest.digest().toHex()
+            if (!sourceHash.equals(scan.sha256, ignoreCase = true)) {
                 blob.delete()
                 return QuarantineResult.SourceChanged
             }
@@ -61,7 +82,7 @@ class QuarantineManager(
             )
             store.putQuarantine(entry)
 
-            if (!deleteSource(context.contentResolver, uri)) {
+            if (!removeSource()) {
                 store.removeQuarantine(id)
                 blob.delete()
                 return QuarantineResult.SourceRemovalFailed

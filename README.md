@@ -1,12 +1,16 @@
-# Aman Security 3.5.0
+# Aman Security 3.5.4
 
-Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, signed cloud threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+Android antivirus / anti-malware project with strict Arabic and English UI separation, on-device APK/app analysis, phishing protection, Web Guard, confirmed-only automatic encrypted quarantine, install/update event scanning, recurring installed-app rescans, behavior/zero-day heuristics, signed cloud threat-intelligence updates, source-health tracking, production-corpus validation tooling, and configurable release self-integrity checking.
+
+## 3.5.4 confirmed-threat automatic quarantine
+
+Aman 3.5.4 automatically moves a file into encrypted local quarantine only after an exact, non-excluded `KNOWN_THREAT` signature match. The source stays in place for suspicious, unknown, test-signature, and excluded results; those cases remain reviewable and user-controlled. The encrypted quarantine copy is hash-verified before source removal, retains a local audit record, and supports explicit restoration or permanent deletion from the existing quarantine flow. The feature runs only inside an already-triggered Downloads or manual shared-storage scan: it adds no service, poller, full-device scan, network request, or recurring job.
 
 ## 3.5.0 cloud intelligence factory
 
 Aman 3.5.0 moves heavy threat-feed collection and normalization off the phone. The single GitHub Actions pipeline has a scheduled **threat-intelligence** job that gathers bounded public/authorized feeds, normalizes them, discards raw feed payloads, builds compact sorted SHA-256 indexes, signs a small manifest with an RSA key held only in GitHub Actions secrets, verifies the package, and publishes only the latest package to the `aman-threat-db` branch. Scheduled runs refresh intelligence without rebuilding the Android app.
 
-The Android app is now a lightweight consumer. It contacts only the configured Aman package endpoint, verifies the signed manifest and rollback serial, streams the compact ZIP to disk, validates every entry/hash/count, and atomically swaps the last-known-good database. Large SHA-256 indexes are memory-mapped and binary-searched instead of being expanded into large Java `String`/`HashSet` collections. Periodic refresh is every 12 hours on unmetered network with battery-not-low; an explicit manual refresh works on any connected network.
+The Android app is now a lightweight consumer. It contacts only the configured Aman package endpoint, verifies the signed manifest and rollback serial, streams the compact ZIP to disk, validates every entry/hash/count, and atomically swaps the last-known-good database. Large SHA-256 indexes are memory-mapped and binary-searched instead of being expanded into large Java `String`/`HashSet` collections. Periodic refresh is approximately every 24 hours on unmetered network with battery-not-low, using a device-distributed window; an explicit manual refresh works on any connected network.
 
 No upstream phishing/malware provider URL is embedded in the phone runtime, no raw malicious URL feed is shipped to the phone, and no malware binary is downloaded by the intelligence factory. The app continues to make malware/file/link decisions locally. See `docs/CLOUD_INTELLIGENCE_FACTORY_3_5.md`.
 
@@ -42,7 +46,7 @@ Aman 2.8 adds a user-visible foreground Automatic Anti-Virus service instead of 
 
 The Scan Center now separates **Quick scan** (installed apps), **Full scan** (installed apps plus accessible shared-device files/install packages), **Downloads scan**, selective file scan, and Smart Scan. Long scans report actual app/file progress and the current package or file path, and can be stopped cooperatively. The Protection Center reports whether the real-time service heartbeat is actually alive, file-access readiness, app/install monitoring state, Downloads protection state, lifetime check counters, and the last protection activity.
 
-On Android 11+, shared-file and Downloads antivirus scanning uses the platform's user-granted “Manage all files” access. Aman requests it only after a dedicated disclosure and uses it for local malware scanning; this layer does not upload or automatically delete files. See `docs/CHANGELOG_2_8.md`.
+On Android 11+, shared-file and Downloads antivirus scanning uses the platform's user-granted “Manage all files” access. Aman requests it only after a dedicated disclosure and uses it for local malware scanning; this layer does not upload files or permanently delete them; exact confirmed threats may instead be moved to encrypted local quarantine. See `docs/CHANGELOG_2_8.md`.
 
 ## 2.7 production antivirus hardening
 

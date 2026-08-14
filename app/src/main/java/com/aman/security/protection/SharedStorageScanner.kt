@@ -6,6 +6,8 @@ import com.aman.security.scanner.ApkStaticAnalyzer
 import com.aman.security.scanner.FileScanner
 import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.security.QuarantineManager
+import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.SecurityRecordStore
 import java.io.File
 import java.util.ArrayDeque
@@ -36,6 +38,7 @@ class SharedStorageScanner(private val context: Context) {
     private val scanner = FileScanner(context.contentResolver, database, ApkStaticAnalyzer(context, database))
     private val events = ProtectionEventStore(context)
     private val records = SecurityRecordStore(context)
+    private val quarantineManager = QuarantineManager(context, records)
     private val timeline = ProtectionActivityStore(context)
 
     fun scan(
@@ -69,6 +72,18 @@ class SharedStorageScanner(private val context: Context) {
             }
             val excluded = records.isExcluded(result.sha256)
             val severity = if (ProtectionPolicy.shouldNotifyFile(result, excluded)) ProtectionPolicy.severityForFile(result) else null
+            if (QuarantinePolicy.shouldAutoQuarantine(result.classification, excluded)) {
+                when (quarantineManager.quarantine(file, result)) {
+                    is QuarantineManager.QuarantineResult.Success -> timeline.add(
+                        kind = ProtectionActivityKind.FILE_SCAN,
+                        state = ProtectionActivityState.THREAT,
+                        title = context.getString(com.aman.security.R.string.activity_file_quarantined, result.fileName),
+                        detail = result.sha256,
+                        dedupeKey = "quarantined:${result.sha256}"
+                    )
+                    else -> Unit
+                }
+            }
             if (severity != null) {
                 val event = events.add(ProtectionEventType.FILE, result.fileName, file.absolutePath, severity)
                 ProtectionNotifier.notifyEvent(context, event)

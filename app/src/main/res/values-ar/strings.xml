@@ -475,6 +475,8 @@
     <string name="activity_realtime_active">الحماية الفورية تعمل</string>
     <string name="activity_download_detected">تم اكتشاف تنزيل جديد: %1$s</string>
     <string name="activity_download_checked">تم فحص التنزيل: %1$s</string>
+    <string name="activity_download_quarantined">تم عزل التهديد تلقائيًا من التنزيلات: %1$s</string>
+    <string name="activity_file_quarantined">تم عزل التهديد تلقائيًا: %1$s</string>
     <string name="activity_app_install_detected">تم اكتشاف تثبيت/تحديث تطبيق: %1$s</string>
     <string name="activity_app_checked">تم فحص التطبيق: %1$s</string>
     <string name="timeline_download_threat">تم اكتشاف تهديد في التنزيل: %1$s</string>

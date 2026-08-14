@@ -23,4 +23,13 @@ class QuarantinePolicyTest {
         assertTrue(QuarantinePolicy.canOfferQuarantine(ScanClassification.KNOWN_THREAT, false))
         assertTrue(QuarantinePolicy.canOfferQuarantine(ScanClassification.TEST_SIGNATURE, false))
     }
+
+    @Test
+    fun `automatic quarantine only applies to confirmed non-excluded threats`() {
+        assertTrue(QuarantinePolicy.shouldAutoQuarantine(ScanClassification.KNOWN_THREAT, false))
+        assertFalse(QuarantinePolicy.shouldAutoQuarantine(ScanClassification.KNOWN_THREAT, true))
+        assertFalse(QuarantinePolicy.shouldAutoQuarantine(ScanClassification.SUSPICIOUS, false))
+        assertFalse(QuarantinePolicy.shouldAutoQuarantine(ScanClassification.TEST_SIGNATURE, false))
+        assertFalse(QuarantinePolicy.shouldAutoQuarantine(ScanClassification.UNKNOWN_APK, false))
+    }
 }

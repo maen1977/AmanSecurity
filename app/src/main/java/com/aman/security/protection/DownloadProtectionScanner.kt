@@ -8,6 +8,8 @@ import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanDetectionReason
 import com.aman.security.scanner.ScanResult
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.security.QuarantineManager
+import com.aman.security.security.QuarantinePolicy
 import com.aman.security.security.SecurityRecordStore
 import java.io.File
 import java.security.MessageDigest
@@ -21,7 +23,9 @@ data class DownloadScanSummary(
     val highRisk: Int,
     val inaccessible: Int,
     val truncated: Boolean,
-    val accessMissing: Boolean
+    val accessMissing: Boolean,
+    val quarantinedFiles: Int = 0,
+    val quarantineFailures: Int = 0
 )
 
 /**
@@ -34,6 +38,7 @@ class DownloadProtectionScanner(private val context: Context) {
     private val activityStore = ProtectionActivityStore(context)
     private val eventStore = ProtectionEventStore(context)
     private val recordStore = SecurityRecordStore(context)
+    private val quarantineManager = QuarantineManager(context, recordStore)
     private val database = SignatureDatabase(context)
     private val scanner = FileScanner(
         context.contentResolver,
@@ -62,6 +67,8 @@ class DownloadProtectionScanner(private val context: Context) {
         var known = 0
         var high = 0
         var inaccessible = 0
+        var quarantinedFiles = 0
+        var quarantineFailures = 0
         var truncated = false
 
         for ((candidateIndex, file) in candidates.withIndex()) {
@@ -102,6 +109,8 @@ class DownloadProtectionScanner(private val context: Context) {
                     alerts += outcome.alerts
                     known += outcome.known
                     high += outcome.high
+                    quarantinedFiles += outcome.quarantined
+                    quarantineFailures += outcome.quarantineFailures
                 }
                 continue
             }
@@ -132,13 +141,26 @@ class DownloadProtectionScanner(private val context: Context) {
             alerts += handled.alerts
             known += handled.known
             high += handled.high
+            quarantinedFiles += handled.quarantined
+            quarantineFailures += handled.quarantineFailures
         }
 
         cacheStore.saveFiles(fileCache)
         preferences.lastDownloadsScanAt = System.currentTimeMillis()
         preferences.lastDownloadsScannedCount = scanned
         preferences.lastDownloadsAlertCount = alerts
-        return DownloadScanSummary(scanned, skipped, alerts, known, high, inaccessible, truncated, false)
+        return DownloadScanSummary(
+            scannedFiles = scanned,
+            skippedUnchanged = skipped,
+            alerts = alerts,
+            knownThreats = known,
+            highRisk = high,
+            inaccessible = inaccessible,
+            truncated = truncated,
+            accessMissing = false,
+            quarantinedFiles = quarantinedFiles,
+            quarantineFailures = quarantineFailures
+        )
     }
 
     private fun handleResult(result: ScanResult, file: File, fromCachedReputation: Boolean): ResultCounts {
@@ -148,6 +170,23 @@ class DownloadProtectionScanner(private val context: Context) {
 
         val excluded = recordStore.isExcluded(result.sha256)
         val severity = if (ProtectionPolicy.shouldNotifyFile(result, excluded)) ProtectionPolicy.severityForFile(result) else null
+        var quarantined = false
+        var quarantineFailure = false
+        if (QuarantinePolicy.shouldAutoQuarantine(result.classification, excluded)) {
+            when (quarantineManager.quarantine(file, result)) {
+                is QuarantineManager.QuarantineResult.Success -> {
+                    quarantined = true
+                    activityStore.add(
+                        kind = ProtectionActivityKind.DOWNLOAD_SCAN,
+                        state = ProtectionActivityState.THREAT,
+                        title = context.getString(com.aman.security.R.string.activity_download_quarantined, result.fileName),
+                        detail = result.sha256,
+                        dedupeKey = "quarantined:${result.sha256}"
+                    )
+                }
+                else -> quarantineFailure = true
+            }
+        }
         if (severity != null) {
             val alreadyPresent = eventStore.events().any {
                 it.type == ProtectionEventType.FILE && it.detail == file.absolutePath && it.severity == severity
@@ -170,10 +209,15 @@ class DownloadProtectionScanner(private val context: Context) {
                 return ResultCounts(
                     alerts = 1,
                     known = if (severity == ProtectionSeverity.KNOWN_THREAT) 1 else 0,
-                    high = if (severity == ProtectionSeverity.HIGH_RISK) 1 else 0
+                    high = if (severity == ProtectionSeverity.HIGH_RISK) 1 else 0,
+                    quarantined = if (quarantined) 1 else 0,
+                    quarantineFailures = if (quarantineFailure) 1 else 0
                 )
             }
-            return ResultCounts()
+            return ResultCounts(
+                quarantined = if (quarantined) 1 else 0,
+                quarantineFailures = if (quarantineFailure) 1 else 0
+            )
         }
 
         if (!fromCachedReputation) {
@@ -214,7 +258,13 @@ class DownloadProtectionScanner(private val context: Context) {
         .digest(path.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
 
-    private data class ResultCounts(val alerts: Int = 0, val known: Int = 0, val high: Int = 0)
+    private data class ResultCounts(
+        val alerts: Int = 0,
+        val known: Int = 0,
+        val high: Int = 0,
+        val quarantined: Int = 0,
+        val quarantineFailures: Int = 0
+    )
 
     companion object {
         private const val MAX_DOWNLOAD_DOCUMENTS = 3000
