@@ -713,6 +713,7 @@
     <string name="threat_update_notification">Aman is applying the signed protection package.</string>
     <string name="threat_update_running">Updating threat intelligence • %1$d%% • %2$s</string>
     <string name="threat_update_success_persistent">Signed Aman intelligence package verified • %1$d package change(s) applied.</string>
+    <string name="threat_update_already_current_persistent">Signed Aman intelligence package verified • Protection is already up to date.</string>
     <string name="threat_update_partial_persistent">Threat package update completed partially • %1$d succeeded • %2$d failed.</string>
     <string name="threat_update_failed_persistent">A signed Aman threat package could not be verified or downloaded. Last-known-good protection data was kept.</string>
     <string name="threat_update_failure_reason">Reason: %1$s</string>

@@ -7,6 +7,8 @@ updater=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatUp
 state=(ROOT/'app/src/main/java/com/aman/security/autonomous/ThreatUpdateStateStore.kt').read_text()
 layout=(ROOT/'app/src/main/res/layout/activity_main.xml').read_text()
 scheduler=(ROOT/'app/src/main/java/com/aman/security/autonomous/AutonomousThreatScheduler.kt').read_text()
+strings=(ROOT/'app/src/main/res/values/strings.xml').read_text()
+strings_ar=(ROOT/'app/src/main/res/values-ar/strings.xml').read_text()
 def need(ok,label):
     if not ok: raise SystemExit('THREAT_UPDATE_TRANSPARENCY_3_5_FAILED '+label)
 need('PeriodicWorkRequestBuilder<AutonomousThreatWorker>(24, TimeUnit.HOURS, 120, TimeUnit.MINUTES)' in scheduler and 'setInitialDelay' in scheduler,'periodic_daily_distributed')
@@ -21,7 +23,8 @@ need('STALE_ACTIVE_MS = 3 * 60_000L' in state and 'lastProgressAt' in state and 
 need('progressThreatUpdate' in layout and 'txtUpdateTransfer' in layout and 'txtUpdateTiming' in layout and 'txtUpdateSourceDetails' in layout,'visible_update_details')
 need('threatUpdateTimingText' in main and 'buildThreatSourceStatusText' in main and 'formatByteCount' in main,'ui_details')
 need('lastRenderedThreatUpdateCompletion' in main,'no_repeat_reload')
+need('state.changedSources == 0' in main and 'threat_update_already_current_persistent' in main and 'threat_update_already_current_persistent' in strings and 'threat_update_already_current_persistent' in strings_ar,'already_current_success_ui')
 need('state.isActive && !state.isStaleActive' in main and 'ThreatUpdateState.QUEUED -> {' in main and 'threat_update_stalled_retry' in main,'stale_queued_retry_ui')
 need('private fun renderCloudPackageCard()' in main,'cloud_package_card_renderer')
 need('database.reloadAutonomous()\n            renderCloudPackageCard()\n            renderAutonomousIntel()' in main,'cloud_package_card_refresh_after_completion')
-print('THREAT_UPDATE_TRANSPARENCY_3_5_OK periodic_daily_24h=1 manual_now=1 manual_expedited=1 manual_not_replaced=1 single_package_progress=1 transfer_bytes=1 phases=1 last_success=1 next_check=1 stale_retry=1 package_card_refresh=1')
+print('THREAT_UPDATE_TRANSPARENCY_3_5_OK periodic_daily_24h=1 manual_now=1 manual_expedited=1 manual_not_replaced=1 single_package_progress=1 transfer_bytes=1 phases=1 last_success=1 already_current_ui=1 next_check=1 stale_retry=1 package_card_refresh=1')

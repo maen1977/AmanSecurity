@@ -2101,7 +2101,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             ThreatUpdateState.SUCCESS -> binding.txtUpdateStatus.text = buildString {
-                append(getString(R.string.threat_update_success_persistent, state.changedSources))
+                append(
+                    if (state.changedSources == 0) {
+                        getString(R.string.threat_update_already_current_persistent)
+                    } else {
+                        getString(R.string.threat_update_success_persistent, state.changedSources)
+                    }
+                )
                 append('\n')
                 append(threatIntelCountsText(info))
             }
