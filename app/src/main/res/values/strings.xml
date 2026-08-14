@@ -710,6 +710,7 @@
     <string name="persistent_scan_failed_ui">The scan failed: %1$s</string>
     <string name="persistent_scan_already_running">A scan is already running. Aman will keep it running in the background.</string>
     <string name="threat_update_queued">Threat update queued. It will continue if you leave Aman.</string>
+    <string name="threat_update_notification">Aman is applying the signed protection package.</string>
     <string name="threat_update_running">Updating threat intelligence • %1$d%% • %2$s</string>
     <string name="threat_update_success_persistent">Signed Aman intelligence package verified • %1$d package change(s) applied.</string>
     <string name="threat_update_partial_persistent">Threat package update completed partially • %1$d succeeded • %2$d failed.</string>

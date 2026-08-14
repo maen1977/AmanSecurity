@@ -710,6 +710,7 @@
     <string name="persistent_scan_failed_ui">فشل الفحص: %1$s</string>
     <string name="persistent_scan_already_running">يوجد فحص يعمل بالفعل. سيستمر أمان بتشغيله في الخلفية.</string>
     <string name="threat_update_queued">تمت جدولة تحديث التهديدات وسيستمر حتى لو خرجت من أمان.</string>
+    <string name="threat_update_notification">يطبّق أمان حزمة الحماية الموقعة.</string>
     <string name="threat_update_running">تحديث معلومات التهديدات • %1$d%% • %2$s</string>
     <string name="threat_update_success_persistent">تم التحقق من حزمة معلومات أمان الموقعة • تم تطبيق %1$d تغيير.</string>
     <string name="threat_update_partial_persistent">اكتمل تحديث حزمة التهديدات جزئيًا • نجح %1$d • فشل %2$d.</string>

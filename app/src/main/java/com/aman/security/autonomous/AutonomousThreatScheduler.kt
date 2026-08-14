@@ -6,6 +6,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -64,6 +65,9 @@ object AutonomousThreatScheduler {
         ThreatUpdateStateStore(app).queued()
         val request = OneTimeWorkRequestBuilder<AutonomousThreatWorker>()
             .setConstraints(manualNetworkConstraints())
+            // Manual updates are user-visible and must start promptly. If expedited quota is
+            // unavailable, preserve correctness by falling back to a normal request.
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(app).enqueueUniqueWork(ON_DEMAND_WORK, ExistingWorkPolicy.REPLACE, request)
