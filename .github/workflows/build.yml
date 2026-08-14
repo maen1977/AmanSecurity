@@ -41,7 +41,10 @@ jobs:
             echo "::error::AMAN_THREAT_DEPLOY_KEY is not configured. Add the SSH private deploy key for AmanSecurity-Threat-DB as an Actions secret."
             exit 1
           fi
-          python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 30
+          python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 31
+          python3 tools/prepare_cloud_bundle.py \
+            --dir dist/cloud-threat-db \
+            --bundle-name "aman-threat-db-${GITHUB_RUN_ID}.zip"
           python3 tools/sign_cloud_threat_db.py \
             --manifest dist/cloud-threat-db/manifest.json \
             --signature dist/cloud-threat-db/manifest.sig
@@ -63,7 +66,7 @@ jobs:
           mkdir -p /tmp/aman-cloud-intel/latest
           cp dist/cloud-threat-db/manifest.json /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/manifest.sig /tmp/aman-cloud-intel/latest/
-          cp dist/cloud-threat-db/aman-threat-db.zip /tmp/aman-cloud-intel/latest/
+          cp "dist/cloud-threat-db/aman-threat-db-${GITHUB_RUN_ID}.zip" /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/build-report.json /tmp/aman-cloud-intel/latest/
           cp tools/verify_public_threat_mirror.py /tmp/aman-cloud-intel/verify_public_threat_mirror.py
 
@@ -93,7 +96,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.5.0-Cloud-Threat-Package
+          name: AmanSecurity-3.5.1-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -178,8 +181,8 @@ jobs:
       - name: Prepare direct-install APK
         shell: bash
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk AmanSecurity-3.5.0-DirectInstall.apk
-          test -s AmanSecurity-3.5.0-DirectInstall.apk
+          cp app/build/outputs/apk/debug/app-debug.apk AmanSecurity-3.5.1-DirectInstall.apk
+          test -s AmanSecurity-3.5.1-DirectInstall.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -187,21 +190,21 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum AmanSecurity-3.5.0-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum AmanSecurity-3.5.1-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.5.0-DirectInstall-APK
-          path: AmanSecurity-3.5.0-DirectInstall.apk
+          name: AmanSecurity-3.5.1-DirectInstall-APK
+          path: AmanSecurity-3.5.1-DirectInstall.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.5.0-Unsigned-Release-AAB
+          name: AmanSecurity-3.5.1-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -210,7 +213,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: AmanSecurity-3.5.0-Verification-Reports
+          name: AmanSecurity-3.5.1-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/

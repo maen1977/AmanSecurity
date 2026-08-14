@@ -78,7 +78,9 @@ data class CloudThreatManifest(
                 generatedAt = generatedAt,
                 generatedAtEpochMs = generatedEpoch,
                 minAppVersionCode = json.getInt("minAppVersionCode").also { require(it in 1..100_000) },
-                bundlePath = json.getString("bundlePath").also { require(it == "aman-threat-db.zip") },
+                bundlePath = json.getString("bundlePath").also {
+                    require(it.matches(Regex("^aman-threat-db-[0-9]+\\.zip$")))
+                },
                 bundleSha256 = json.getString("bundleSha256").lowercase(Locale.ROOT).also { require(it.matches(HASH)) },
                 bundleBytes = json.getLong("bundleBytes").also { require(it in 1L..MAX_BUNDLE_BYTES) },
                 latestAndroidSecurityPatch = patch,

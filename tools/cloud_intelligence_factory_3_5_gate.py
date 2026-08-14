@@ -18,7 +18,7 @@ scheduler=read('app/src/main/java/com/aman/security/autonomous/AutonomousThreatS
 builder=read('tools/build_cloud_threat_db.py')
 cleanup=read('tools/repository_cleanup_2_6.py')
 
-need('versionName = "3.5.0"' in gradle and 'versionCode = 30' in gradle,'version')
+need('versionName = "3.5.1"' in gradle and 'versionCode = 31' in gradle,'version')
 need('AMAN_THREAT_DB_BASE_URL' in gradle,'build_endpoint')
 need('schedule:' in workflow and '17 */6 * * *' in workflow,'factory_schedule')
 need('threat-intelligence:' in workflow and 'build_cloud_threat_db.py' in workflow and 'sign_cloud_threat_db.py' in workflow and 'verify_cloud_threat_db.py' in workflow,'factory_job')
@@ -61,9 +61,10 @@ need(not private_hits,'private_key_in_repo:'+','.join(private_hits))
 
 with tempfile.TemporaryDirectory(prefix='aman-cloud-gate-') as td:
     out=Path(td)/'intel'
-    subprocess.run([sys.executable,str(ROOT/'tools/build_cloud_threat_db.py'),'--offline-fixture','--output',str(out),'--min-app-version-code','30'],check=True,stdout=subprocess.DEVNULL)
+    subprocess.run([sys.executable,str(ROOT/'tools/build_cloud_threat_db.py'),'--offline-fixture','--output',str(out),'--min-app-version-code','31'],check=True,stdout=subprocess.DEVNULL)
+    subprocess.run([sys.executable,str(ROOT/'tools/prepare_cloud_bundle.py'),'--dir',str(out),'--bundle-name','aman-threat-db-999.zip'],check=True,stdout=subprocess.DEVNULL)
     subprocess.run([sys.executable,str(ROOT/'tools/verify_cloud_threat_db.py'),'--dir',str(out)],check=True,stdout=subprocess.DEVNULL)
-    with zipfile.ZipFile(out/'aman-threat-db.zip') as z:
+    with zipfile.ZipFile(out/'aman-threat-db-999.zip') as z:
         names=set(z.namelist())
         need(names=={'malware_files.sha256','phishing_primary.sha256','phishing_openphish.sha256','phishing_community.sha256','malware_url_hosts.sha256','c2_hosts.sha256','android_cves.txt'},'fixture_exact_entries')
         joined=b'\n'.join(z.read(n) for n in names)

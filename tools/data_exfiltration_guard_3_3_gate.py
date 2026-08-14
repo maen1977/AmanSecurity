@@ -20,7 +20,7 @@ center=text('app/src/main/java/com/aman/security/security/AttackDetectionCenter.
 preferences=text('app/src/main/java/com/aman/security/protection/ProtectionPreferences.kt')
 test=text('app/src/test/java/com/aman/security/security/DataExfiltrationPolicyTest.kt')
 
-need('versionName = "3.5.0"' in gradle and 'versionCode = 30' in gradle,'version')
+need('versionName = "3.5.1"' in gradle and 'versionCode = 31' in gradle,'version')
 need('android.permission.PACKAGE_USAGE_STATS' in manifest,'usage_access_manifest')
 need('NetworkStatsManager' in guard and 'TrafficStats.getTotalTxBytes()' in guard,'two_stage_stats')
 need('if (totalTx < 0L) return null' in guard and 'totalTx == TrafficStats.UNSUPPORTED' not in guard,'trafficstats_long_compat')

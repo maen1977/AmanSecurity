@@ -6,14 +6,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 
-EXPECTED_FILES = ("manifest.json", "manifest.sig", "aman-threat-db.zip", "build-report.json")
+BUNDLE_NAME = re.compile(r"^aman-threat-db-[0-9]+\.zip$")
 MAX_MANIFEST_BYTES = 128 * 1024
 MAX_SIGNATURE_BYTES = 128 * 1024
 MAX_REPORT_BYTES = 256 * 1024
@@ -23,7 +23,10 @@ MAX_BUNDLE_BYTES = 8 * 1024 * 1024
 def fetch(url: str, maximum: int) -> bytes:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "AmanSecurity-public-mirror-gate/1.0", "Accept": "application/octet-stream"},
+        headers={
+            "User-Agent": "AmanSecurity-public-mirror-gate/1.0",
+            "Accept": "application/octet-stream",
+        },
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
@@ -47,36 +50,38 @@ def main() -> int:
     # GitHub raw can cache files from a force-pushed branch independently.
     # Use one fresh query token for the whole package so manifest and ZIP agree.
     cache_buster = str(time.time_ns())
+
     def package_url(name: str) -> str:
         return f"{base}/{name}?aman_refresh={cache_buster}"
 
-    payloads = {
-        "manifest.json": fetch(package_url("manifest.json"), MAX_MANIFEST_BYTES),
-        "manifest.sig": fetch(package_url("manifest.sig"), MAX_SIGNATURE_BYTES),
-        "aman-threat-db.zip": fetch(package_url("aman-threat-db.zip"), MAX_BUNDLE_BYTES),
-        "build-report.json": fetch(package_url("build-report.json"), MAX_REPORT_BYTES),
-    }
+    manifest_bytes = fetch(package_url("manifest.json"), MAX_MANIFEST_BYTES)
+    signature = fetch(package_url("manifest.sig"), MAX_SIGNATURE_BYTES)
+    report = fetch(package_url("build-report.json"), MAX_REPORT_BYTES)
     try:
-        manifest = json.loads(payloads["manifest.json"])
+        manifest = json.loads(manifest_bytes)
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"manifest.json is not valid JSON: {exc}") from exc
-    bundle = payloads["aman-threat-db.zip"]
+
+    bundle_path = manifest.get("bundlePath")
+    if not isinstance(bundle_path, str) or not BUNDLE_NAME.fullmatch(bundle_path):
+        raise RuntimeError(f"Unexpected bundlePath: {bundle_path!r}")
+    bundle = fetch(package_url(bundle_path), MAX_BUNDLE_BYTES)
     expected_bytes = manifest.get("bundleBytes")
-    expected_sha256 = manifest.get("bundleSha256")
     if not isinstance(expected_bytes, int) or expected_bytes != len(bundle):
         raise RuntimeError(f"bundleBytes mismatch: manifest={expected_bytes} actual={len(bundle)}")
+    expected_sha256 = manifest.get("bundleSha256")
     actual_sha256 = hashlib.sha256(bundle).hexdigest()
     if expected_sha256 != actual_sha256:
         raise RuntimeError(f"bundleSha256 mismatch: manifest={expected_sha256} actual={actual_sha256}")
-    bundle_path = manifest.get("bundlePath")
-    if bundle_path != "aman-threat-db.zip":
-        raise RuntimeError(f"Unexpected bundlePath: {bundle_path!r}")
+    if not report:
+        raise RuntimeError("build-report.json is empty")
     print(
         "PUBLIC_THREAT_MIRROR_OK"
-        f" files={','.join(EXPECTED_FILES)}"
+        f" files=manifest.json,manifest.sig,{bundle_path},build-report.json"
         f" serial={manifest.get('serial')}"
         f" bundle_bytes={len(bundle)}"
         f" bundle_sha256={actual_sha256}"
+        f" signature_bytes={len(signature)}"
     )
     return 0
 
