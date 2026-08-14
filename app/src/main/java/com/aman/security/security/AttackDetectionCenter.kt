@@ -84,6 +84,7 @@ class AttackDetectionCenter(private val context: Context) {
         ProtectionActivityKind.INTRUSION_MONITOR,
         ProtectionActivityKind.BANKING_GUARD,
         ProtectionActivityKind.DATA_EXFILTRATION,
+        ProtectionActivityKind.BACKGROUND_ACTIVITY,
         ProtectionActivityKind.SECURITY_AUDIT -> true
         else -> false
     }

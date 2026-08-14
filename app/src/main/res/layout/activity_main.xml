@@ -249,6 +249,13 @@
                         <TextView android:id="@+id/txtUrlClassification" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/url_result_not_scanned" android:textColor="@color/text_primary" android:textStyle="bold" />
                         <TextView android:id="@+id/txtUrlReason" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
                         <TextView android:id="@+id/txtUrlTechnical" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/message_scan_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/message_scan_subtitle" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <EditText android:id="@+id/edtMessage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/message_input_hint" android:inputType="textCapSentences|textMultiLine" android:minLines="3" android:maxLines="7" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnScanMessage" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/scan_message_action" />
+                        <TextView android:id="@+id/txtMessageClassification" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/message_result_not_scanned" android:textColor="@color/text_primary" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtMessageReason" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:id="@+id/txtMessageTechnical" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="11sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
@@ -329,6 +336,11 @@
                             <Space android:layout_width="8dp" android:layout_height="1dp" />
                             <com.google.android.material.button.MaterialButton android:id="@+id/btnRunDataExfilCheck" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/data_exfil_check_now" />
                         </LinearLayout>
+
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="@string/background_activity_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtBackgroundActivityStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/background_activity_privacy_note" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnRunBackgroundActivityCheck" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/background_activity_check_now" />
 
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="@string/banking_protection_title" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
                         <TextView android:id="@+id/txtBankingProtectionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="@color/text_secondary" android:textSize="12sp" />

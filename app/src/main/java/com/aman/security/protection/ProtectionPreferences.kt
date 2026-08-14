@@ -236,6 +236,22 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getLong(KEY_LAST_DATA_EXFIL_TOP_BYTES, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_DATA_EXFIL_TOP_BYTES, value.coerceAtLeast(0L)).apply()
 
+    var lastBackgroundActivityCheckAt: Long
+        get() = prefs.getLong(KEY_LAST_BACKGROUND_ACTIVITY_CHECK_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_BACKGROUND_ACTIVITY_CHECK_AT, value).apply()
+
+    var lastBackgroundActivityReviewCount: Int
+        get() = prefs.getInt(KEY_LAST_BACKGROUND_ACTIVITY_REVIEW_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_BACKGROUND_ACTIVITY_REVIEW_COUNT, value.coerceAtLeast(0)).apply()
+
+    var lastBackgroundActivityHighCount: Int
+        get() = prefs.getInt(KEY_LAST_BACKGROUND_ACTIVITY_HIGH_COUNT, 0)
+        set(value) = prefs.edit().putInt(KEY_LAST_BACKGROUND_ACTIVITY_HIGH_COUNT, value.coerceAtLeast(0)).apply()
+
+    var lastBackgroundActivityTopPackage: String?
+        get() = prefs.getString(KEY_LAST_BACKGROUND_ACTIVITY_TOP_PACKAGE, null)
+        set(value) = prefs.edit().putString(KEY_LAST_BACKGROUND_ACTIVITY_TOP_PACKAGE, value).apply()
+
     @Synchronized
     fun downloadLedger(): MutableMap<String, String> {
         val raw = prefs.getString(KEY_DOWNLOAD_LEDGER, null) ?: return linkedMapOf()
@@ -388,6 +404,10 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_LAST_DATA_EXFIL_HIGH_COUNT = "last_data_exfil_high_count"
         private const val KEY_LAST_DATA_EXFIL_TOP_PACKAGE = "last_data_exfil_top_package"
         private const val KEY_LAST_DATA_EXFIL_TOP_BYTES = "last_data_exfil_top_bytes"
+        private const val KEY_LAST_BACKGROUND_ACTIVITY_CHECK_AT = "last_background_activity_check_at"
+        private const val KEY_LAST_BACKGROUND_ACTIVITY_REVIEW_COUNT = "last_background_activity_review_count"
+        private const val KEY_LAST_BACKGROUND_ACTIVITY_HIGH_COUNT = "last_background_activity_high_count"
+        private const val KEY_LAST_BACKGROUND_ACTIVITY_TOP_PACKAGE = "last_background_activity_top_package"
         const val WEB_SHIELD_SELF_TEST_NOT_RUN = 0
         const val WEB_SHIELD_SELF_TEST_RUNNING = 1
         const val WEB_SHIELD_SELF_TEST_PASSED = 2

@@ -30,6 +30,7 @@ object ProtectionNotifier {
     private const val INTRUSION_ALERT_ID = 27200
     private const val BANKING_ALERT_ID = 27300
     private const val DATA_EXFIL_ALERT_ID = 27400
+    private const val BACKGROUND_ACTIVITY_ALERT_ID = 27500
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -292,6 +293,37 @@ object ProtectionNotifier {
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyBackgroundActivityReview(context: Context, highImpactApps: Int, topAppName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            BACKGROUND_ACTIVITY_ALERT_ID,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.background_activity_notification_body, highImpactApps)
+        val contentText = if (topAppName.isBlank()) body else "$body $topAppName"
+        postNotificationSafely(
+            context,
+            BACKGROUND_ACTIVITY_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.background_activity_notification_title))
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .build()

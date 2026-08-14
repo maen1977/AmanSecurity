@@ -76,6 +76,10 @@ import java.util.concurrent.CancellationException
 import com.aman.security.scanner.InstalledAppScanResult
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
+import com.aman.security.scanner.MessageRiskLevel
+import com.aman.security.scanner.MessageRiskSignal
+import com.aman.security.scanner.MessageScanResult
+import com.aman.security.scanner.MessageScanner
 import com.aman.security.scanner.OfficialWebTestIndicators
 import com.aman.security.scanner.ScanClassification
 import com.aman.security.scanner.ScanDetectionReason
@@ -92,6 +96,7 @@ import com.aman.security.security.AppIntegrityInspector
 import com.aman.security.security.DeviceSecurityAuditor
 import com.aman.security.security.DataExfiltrationAccess
 import com.aman.security.security.DataExfiltrationGuard
+import com.aman.security.security.BackgroundActivityAuditor
 import com.aman.security.security.NetworkSecurityAuditor
 import com.aman.security.security.NetworkTransportType
 import com.aman.security.security.PrivacyPermissionAuditor
@@ -135,6 +140,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var apkStaticAnalyzer: ApkStaticAnalyzer
     private lateinit var installedAppScanner: InstalledAppScanner
     private lateinit var urlScanner: UrlScanner
+    private lateinit var messageScanner: MessageScanner
     private lateinit var recordStore: SecurityRecordStore
     private lateinit var quarantineManager: QuarantineManager
     private lateinit var protectionPreferences: ProtectionPreferences
@@ -269,6 +275,7 @@ class MainActivity : AppCompatActivity() {
         scanner = FileScanner(contentResolver, database, apkStaticAnalyzer)
         installedAppScanner = InstalledAppScanner(this, database)
         urlScanner = UrlScanner(database::findUrl)
+        messageScanner = MessageScanner(urlScanner)
         recordStore = SecurityRecordStore(this)
         quarantineManager = QuarantineManager(this, recordStore)
         protectionPreferences = ProtectionPreferences(this)
@@ -291,6 +298,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanStorageFolder.setOnClickListener { scanManualStorageFolder() }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
+        binding.btnScanMessage.setOnClickListener { scanMessageInput() }
         binding.btnConfigureWebGuard.setOnClickListener { configureWebGuard() }
         binding.btnWebShieldSelfTest.setOnClickListener { runWebShieldSelfTest() }
         binding.btnAmtsoWebTest.setOnClickListener { runAmtsoWebTest() }
@@ -319,6 +327,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnDataUsageAccess.setOnClickListener { openUsageAccessSettings() }
         binding.btnRunDataExfilCheck.setOnClickListener { runDataExfiltrationCheckNow() }
+        binding.btnRunBackgroundActivityCheck.setOnClickListener { runBackgroundActivityCheckNow() }
         binding.switchBankingProtection.setOnCheckedChangeListener { _, checked ->
             if (renderingProtectionControls) return@setOnCheckedChangeListener
             protectionPreferences.bankingProtectionEnabled = checked
@@ -631,10 +640,15 @@ class MainActivity : AppCompatActivity() {
             binding.root.post { requestSmartScan() }
         }
         if (incoming?.action != Intent.ACTION_SEND || incoming.type != "text/plain") return
-        val candidate = SharedUrlExtractor.firstCandidate(incoming.getStringExtra(Intent.EXTRA_TEXT)) ?: return
+        val sharedText = incoming.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.trim().orEmpty()
+        if (sharedText.isBlank()) return
         showPage(PAGE_SCAN)
-        binding.edtUrl.setText(candidate)
-        scanUrl(candidate)
+        binding.edtMessage.setText(sharedText)
+        scanMessage(sharedText)
+        SharedUrlExtractor.firstCandidate(sharedText)?.let { candidate ->
+            binding.edtUrl.setText(candidate)
+            scanUrl(candidate)
+        }
     }
 
     private fun scanUrlInput() {
@@ -644,6 +658,64 @@ class MainActivity : AppCompatActivity() {
     private fun scanUrl(value: String) {
         val result = urlScanner.scan(value)
         renderUrlResult(result)
+    }
+
+    private fun scanMessageInput() {
+        scanMessage(binding.edtMessage.text?.toString().orEmpty())
+    }
+
+    private fun scanMessage(value: String) {
+        renderMessageResult(messageScanner.scan(value))
+    }
+
+    private fun renderMessageResult(result: MessageScanResult) {
+        binding.txtMessageClassification.setText(when (result.riskLevel) {
+            MessageRiskLevel.INVALID -> R.string.message_result_invalid
+            MessageRiskLevel.LOW -> R.string.message_result_low
+            MessageRiskLevel.REVIEW -> R.string.message_result_review
+            MessageRiskLevel.HIGH -> R.string.message_result_high
+            MessageRiskLevel.KNOWN_THREAT -> R.string.message_result_known_threat
+        })
+        binding.txtMessageReason.text = when (result.riskLevel) {
+            MessageRiskLevel.INVALID -> getString(R.string.message_reason_invalid)
+            MessageRiskLevel.LOW -> getString(R.string.message_reason_low)
+            MessageRiskLevel.KNOWN_THREAT -> getString(R.string.message_reason_known_threat)
+            MessageRiskLevel.REVIEW, MessageRiskLevel.HIGH -> formatMessageSignals(result.signals)
+        }
+        binding.txtMessageTechnical.text = buildString {
+            append(getString(R.string.message_score_line, NumberFormat.getIntegerInstance().format(result.riskScore)))
+            if (result.urls.isNotEmpty()) {
+                append('\n')
+                append(getString(R.string.message_urls_line, result.urls.size))
+            }
+            append('\n')
+            append(getString(R.string.message_local_only))
+        }
+    }
+
+    private fun formatMessageSignals(signals: Set<MessageRiskSignal>): String {
+        if (signals.isEmpty()) return getString(R.string.message_reason_review)
+        return buildString {
+            append(getString(R.string.message_reason_review))
+            signals.forEach { signal ->
+                append('\n')
+                append('•')
+                append(' ')
+                append(getString(messageSignalString(signal)))
+            }
+        }
+    }
+
+    private fun messageSignalString(signal: MessageRiskSignal): Int = when (signal) {
+        MessageRiskSignal.URGENT_LANGUAGE -> R.string.message_signal_urgent
+        MessageRiskSignal.CREDENTIAL_REQUEST -> R.string.message_signal_credentials
+        MessageRiskSignal.PAYMENT_REQUEST -> R.string.message_signal_payment
+        MessageRiskSignal.PRIZE_OR_GIFT -> R.string.message_signal_prize
+        MessageRiskSignal.IMPERSONATION -> R.string.message_signal_impersonation
+        MessageRiskSignal.SHORTENED_URL -> R.string.message_signal_shortened_url
+        MessageRiskSignal.MULTIPLE_URLS -> R.string.message_signal_multiple_urls
+        MessageRiskSignal.SUSPICIOUS_URL -> R.string.message_signal_suspicious_url
+        MessageRiskSignal.KNOWN_THREAT_URL -> R.string.message_signal_known_url
     }
 
     private fun renderUrlResult(result: UrlScanResult) {
@@ -932,6 +1004,59 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun runBackgroundActivityCheckNow() {
+        if (!protectionPreferences.enabled) {
+            renderProtectionStatus()
+            return
+        }
+        binding.btnRunBackgroundActivityCheck.isEnabled = false
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.Default) {
+                runCatching { BackgroundActivityAuditor(applicationContext).audit() }
+            }
+            binding.btnRunBackgroundActivityCheck.isEnabled = true
+            outcome.onSuccess { summary ->
+                val now = System.currentTimeMillis()
+                val top = summary.findings.firstOrNull()
+                protectionPreferences.lastBackgroundActivityCheckAt = now
+                protectionPreferences.lastBackgroundActivityReviewCount = summary.reviewApps
+                protectionPreferences.lastBackgroundActivityHighCount = summary.highImpactApps
+                protectionPreferences.lastBackgroundActivityTopPackage = top?.packageName
+                protectionPreferences.markActivity(getString(R.string.activity_background_review_complete, summary.findings.size))
+                if (summary.findings.isEmpty()) {
+                    protectionActivityStore.add(
+                        kind = ProtectionActivityKind.BACKGROUND_ACTIVITY,
+                        state = ProtectionActivityState.SAFE,
+                        title = getString(R.string.timeline_background_activity_clean),
+                        detail = getString(R.string.timeline_background_activity_clean_detail),
+                        dedupeKey = "background_activity:clean"
+                    )
+                } else {
+                    val state = if (summary.highImpactApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.INFO
+                    protectionActivityStore.add(
+                        kind = ProtectionActivityKind.BACKGROUND_ACTIVITY,
+                        state = state,
+                        title = getString(R.string.timeline_background_activity_review, summary.findings.size),
+                        detail = summary.findings.take(3).joinToString(" • ") { it.appName },
+                        dedupeKey = "background_activity:${summary.findings.map { it.packageName }.sorted().joinToString(",")}"
+                    )
+                    if (summary.highImpactApps > 0) {
+                        ProtectionNotifier.notifyBackgroundActivityReview(this@MainActivity, summary.highImpactApps, top?.appName.orEmpty())
+                    }
+                }
+                renderProtectionStatus()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.background_activity_manual_complete, summary.reviewApps, summary.highImpactApps),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure {
+                renderProtectionStatus()
+                showInfo(R.string.operation_failed_try_again)
+            }
+        }
+    }
+
     private fun runBankingRiskCheckNow() {
         if (!protectionPreferences.enabled || !protectionPreferences.bankingProtectionEnabled) {
             renderProtectionStatus()
@@ -1091,6 +1216,23 @@ class MainActivity : AppCompatActivity() {
         } else dataExfilBaseStatus
         binding.btnDataUsageAccess.visibility = if (dataExfilEnabled && !dataExfilAccess) View.VISIBLE else View.GONE
         binding.btnRunDataExfilCheck.isEnabled = dataExfilEnabled && dataExfilAccess
+
+        val backgroundCheckAt = protectionPreferences.lastBackgroundActivityCheckAt
+        binding.txtBackgroundActivityStatus.text = when {
+            !enabled -> getString(R.string.background_activity_status_off)
+            backgroundCheckAt <= 0L -> getString(R.string.background_activity_status_never)
+            protectionPreferences.lastBackgroundActivityReviewCount == 0 -> getString(
+                R.string.background_activity_status_clean,
+                formatDate(backgroundCheckAt)
+            )
+            else -> getString(
+                R.string.background_activity_status_review,
+                formatDate(backgroundCheckAt),
+                protectionPreferences.lastBackgroundActivityReviewCount,
+                protectionPreferences.lastBackgroundActivityHighCount
+            )
+        }
+        binding.btnRunBackgroundActivityCheck.isEnabled = enabled
 
         val bankingEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         val baseBankingStatus = if (!bankingEnabled) {
@@ -1562,6 +1704,7 @@ class MainActivity : AppCompatActivity() {
         binding.switchDataExfilGuard.isEnabled = enabled
         binding.btnDataUsageAccess.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled
         binding.btnRunDataExfilCheck.isEnabled = enabled && protectionPreferences.dataExfiltrationGuardEnabled && DataExfiltrationAccess.isGranted(this)
+        binding.btnRunBackgroundActivityCheck.isEnabled = enabled
         binding.switchBankingProtection.isEnabled = enabled
         binding.switchBankingBlockHighRisk.isEnabled = false
         binding.switchBankingBlockHighRisk.visibility = View.GONE
