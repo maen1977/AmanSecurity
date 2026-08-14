@@ -71,7 +71,8 @@ class MessageScanner(private val urlScanner: UrlScanner) {
         }
         if (urls.any { isShortenedHost(it.host) }) {
             signals += MessageRiskSignal.SHORTENED_URL
-            score += 18
+            // A hidden destination deserves review, but is not proof of phishing.
+            score += 25
         }
         if (urls.any { it.riskLevel == UrlRiskLevel.KNOWN_PHISHING || it.riskLevel == UrlRiskLevel.KNOWN_MALICIOUS }) {
             signals += MessageRiskSignal.KNOWN_THREAT_URL
