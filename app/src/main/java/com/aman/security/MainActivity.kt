@@ -32,6 +32,7 @@ import com.aman.security.autonomous.AutonomousUpdatePhase
 import com.aman.security.autonomous.ThreatUpdateState
 import com.aman.security.autonomous.ThreatUpdateStateStore
 import com.aman.security.protection.ProtectedFolderScanner
+import com.aman.security.protection.ManualStorageFolderScanner
 import com.aman.security.protection.ProtectedFolderScanSummary
 import com.aman.security.protection.DownloadProtectionScanner
 import com.aman.security.protection.LocalScanCacheStore
@@ -141,6 +142,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var protectionActivityStore: ProtectionActivityStore
     private lateinit var scanFindingsStore: ScanFindingsStore
     private var selectedUri: Uri? = null
+    private var selectedStorageTreeUri: Uri? = null
     private var lastScanResult: ScanResult? = null
     private var lastInstalledSummary: InstalledAppsScanSummary? = null
     private var lastSecurityAudit: SecurityAuditSummary? = null
@@ -216,6 +218,10 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) setProtectedFolder(uri)
     }
 
+    private val manualStorageFolderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) setManualStorageFolder(uri)
+    }
+
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         renderProtectionStatus()
     }
@@ -268,6 +274,7 @@ class MainActivity : AppCompatActivity() {
         protectionPreferences = ProtectionPreferences(this)
         protectionEventStore = ProtectionEventStore(this)
         protectionActivityStore = ProtectionActivityStore(this)
+        restoreManualStorageFolderSelection()
         scanFindingsStore = ScanFindingsStore(this)
         ProtectionNotifier.ensureChannels(this)
         AutonomousThreatScheduler.schedule(this)
@@ -280,6 +287,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnChooseFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         binding.btnScanFile.setOnClickListener { scanSelectedFile() }
+        binding.btnChooseStorageFolder.setOnClickListener { manualStorageFolderPicker.launch(selectedStorageTreeUri) }
+        binding.btnScanStorageFolder.setOnClickListener { scanManualStorageFolder() }
         binding.btnScanInstalledApps.setOnClickListener { requestInstalledAppsScan() }
         binding.btnScanUrl.setOnClickListener { scanUrlInput() }
         binding.btnConfigureWebGuard.setOnClickListener { configureWebGuard() }
@@ -1348,6 +1357,123 @@ class MainActivity : AppCompatActivity() {
         renderProtectionStatus()
     }
 
+    private fun restoreManualStorageFolderSelection() {
+        val rawUri = getSharedPreferences(STORAGE_SCAN_PREFERENCES, MODE_PRIVATE)
+            .getString(STORAGE_SCAN_URI_KEY, null)
+        val uri = rawUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        selectedStorageTreeUri = uri
+        if (uri == null) {
+            binding.txtStorageScanSelection.setText(R.string.storage_scan_none_selected)
+            binding.btnScanStorageFolder.isEnabled = false
+            return
+        }
+        val permissionPresent = contentResolver.persistedUriPermissions.any { permission ->
+            permission.uri == uri && permission.isReadPermission
+        }
+        if (!permissionPresent) {
+            binding.txtStorageScanSelection.setText(R.string.storage_scan_permission_lost)
+            binding.btnScanStorageFolder.isEnabled = false
+            return
+        }
+        binding.txtStorageScanSelection.text = getString(
+            R.string.storage_scan_selected,
+            uri.lastPathSegment ?: uri.toString()
+        )
+        binding.btnScanStorageFolder.isEnabled = true
+    }
+
+    private fun setManualStorageFolder(uri: Uri) {
+        val granted = runCatching {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            true
+        }.getOrDefault(false)
+        if (!granted) {
+            showInfo(R.string.storage_scan_failed)
+            return
+        }
+        selectedStorageTreeUri = uri
+        getSharedPreferences(STORAGE_SCAN_PREFERENCES, MODE_PRIVATE)
+            .edit()
+            .putString(STORAGE_SCAN_URI_KEY, uri.toString())
+            .apply()
+        binding.txtStorageScanSelection.text = getString(
+            R.string.storage_scan_selected,
+            uri.lastPathSegment ?: uri.toString()
+        )
+        binding.txtStorageScanResult.text = ""
+        binding.btnScanStorageFolder.isEnabled = !activeScan
+    }
+
+    private fun scanManualStorageFolder() {
+        val treeUri = selectedStorageTreeUri
+        if (treeUri == null) {
+            showInfo(R.string.storage_scan_none_selected)
+            return
+        }
+        showPage(PAGE_SCAN)
+        scanCancelRequested = false
+        activeScan = true
+        binding.btnStopScan.isEnabled = true
+        setScanControlsEnabled(false)
+        binding.txtStorageScanResult.setText(R.string.storage_scan_running)
+        lifecycleScope.launch(uiCoroutineErrorHandler) {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    ManualStorageFolderScanner(
+                        resolver = contentResolver,
+                        fileScanner = scanner,
+                        eventStore = protectionEventStore,
+                        recordStore = recordStore,
+                        notifier = { ProtectionNotifier.notifyEvent(applicationContext, it) }
+                    ).scan(
+                        treeUri = treeUri,
+                        onProgress = { scanned, fileName ->
+                            runOnUiThread {
+                                if (!isFinishing && !isDestroyed) {
+                                    binding.txtStorageScanResult.text = getString(
+                                        R.string.storage_scan_running
+                                    ) + "\\n" + fileName
+                                }
+                            }
+                        },
+                        shouldCancel = { scanCancelRequested }
+                    )
+                }
+            }
+            activeScan = false
+            scanCancelRequested = false
+            setScanControlsEnabled(true)
+            binding.btnStopScan.isEnabled = false
+            outcome.onSuccess { summary ->
+                if (summary.permissionLost) {
+                    binding.txtStorageScanResult.setText(R.string.storage_scan_permission_lost)
+                    binding.btnScanStorageFolder.isEnabled = false
+                } else {
+                    val headline = getString(
+                        R.string.storage_scan_result,
+                        NumberFormat.getIntegerInstance().format(summary.scannedFiles),
+                        NumberFormat.getIntegerInstance().format(summary.alerts),
+                        NumberFormat.getIntegerInstance().format(summary.skippedFiles)
+                    )
+                    val detail = if (summary.alerts > 0) {
+                        getString(R.string.storage_scan_result_attention)
+                    } else {
+                        getString(R.string.storage_scan_result_safe)
+                    }
+                    binding.txtStorageScanResult.text = headline + "\\n" + detail
+                }
+                renderSecurityManagement()
+                renderProtectionStatus()
+            }.onFailure {
+                if (it is CancellationException) {
+                    binding.txtStorageScanResult.text = getString(R.string.scan_cancelled_detail)
+                } else {
+                    binding.txtStorageScanResult.setText(R.string.storage_scan_failed)
+                }
+            }
+        }
+    }
+
     private fun scanProtectedFolderNow() {
         val treeUri = protectionPreferences.protectedTreeUri
         if (treeUri == null) {
@@ -2209,6 +2335,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnScanDownloads.isEnabled = enabled
         binding.btnChooseFile.isEnabled = enabled
         binding.btnScanFile.isEnabled = enabled && selectedUri != null
+        binding.btnChooseStorageFolder.isEnabled = enabled
+        binding.btnScanStorageFolder.isEnabled = enabled && selectedStorageTreeUri != null
     }
 
     private fun requestInstalledAppsScan() {
@@ -3356,6 +3484,8 @@ class MainActivity : AppCompatActivity() {
         private const val WEB_GUARD_TEST_RETURN_GRACE_MS = 1_000L
         private const val TAG = "AmanSecurity"
         private const val PRIVACY_PREFERENCES = "privacy_preferences"
+        private const val STORAGE_SCAN_PREFERENCES = "storage_scan_preferences"
+        private const val STORAGE_SCAN_URI_KEY = "selected_tree_uri"
         private const val INSTALLED_SCAN_DISCLOSURE_KEY = "installed_scan_disclosure_version"
         private const val INSTALLED_SCAN_DISCLOSURE_VERSION = 1
         private const val PROTECTION_DISCLOSURE_KEY = "background_protection_disclosure_version"

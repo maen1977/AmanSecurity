@@ -227,6 +227,20 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.card.MaterialCardView android:id="@+id/storageScanSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/storage_scan_title" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txtStorageScanSelection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="@string/storage_scan_none_selected" android:textColor="@color/text_secondary" android:textSize="12sp" android:maxLines="2" android:ellipsize="middle" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="@string/storage_scan_subtitle" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnChooseStorageFolder" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/storage_scan_choose_folder" />
+                            <Space android:layout_width="8dp" android:layout_height="1dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btnScanStorageFolder" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:enabled="false" android:text="@string/storage_scan_action" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/txtStorageScanResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <com.google.android.material.card.MaterialCardView android:id="@+id/webProtectionSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeColor="@color/card_stroke" app:strokeWidth="1dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/url_protection_title" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
