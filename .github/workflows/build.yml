@@ -79,6 +79,15 @@ jobs:
           git push --force threat-public HEAD:main
           git remote remove threat-public
 
+      - name: Smoke-test public threat mirror
+        if: steps.intel.outcome == 'success'
+        shell: bash
+        env:
+          AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+        run: |
+          set -euo pipefail
+          python3 tools/verify_public_threat_mirror.py "$AMAN_THREAT_DB_BASE_URL"
+
       - name: Upload threat-package diagnostics
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
