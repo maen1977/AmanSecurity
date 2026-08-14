@@ -24,6 +24,8 @@
     <string name="reason_unknown_apk">This APK is not in the active database. This does not prove that it is safe.</string>
     <string name="reason_double_extension">The file name uses a misleading double extension.</string>
     <string name="reason_signature_match">The SHA-256 fingerprint matches a known signature in the active database.</string>
+    <string name="reason_archive_known_signature">A known threat signature was found inside this archive.</string>
+    <string name="reason_archive_misleading_entry">A file inside this archive uses a misleading double extension.</string>
     <string name="reason_eicar_test">This is the standard harmless anti-malware test signature.</string>
     <string name="sha256_label">SHA-256</string>
     <string name="signature_id_label">Threat reference</string>

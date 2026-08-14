@@ -2816,6 +2816,8 @@ class MainActivity : AppCompatActivity() {
             ScanDetectionReason.APK_IDENTITY_TEST -> R.string.reason_apk_identity_test
             ScanDetectionReason.KNOWN_FILE_SIGNATURE -> R.string.reason_signature_match
             ScanDetectionReason.TEST_SIGNATURE -> R.string.reason_eicar_test
+            ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE -> R.string.reason_archive_known_signature
+            ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY -> R.string.reason_archive_misleading_entry
         }
 
         binding.txtClassification.setText(titleRes)
