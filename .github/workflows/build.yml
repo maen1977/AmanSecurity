@@ -65,6 +65,7 @@ jobs:
           cp dist/cloud-threat-db/manifest.sig /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/aman-threat-db.zip /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/build-report.json /tmp/aman-cloud-intel/latest/
+          cp tools/verify_public_threat_mirror.py /tmp/aman-cloud-intel/verify_public_threat_mirror.py
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -86,7 +87,7 @@ jobs:
           AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
         run: |
           set -euo pipefail
-          python3 tools/verify_public_threat_mirror.py "$AMAN_THREAT_DB_BASE_URL"
+          python3 /tmp/aman-cloud-intel/verify_public_threat_mirror.py "$AMAN_THREAT_DB_BASE_URL"
 
       - name: Upload threat-package diagnostics
         if: always() && steps.intel.outcome == 'success'
