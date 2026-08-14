@@ -463,7 +463,6 @@
     <string name="scan_scope_device">Lock screen, developer settings, root indicators, network, DNS, and sensitive permissions</string>
     <string name="scan_complete_percent">100%</string>
     <string name="scan_progress_percent">%1$s%%</string>
-    <string name="file_scan_title">File scan</string>
 
     <string name="scan_stage_hashing">Reading and hashing file</string>
     <string name="scan_stage_reputation">Checking threat reputation</string>
