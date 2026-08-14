@@ -33,9 +33,17 @@
     <string name="file_access_error">File access error</string>
     <string name="privacy_note">Files, installed-app inventory, and scan results stay on-device. Internet access is used only to download public threat indicators and Android security bulletins.</string>
     <string name="database_version">Threat database: %1$s</string>
+    <string name="cloud_package_version">Cloud protection package: %1$s • serial %2$d</string>
+    <string name="cloud_package_not_installed">Cloud protection package: not installed yet</string>
+    <string name="cloud_package_entries">Cloud indicators: %1$s malware hashes • %2$s phishing indicators • %3$s C2 hosts • %4$s Android CVEs</string>
+    <string name="cloud_package_status_current">Cloud package status: current</string>
+    <string name="cloud_package_status_stale">Cloud package status: stale — automatic refresh is due</string>
+    <string name="cloud_package_status_waiting">Cloud package status: waiting for first automatic download</string>
+    <string name="cloud_package_generated">Cloud package generated: %1$s</string>
+    <string name="cloud_package_date_unknown">unknown</string>
     <string name="database_entries">File indicators: %1$s • Link indicators: %2$s • APK identity indicators: %3$s • Detection intelligence: %4$s</string>
     <string name="update_database">Update protection now</string>
-    <string name="update_idle">Protection intelligence updates automatically about every six hours when internet is available, with no API keys or sign-in.</string>
+    <string name="update_idle">Protection intelligence updates automatically about every 24 hours when internet is available, with a distributed window to reduce mirror load and no API keys or sign-in.</string>
     <string name="update_checking">Fetching the latest threat intelligence from public sources…</string>
     <string name="update_up_to_date">Sources were checked and no newer indicators were found.</string>
     <string name="update_success">Updated: %1$s malware file hashes • %2$s phishing indicators • %3$s command-and-control hosts • %4$s Android CVEs in the latest bulletin.</string>
@@ -206,7 +214,7 @@
     <string name="reason_apk_identity_test">A safe local package-identity test indicator matched. It is not a malware verdict.</string>
     <string name="background_protection_title">Background protection</string>
     <string name="background_protection_body">When enabled, Aman deeply scans new or updated apps, watches new Downloads, and uses cached hashes plus scheduled catch-up checks instead of continuously rereading storage.</string>
-    <string name="background_protection_note">Protection is local and event-driven. Aman never uploads the scan cache or file/app inventory. Public threat intelligence refreshes about every six hours when Android allows network work; unchanged APKs/files are rechecked by cached SHA-256 instead of being read again.</string>
+    <string name="background_protection_note">Protection is local and event-driven. Aman never uploads the scan cache or file/app inventory. Public threat intelligence refreshes about every 24 hours when Android allows network work; unchanged APKs/files are rechecked by cached SHA-256 instead of being read again.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -773,7 +781,7 @@
     <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the signed Aman package</string>
     <string name="threat_update_transfer_unknown">Downloaded %1$s of the signed Aman package</string>
     <string name="threat_update_last_success">Last successful update: %1$s</string>
-    <string name="threat_update_next_check">Next automatic Wi-Fi check: around %1$s (Android may delay background work)</string>
+    <string name="threat_update_next_check">Next automatic daily Wi-Fi check: around %1$s (Android may delay background work)</string>
     <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
     <string name="threat_update_never_success">No signed Aman cloud-intelligence package has been installed yet.</string>
     <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing indicators • %3$s C2 hosts • %4$s Android CVEs</string>

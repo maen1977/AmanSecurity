@@ -503,19 +503,52 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderDatabaseInfo() {
         val info = database.info
+        val cloudStore = database.autonomousStore
+        val cloudInfo = cloudStore.info()
+        val cloudVersion = cloudStore.installedVersion()
+        val cloudSerial = cloudStore.installedSerial()
         binding.txtAppVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
         binding.txtHomeVersion.text = BuildConfig.VERSION_NAME
-        binding.txtDatabaseVersion.text = getString(R.string.database_version, info.version)
-        binding.txtDatabaseEntries.text = getString(
-            R.string.database_entries,
-            NumberFormat.getIntegerInstance().format(info.fileEntries),
-            NumberFormat.getIntegerInstance().format(info.urlEntries),
-            NumberFormat.getIntegerInstance().format(info.apkIdentityEntries),
-            NumberFormat.getIntegerInstance().format(info.detectionEntries)
-        )
-        val generated = runCatching { Date.from(Instant.parse(info.generatedAt)) }.getOrNull()
-        val formattedDate = generated?.let(DateFormat.getDateTimeInstance()::format) ?: getString(R.string.database_date_unknown)
-        binding.txtDatabaseFreshness.text = getString(R.string.database_baseline_date, formattedDate)
+        binding.txtDatabaseVersion.text = if (cloudVersion != null) {
+            getString(R.string.cloud_package_version, cloudVersion, cloudSerial)
+        } else {
+            getString(R.string.cloud_package_not_installed)
+        }
+        binding.txtDatabaseEntries.text = if (cloudVersion != null) {
+            getString(
+                R.string.cloud_package_entries,
+                NumberFormat.getIntegerInstance().format(cloudInfo.malwareFileHashes),
+                NumberFormat.getIntegerInstance().format(cloudInfo.phishingHosts),
+                NumberFormat.getIntegerInstance().format(cloudInfo.c2Hosts),
+                NumberFormat.getIntegerInstance().format(cloudInfo.androidCveCount)
+            )
+        } else {
+            getString(
+                R.string.database_entries,
+                NumberFormat.getIntegerInstance().format(info.fileEntries),
+                NumberFormat.getIntegerInstance().format(info.urlEntries),
+                NumberFormat.getIntegerInstance().format(info.apkIdentityEntries),
+                NumberFormat.getIntegerInstance().format(info.detectionEntries)
+            )
+        }
+        val baselineGenerated = runCatching { Date.from(Instant.parse(info.generatedAt)) }.getOrNull()
+        val formattedBaselineDate = baselineGenerated?.let(DateFormat.getDateTimeInstance()::format)
+            ?: getString(R.string.database_date_unknown)
+        val cloudGenerated = cloudInfo.cloudGeneratedAtEpochMs.takeIf { it > 0L }?.let { Date(it) }
+        val cloudDateText = cloudGenerated?.let(DateFormat.getDateTimeInstance()::format)
+            ?: getString(R.string.cloud_package_date_unknown)
+        val cloudStatus = when {
+            cloudVersion == null -> getString(R.string.cloud_package_status_waiting)
+            cloudInfo.cloudPackageFresh -> getString(R.string.cloud_package_status_current)
+            else -> getString(R.string.cloud_package_status_stale)
+        }
+        binding.txtDatabaseFreshness.text = buildString {
+            append(cloudStatus)
+            append(" • ")
+            append(getString(R.string.cloud_package_generated, cloudDateText))
+            append('\n')
+            append(getString(R.string.database_baseline_date, formattedBaselineDate))
+        }
         renderAutonomousIntel()
         renderThreatUpdateState(ThreatUpdateStateStore(this).snapshot())
         renderProtectionPosture()
@@ -2075,7 +2108,7 @@ class MainActivity : AppCompatActivity() {
     private fun threatUpdateTimingText(lastSuccessfulAt: Long): String {
         if (lastSuccessfulAt <= 0L) return getString(R.string.threat_update_never_success)
         val last = DateFormat.getDateTimeInstance().format(Date(lastSuccessfulAt))
-        val nextAt = lastSuccessfulAt + TimeUnit.HOURS.toMillis(12)
+        val nextAt = lastSuccessfulAt + TimeUnit.HOURS.toMillis(24)
         val nextLine = if (nextAt > System.currentTimeMillis()) {
             getString(R.string.threat_update_next_check, DateFormat.getDateTimeInstance().format(Date(nextAt)))
         } else {

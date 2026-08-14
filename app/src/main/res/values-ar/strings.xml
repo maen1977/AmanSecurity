@@ -33,9 +33,17 @@
     <string name="file_access_error">خطأ في الوصول إلى الملف</string>
     <string name="privacy_note">تبقى الملفات وقائمة التطبيقات ونتائج الفحص على الجهاز. يستخدم الإنترنت لتنزيل مؤشرات تهديد عامة ونشرات أمان أندرويد فقط.</string>
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
+    <string name="cloud_package_version">حزمة الحماية السحابية: %1$s • الرقم التسلسلي %2$d</string>
+    <string name="cloud_package_not_installed">حزمة الحماية السحابية: لم تُثبّت بعد</string>
+    <string name="cloud_package_entries">المؤشرات السحابية: %1$s بصمة برمجية ضارة • %2$s مؤشر تصيد • %3$s مضيف تحكم وسيطرة • %4$s ثغرة أندرويد</string>
+    <string name="cloud_package_status_current">حالة الحزمة السحابية: محدثة</string>
+    <string name="cloud_package_status_stale">حالة الحزمة السحابية: قديمة — حان موعد التحديث التلقائي</string>
+    <string name="cloud_package_status_waiting">حالة الحزمة السحابية: بانتظار أول تنزيل تلقائي</string>
+    <string name="cloud_package_generated">تاريخ توليد الحزمة السحابية: %1$s</string>
+    <string name="cloud_package_date_unknown">غير معروف</string>
     <string name="database_entries">مؤشرات الملفات: %1$s • مؤشرات الروابط: %2$s • مؤشرات هوية APK: %3$s • سجلات الكشف: %4$s</string>
     <string name="update_database">تحديث الحماية الآن</string>
-    <string name="update_idle">تتحدث معلومات الحماية تلقائيًا كل نحو ست ساعات عند توفر الإنترنت، دون مفاتيح أو تسجيل دخول.</string>
+    <string name="update_idle">تتحدث معلومات الحماية تلقائيًا كل 24 ساعة تقريبًا عند توفر الإنترنت، ضمن نافذة موزعة لتقليل الضغط على المرآة العامة، ودون مفاتيح أو تسجيل دخول.</string>
     <string name="update_checking">جارٍ جلب أحدث معلومات التهديد من المصادر العامة…</string>
     <string name="update_up_to_date">تم فحص المصادر ولم تظهر مؤشرات أحدث.</string>
     <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مؤشر تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة أندرويد في أحدث نشرة.</string>
@@ -206,7 +214,7 @@
     <string name="reason_apk_identity_test">تطابق مؤشر اختبار آمن ومحلي لهوية الحزمة، وهذه ليست نتيجة تشير إلى برمجية ضارة.</string>
     <string name="background_protection_title">الحماية في الخلفية</string>
     <string name="background_protection_body">عند تفعيلها، يفحص أمان التطبيقات الجديدة أو المحدثة بعمق ويراقب التنزيلات الجديدة، ويستخدم البصمات المخزنة وفحوص الاستدراك بدل إعادة قراءة التخزين باستمرار.</string>
-    <string name="background_protection_note">الحماية محلية وتعتمد على الأحداث. لا يرفع أمان ذاكرة الفحص أو قائمة الملفات والتطبيقات. تتحدث معلومات التهديد كل نحو ست ساعات، وتُعاد مقارنة بصمات SHA-256 للملفات وAPK غير المتغيرة دون قراءتها من جديد.</string>
+    <string name="background_protection_note">الحماية محلية وتعتمد على الأحداث. لا يرفع أمان ذاكرة الفحص أو قائمة الملفات والتطبيقات. تتحدث معلومات التهديد كل 24 ساعة تقريبًا عندما يسمح أندرويد بالعمل الشبكي، وتُعاد مقارنة بصمات SHA-256 للملفات وAPK غير المتغيرة دون قراءتها من جديد.</string>
     <string name="protection_state_enabled">الحماية مفعلة</string>
     <string name="protection_state_disabled">الحماية معطلة</string>
     <string name="protection_state_notifications_off">الحماية مفعلة، لكن إذن إشعارات أندرويد متوقف. ستبقى التنبيهات محفوظة في نشاط الحماية الأخير.</string>
@@ -773,7 +781,7 @@
     <string name="threat_update_transfer_known">تم تنزيل %1$s من %2$s من حزمة أمان الموقعة</string>
     <string name="threat_update_transfer_unknown">تم تنزيل %1$s من حزمة أمان الموقعة</string>
     <string name="threat_update_last_success">آخر تحديث ناجح: %1$s</string>
-    <string name="threat_update_next_check">الفحص التلقائي التالي عبر واي فاي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
+    <string name="threat_update_next_check">موعد فحص واي فاي التلقائي اليومي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
     <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
     <string name="threat_update_never_success">لم يتم تثبيت حزمة معلومات أمان سحابية موقعة بعد.</string>
     <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مؤشر تصيد • %3$s مضيف C2 • %4$s ثغرة أندرويد</string>

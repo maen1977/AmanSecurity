@@ -11,9 +11,11 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 object AutonomousThreatScheduler {
-    private const val PERIODIC_WORK = "aman-cloud-threat-intelligence-12h"
+    private const val PERIODIC_WORK = "aman-cloud-threat-intelligence-24h"
+    private const val LEGACY_PERIODIC_WORK = "aman-cloud-threat-intelligence-12h"
     private const val ON_DEMAND_WORK = "aman-autonomous-threat-intelligence-now"
 
     private fun periodicNetworkConstraints(): Constraints = Constraints.Builder()
@@ -28,14 +30,19 @@ object AutonomousThreatScheduler {
     fun schedule(context: Context) {
         val app = context.applicationContext
         val network = periodicNetworkConstraints()
-        val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(12, TimeUnit.HOURS, 60, TimeUnit.MINUTES)
+        val periodic = PeriodicWorkRequestBuilder<AutonomousThreatWorker>(24, TimeUnit.HOURS, 120, TimeUnit.MINUTES)
             .setConstraints(network)
+            // Spread first-run checks across a four-hour window so a large install base does not
+            // contact the public mirror at the same minute.
+            .setInitialDelay(Random.nextLong(0L, TimeUnit.HOURS.toMinutes(4L) + 1L), TimeUnit.MINUTES)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(app).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, periodic)
+        val workManager = WorkManager.getInstance(app)
+        workManager.cancelUniqueWork(LEGACY_PERIODIC_WORK)
+        workManager.enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.KEEP, periodic)
 
         val last = AutonomousThreatStore(app).info().lastSuccessfulUpdateEpochMs
-        if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(12)) {
+        if (last == 0L || System.currentTimeMillis() - last >= TimeUnit.HOURS.toMillis(24)) {
             val state = ThreatUpdateStateStore(app)
             val snapshot = state.snapshot()
             if (!snapshot.isActive || snapshot.isStaleActive) state.queued()

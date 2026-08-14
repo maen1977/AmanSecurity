@@ -23,7 +23,13 @@ data class AutonomousIntelInfo(
     val freshSources: Int = 0,
     val staleSources: Int = 0,
     val totalSources: Int = AutonomousFeedPolicy.all.size,
-    val sourceHealth: List<AutonomousSourceHealth> = emptyList()
+    val sourceHealth: List<AutonomousSourceHealth> = emptyList(),
+    val cloudSerial: Long = 0L,
+    val cloudVersion: String? = null,
+    val cloudGeneratedAt: String? = null,
+    val cloudGeneratedAtEpochMs: Long = 0L,
+    val cloudPackageFresh: Boolean = false,
+    val cloudConsecutiveFailures: Int = 0
 )
 
 

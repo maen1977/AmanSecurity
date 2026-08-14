@@ -1,6 +1,6 @@
 # GitHub Actions threat updates
 
-Aman Security uses `.github/workflows/build.yml` for both the signed threat-intelligence factory and Android CI. The workflow runs on pushes to `main`, on manual dispatch, and every six hours. Scheduled runs publish intelligence without rebuilding the Android APK; push and manual runs also build and test the app.
+Aman Security uses `.github/workflows/build.yml` for both the signed threat-intelligence factory and Android CI. The workflow runs on pushes to `main`, on manual dispatch, and once daily at 03:17 UTC. Scheduled runs publish intelligence without rebuilding the Android APK; push and manual runs also build and test the app.
 
 ## Secrets
 
@@ -31,4 +31,4 @@ External feeds are attempted independently. A transient provider failure is reco
 
 ## Validation
 
-After a manual run, verify that the public repository contains `latest/manifest.json`, `latest/manifest.sig`, `latest/aman-threat-db.zip`, and `latest/build-report.json`. Also verify that the two metadata URLs return HTTP 200 without authentication and inspect the uploaded diagnostics artifact before installing the resulting APK.
+After a manual run, verify that the public repository contains `latest/manifest.json`, `latest/manifest.sig`, `latest/aman-threat-db-{RUN_ID}.zip (the exact name is referenced by `manifest.json`)`, and `latest/build-report.json`. Also verify that the two metadata URLs return HTTP 200 without authentication and inspect the uploaded diagnostics artifact before installing the resulting APK.

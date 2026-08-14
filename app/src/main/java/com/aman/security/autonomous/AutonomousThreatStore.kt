@@ -179,7 +179,13 @@ class AutonomousThreatStore(context: Context) {
             freshSources = health.count { it.fresh },
             staleSources = health.count { !it.fresh },
             totalSources = 1,
-            sourceHealth = health
+            sourceHealth = health,
+            cloudSerial = state.optLong("cloudSerial", 0L),
+            cloudVersion = state.optString("cloudVersion", "").takeIf(String::isNotBlank),
+            cloudGeneratedAt = state.optString("cloudGeneratedAt", "").takeIf(String::isNotBlank),
+            cloudGeneratedAtEpochMs = generated,
+            cloudPackageFresh = fresh,
+            cloudConsecutiveFailures = state.optInt("cloudConsecutiveFailures", 0)
         )
     }
 

@@ -9,7 +9,7 @@ if files!=expected:
 w=(root/expected[0]).read_text(encoding='utf-8')
 checks={
  'auto_push_main':'push:' in w and 'branches: [ "main" ]' in w,
- 'scheduled_refresh':'schedule:' in w and '17 */6 * * *' in w,
+ 'scheduled_refresh_daily':'schedule:' in w and '17 3 * * *' in w,
  'manual':'workflow_dispatch:' in w,
  'concurrency':'cancel-in-progress: true' in w,
  'single_pipeline_name':'name: Aman Security Pipeline' in w,
@@ -17,4 +17,4 @@ checks={
 bad=[k for k,v in checks.items() if not v]
 if bad:
     print('SINGLE_WORKFLOW_GATE_FAILED',','.join(bad)); sys.exit(1)
-print('SINGLE_WORKFLOW_GATE_OK count=1 trigger=push_main+schedule_6h+manual concurrency_cancel=1')
+print('SINGLE_WORKFLOW_GATE_OK count=1 trigger=push_main+schedule_daily_03_17_utc+manual concurrency_cancel=1')
