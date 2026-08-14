@@ -24,7 +24,7 @@ class AutonomousThreatWorker(appContext: Context, params: WorkerParameters) : Wo
         }
         state.complete(result)
         return when (result) {
-            AutonomousUpdateResult.NoSourceAvailable -> Result.retry()
+            is AutonomousUpdateResult.NoSourceAvailable -> Result.retry()
             is AutonomousUpdateResult.Success,
             is AutonomousUpdateResult.Partial -> {
                 if (ProtectionPreferences(applicationContext).enabled) {

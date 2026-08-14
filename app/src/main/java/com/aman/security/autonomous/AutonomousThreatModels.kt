@@ -46,5 +46,5 @@ data class AutonomousUpdateProgress(
 sealed class AutonomousUpdateResult {
     data class Success(val info: AutonomousIntelInfo, val changedSources: Int) : AutonomousUpdateResult()
     data class Partial(val info: AutonomousIntelInfo, val successfulSources: Int, val failedSources: Int, val changedSources: Int) : AutonomousUpdateResult()
-    data object NoSourceAvailable : AutonomousUpdateResult()
+    data class NoSourceAvailable(val error: String = "no_source_available") : AutonomousUpdateResult()
 }

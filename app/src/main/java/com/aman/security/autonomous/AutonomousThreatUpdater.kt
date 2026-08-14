@@ -49,7 +49,7 @@ class AutonomousThreatUpdater(
         if (!http.configured()) {
             store.recordCloudFailure(attemptAt)
             report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = false)
-            return AutonomousUpdateResult.NoSourceAvailable
+            return AutonomousUpdateResult.NoSourceAvailable("endpoint_not_configured")
         }
 
         return try {
@@ -93,10 +93,19 @@ class AutonomousThreatUpdater(
             report(AutonomousUpdatePhase.APPLYING, 100, download.bytes, manifest.bundleBytes, finished = true, succeeded = true)
             val info = store.info()
             AutonomousUpdateResult.Success(info, changedSources = if (changed) 1 else 0)
-        } catch (_: Exception) {
+        } catch (error: Exception) {
             store.recordCloudFailure(attemptAt)
             report(AutonomousUpdatePhase.APPLYING, 100, finished = true, succeeded = false)
-            AutonomousUpdateResult.NoSourceAvailable
+            AutonomousUpdateResult.NoSourceAvailable(failureReason(error))
+        }
+    }
+
+    private fun failureReason(error: Exception): String {
+        val message = error.message.orEmpty().replace(Regex("\\s+"), " ").trim()
+        return when {
+            message.isNotBlank() -> message.take(240)
+            error is SecurityException -> "security_validation_failed"
+            else -> error.javaClass.simpleName.take(120)
         }
     }
 

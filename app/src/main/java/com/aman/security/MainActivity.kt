@@ -2062,7 +2062,13 @@ class MainActivity : AppCompatActivity() {
                 append('\n')
                 append(threatIntelCountsText(info))
             }
-            ThreatUpdateState.FAILED -> binding.txtUpdateStatus.setText(R.string.threat_update_failed_persistent)
+            ThreatUpdateState.FAILED -> binding.txtUpdateStatus.text = buildString {
+                append(getString(R.string.threat_update_failed_persistent))
+                if (state.error.isNotBlank()) {
+                    append('\n')
+                    append(getString(R.string.threat_update_failure_reason, state.error))
+                }
+            }
         }
     }
 

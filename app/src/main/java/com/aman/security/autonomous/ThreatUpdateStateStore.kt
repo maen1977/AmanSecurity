@@ -162,7 +162,7 @@ class ThreatUpdateStateStore(context: Context) {
                 now = now,
                 error = ""
             )
-            AutonomousUpdateResult.NoSourceAvailable -> writeTerminal(
+            is AutonomousUpdateResult.NoSourceAvailable -> writeTerminal(
                 state = ThreatUpdateState.FAILED,
                 successful = 0,
                 failed = AutonomousThreatUpdater.TOTAL_SOURCES,
@@ -172,7 +172,7 @@ class ThreatUpdateStateStore(context: Context) {
                 c2 = 0,
                 cves = 0,
                 now = now,
-                error = "no_source_available"
+                error = result.error
             )
         }
     }
