@@ -34,7 +34,7 @@ The mobile ZIP contains only compact indicator indexes and Android CVE identifie
 Required for publishing in the private `AmanSecurity` repository:
 
 - `AMAN_THREAT_DB_PRIVATE_KEY_B64` — base64-encoded private RSA signing key. Never commit it to the repository or place it in the APK.
-- `AMAN_THREAT_PUBLISH_TOKEN` — a fine-grained token scoped only to `AmanSecurity-Threat-DB` with **Contents: Read and write**. It is used only by the CI runner to publish the signed package to the public mirror. Never place this token in the APK or source files.
+- `AMAN_THREAT_DEPLOY_KEY` — the passwordless SSH private key whose public half is installed as a write-enabled deploy key on `AmanSecurity-Threat-DB`. It grants no access to the private application repository and is used only by the CI runner to publish the signed package. Never place this key in the APK or source files.
 
 Optional enrichment:
 
@@ -44,7 +44,7 @@ The matching **public** RSA key is intentionally bundled at `app/src/main/assets
 
 ## First deployment
 
-1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_PUBLISH_TOKEN` in **Repository Settings → Secrets and variables → Actions** of the private `AmanSecurity` repository.
+1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_DEPLOY_KEY` in **Repository Settings → Secrets and variables → Actions** of the private `AmanSecurity` repository.
 2. Optionally add `ABUSECH_AUTH_KEY`.
 3. Run **Aman Security Pipeline** manually once.
 4. Confirm the public `AmanSecurity-Threat-DB` repository contains `latest/manifest.json`, `latest/manifest.sig`, and `latest/aman-threat-db.zip`.

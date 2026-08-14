@@ -7,13 +7,13 @@ Aman Security uses `.github/workflows/build.yml` for both the signed threat-inte
 The private `AmanSecurity` repository requires the following Actions secrets:
 
 - `AMAN_THREAT_DB_PRIVATE_KEY_B64`: base64-encoded RSA private key corresponding to `app/src/main/assets/keys/aman-threat-db-public.pem`. It is used only on the ephemeral CI runner to sign the manifest.
-- `AMAN_THREAT_PUBLISH_TOKEN`: fine-grained token scoped only to the public `maen1977/AmanSecurity-Threat-DB` repository with **Contents: Read and write**. It is used only to publish the signed package mirror.
+- `AMAN_THREAT_DEPLOY_KEY`: passwordless SSH private key whose public half is installed as a write-enabled deploy key on the public `maen1977/AmanSecurity-Threat-DB` repository. It is used only to publish the signed package mirror.
 
 `ABUSECH_AUTH_KEY` is optional and enables authenticated MalwareBazaar/ThreatFox enrichment. The factory still has non-authenticated public sources when this secret is absent. No secret is bundled in the APK.
 
 ## Update sequence
 
-The workflow checks that both required secrets are present and fails fast when either is missing. It then fetches bounded provider metadata, normalizes indicators, discards raw provider payloads, builds the compact seven-file mobile ZIP, signs and verifies the manifest, and force-publishes only `latest/` to the public threat-package repository. The Android client downloads only the manifest, signature, and a newer signed package from the narrow public endpoint:
+The workflow checks that both required secrets are present and fails fast when either is missing. The source repository uses read-only contents permission; cross-repository publication is performed through the repository-scoped SSH deploy key, not the source workflow's `GITHUB_TOKEN`. It then fetches bounded provider metadata, normalizes indicators, discards raw provider payloads, builds the compact seven-file mobile ZIP, signs and verifies the manifest, and force-publishes only `latest/` to the public threat-package repository. The Android client downloads only the manifest, signature, and a newer signed package from the narrow public endpoint:
 
 ```text
 https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
