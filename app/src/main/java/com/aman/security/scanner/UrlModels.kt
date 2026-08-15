@@ -38,7 +38,8 @@ enum class UrlRiskSignal {
     MANY_SUBDOMAINS,
     LONG_URL,
     SUSPICIOUS_KEYWORDS,
-    COMMUNITY_THREAT_FEED
+    COMMUNITY_THREAT_FEED,
+    SHORTENER_HOST
 }
 
 data class UrlScanResult(

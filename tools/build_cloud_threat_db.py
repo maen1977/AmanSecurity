@@ -107,7 +107,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/3.6.6 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/3.6.7 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:

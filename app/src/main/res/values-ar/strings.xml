@@ -331,6 +331,7 @@
     <string name="autonomous_last_update_never">لم يكتمل بعد أول تحديث ذاتي عبر الإنترنت.</string>
     <string name="autonomous_last_update">آخر تحديث ذاتي: %1$s • المصادر التي تم الوصول إليها: %2$d من %3$d • المصادر الحديثة حاليًا: %4$d من %3$d.</string>
     <string name="url_signal_community_feed">ظهر هذا المضيف في مصدر تهديد مجتمعي، لذلك يحتاج إلى مراجعة قبل فتحه.</string>
+    <string name="url_signal_shortener">يستخدم هذا الرابط خدمة اختصار، لذلك تكون وجهته النهائية مخفية حتى فتحه.</string>
     <string name="device_patch_unknown">لم تتوفر بعد بيانات كافية لمقارنة تصحيح أمان الجهاز.</string>
     <string name="device_patch_current">تصحيح أمان الجهاز %1$s يواكب أحدث مستوى منشور %2$s.</string>
     <string name="device_patch_behind">تصحيح أمان الجهاز %1$s أقدم من أحدث مستوى منشور %2$s. افحص تحديثات النظام.</string>

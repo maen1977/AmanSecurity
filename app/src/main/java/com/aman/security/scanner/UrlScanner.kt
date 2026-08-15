@@ -95,11 +95,17 @@ class UrlScanner(
             signals += UrlRiskSignal.SUSPICIOUS_KEYWORDS
             score += 10
         }
+        if (isKnownShortenerHost(normalized.host)) {
+            // A shortener hides the final destination. This is a review signal, not proof of abuse.
+            signals += UrlRiskSignal.SHORTENER_HOST
+            score += 20
+        }
 
         // Compound web-phishing signals matter more than any single weak heuristic.
         if (UrlRiskSignal.PLAIN_HTTP in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 10
         if (UrlRiskSignal.PUNYCODE_HOST in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 15
         if (UrlRiskSignal.IP_ADDRESS_HOST in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 10
+        if (UrlRiskSignal.SHORTENER_HOST in signals && UrlRiskSignal.SUSPICIOUS_KEYWORDS in signals) score += 10
 
         score = score.coerceAtMost(100)
         val level = when {
@@ -131,6 +137,10 @@ class UrlScanner(
         return (1 until labels.size - 1).map { labels.drop(it).joinToString(".") }
     }
 
+    private fun isKnownShortenerHost(host: String): Boolean = SHORTENER_HOSTS.any { shortener ->
+        host == shortener || host.endsWith(".$shortener")
+    }
+
     private fun containsSuspiciousKeyword(url: String, host: String): Boolean {
         val lower = url.lowercase()
         val hostLower = host.lowercase()
@@ -146,6 +156,12 @@ class UrlScanner(
 
         private val SUSPICIOUS_KEYWORDS = setOf(
             "login", "verify", "account", "password", "wallet", "payment", "secure", "auth", "banking", "update"
+        )
+
+        private val SHORTENER_HOSTS = setOf(
+            "bit.ly", "buff.ly", "cutt.ly", "goo.gl", "is.gd", "lnkd.in", "ow.ly",
+            "rb.gy", "rebrand.ly", "s.id", "shorturl.at", "t.co", "t.ly", "tiny.one",
+            "tinyurl.com", "trib.al"
         )
     }
 }

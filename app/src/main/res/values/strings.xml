@@ -331,6 +331,7 @@
     <string name="autonomous_last_update_never">Autonomous intelligence has not completed its first online update yet.</string>
     <string name="autonomous_last_update">Last autonomous update: %1$s • sources reached: %2$d/%3$d • currently fresh: %4$d/%3$d.</string>
     <string name="url_signal_community_feed">This host appears in a community threat feed and should be reviewed before opening.</string>
+    <string name="url_signal_shortener">This link uses a URL shortener, so its final destination is hidden until opened.</string>
     <string name="device_patch_unknown">Not enough data yet to compare the device security patch.</string>
     <string name="device_patch_current">Device security patch %1$s is current with the latest published level %2$s.</string>
     <string name="device_patch_behind">Device security patch %1$s is older than the latest published level %2$s. Check for a system update.</string>

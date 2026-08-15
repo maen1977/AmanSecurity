@@ -40,6 +40,14 @@ class UrlScannerTest {
     }
 
     @Test
+    fun knownShortenerHidesDestinationAndRequiresReview() {
+        val result = scanner().scan("https://bit.ly/account-verify")
+        assertEquals(UrlRiskLevel.REVIEW, result.riskLevel)
+        assertTrue(result.signals.contains(UrlRiskSignal.SHORTENER_HOST))
+        assertTrue(result.riskScore >= 20)
+    }
+
+    @Test
     fun singleHttpSignalDoesNotBecomePhishingVerdict() {
         val result = scanner().scan("http://example.com/")
         assertEquals(UrlRiskLevel.LOW, result.riskLevel)
