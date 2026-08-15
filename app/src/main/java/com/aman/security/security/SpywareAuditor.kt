@@ -1,6 +1,7 @@
 package com.aman.security.security
 
 import android.Manifest
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.ComponentName
 import android.content.Context
 import android.app.admin.DevicePolicyManager
@@ -9,7 +10,8 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
+import android.view.accessibility.AccessibilityManager
+import androidx.core.app.NotificationManagerCompat
 
 
 data class SpywareAppFinding(
@@ -92,19 +94,15 @@ class SpywareAuditor(private val context: Context) {
     private fun isGranted(packageName: String, permission: String): Boolean =
         packageManager.checkPermission(permission, packageName) == PackageManager.PERMISSION_GRANTED
 
-    private fun isEnabledAccessibilityService(packageName: String): Boolean =
-        enabledPackages(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).contains(packageName)
+    private fun isEnabledAccessibilityService(packageName: String): Boolean = runCatching {
+        val manager = context.getSystemService(AccessibilityManager::class.java) ?: return@runCatching false
+        manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any { it.resolveInfo?.serviceInfo?.packageName == packageName }
+    }.getOrDefault(false)
 
-    private fun isEnabledNotificationListener(packageName: String): Boolean =
-        enabledPackages(Settings.Secure.ENABLED_NOTIFICATION_LISTENERS).contains(packageName)
-
-    private fun enabledPackages(setting: String): Set<String> = runCatching {
-        Settings.Secure.getString(context.contentResolver, setting)
-            .orEmpty()
-            .split(':')
-            .mapNotNull { ComponentName.unflattenFromString(it)?.packageName }
-            .toSet()
-    }.getOrDefault(emptySet())
+    private fun isEnabledNotificationListener(packageName: String): Boolean = runCatching {
+        NotificationManagerCompat.getEnabledListenerPackages(context).contains(packageName)
+    }.getOrDefault(false)
 
     private fun isActiveDeviceAdmin(packageName: String, receiverNames: List<String>): Boolean = runCatching {
         val manager = context.getSystemService(DevicePolicyManager::class.java) ?: return@runCatching false
