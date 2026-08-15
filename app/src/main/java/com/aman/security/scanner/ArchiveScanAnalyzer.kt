@@ -29,7 +29,7 @@ class ArchiveScanAnalyzer(
                     if (inspectedEntries >= MAX_ENTRIES) {
                         limitedEntryName = entry.name.take(MAX_ENTRY_NAME_LENGTH)
                         scanLimited = true
-                        return@use
+                        break
                     }
 
                     val name = entry.name.take(MAX_ENTRY_NAME_LENGTH)
@@ -50,7 +50,7 @@ class ArchiveScanAnalyzer(
                         }
                         digest.update(buffer, 0, read)
                     }
-                    if (entryLimited) return@use
+                    if (entryLimited) break
 
                     val sha256 = digest.digest().toHex()
                     val signature = findSignature(sha256)
