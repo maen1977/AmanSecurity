@@ -42,7 +42,7 @@ class LinkGuardActivity : AppCompatActivity() {
         val scanned = scanner.scan(candidate)
         result = scanned
         render(scanned)
-        recordOfficialWebTestIfMatched(scanned)
+        recordOfficialWebTestIfMatched(scanned, WebGuardEvidencePolicy.provesExternalLinkInterception(intent?.action))
 
         if (WebProtectionPolicy.decide(scanned.riskLevel) == WebProtectionDecision.ALLOW) {
             binding.root.post { openExternal(scanned) }
@@ -52,6 +52,8 @@ class LinkGuardActivity : AppCompatActivity() {
     private fun incomingLink(intent: Intent?): String? = when (intent?.action) {
         Intent.ACTION_VIEW -> intent.dataString
         Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+        Intent.ACTION_SEND -> intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+            ?: intent.clipData?.getItemAt(0)?.coerceToText(this)?.toString()
         else -> null
     }
 
@@ -89,8 +91,11 @@ class LinkGuardActivity : AppCompatActivity() {
         binding.btnWebGuardOpen.visibility = if (WebProtectionPolicy.mayOpenAfterWarning(scan.riskLevel)) View.VISIBLE else View.GONE
     }
 
-    private fun recordOfficialWebTestIfMatched(scan: UrlScanResult) {
-        if (scan.riskLevel != UrlRiskLevel.TEST_SIGNATURE ||
+    private fun recordOfficialWebTestIfMatched(scan: UrlScanResult, externalViewIntercepted: Boolean) {
+        // A shared link proves that Link Guard can scan text, but only ACTION_VIEW
+        // proves Android routed a normal external web link through the browser role.
+        if (!externalViewIntercepted ||
+            scan.riskLevel != UrlRiskLevel.TEST_SIGNATURE ||
             scan.threatReference != OfficialWebTestIndicators.AMTSO_ANDROID_PHISHING_REFERENCE
         ) return
 

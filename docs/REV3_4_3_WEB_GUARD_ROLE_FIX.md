@@ -23,3 +23,5 @@ Opening the AMTSO Android phishing page directly inside Chrome succeeds because 
 5. Link Guard shows the harmless test-signature block and records `WEB_GUARD_TEST_PASSED`.
 
 Typing the AMTSO URL manually inside an already-open external browser is not a supported full-path interception test; the DNS-only layer cannot distinguish that encrypted page from other pages on the legitimate AMTSO domain.
+
+For a WhatsApp/SMS link, use the Android Share action and choose Aman. Link Guard now receives `ACTION_SEND` text directly and scans it on-device before any browser is opened. This proves the scanner/share path, but it deliberately does not mark the browser-role AMTSO proof as passed; only a normal `ACTION_VIEW` routed through Aman can do that.
