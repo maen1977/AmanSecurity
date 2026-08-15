@@ -1,7 +1,5 @@
 package com.aman.security.autonomous
 
-import org.json.JSONArray
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,14 +7,14 @@ import org.junit.Test
 class CloudThreatManifestTest {
     @Test
     fun parsesOptionalSourceHealthMetadata() {
-        val json = fixture().put(
-            "sources",
-            JSONArray()
-                .put(JSONObject().put("name", "openphish").put("ok", true).put("count", 120).put("detail", "feed"))
-                .put(JSONObject().put("name", "threatfox").put("ok", true).put("count", 0).put("detail", "skipped: ABUSECH_AUTH_KEY not configured"))
+        val json = fixture(
+            sources = """
+                [{"name":"openphish","ok":true,"count":120,"detail":"feed"},
+                 {"name":"threatfox","ok":true,"count":0,"detail":"skipped: ABUSECH_AUTH_KEY not configured"}]
+            """.trimIndent()
         )
 
-        val manifest = CloudThreatManifest.parse(json.toString().toByteArray())
+        val manifest = CloudThreatManifest.parse(json.toByteArray())
 
         assertEquals(2, manifest.sources.size)
         assertEquals("openphish", manifest.sources[0].name)
@@ -27,39 +25,34 @@ class CloudThreatManifestTest {
 
     @Test
     fun rejectsUnsafeSourceMetadata() {
-        val invalidName = fixture().put(
-            "sources",
-            JSONArray().put(JSONObject().put("name", "open-phish").put("ok", true).put("count", 1))
+        val invalidName = fixture(
+            sources = "[{\"name\":\"open-phish\",\"ok\":true,\"count\":1}]"
         )
-        val oversizedDetail = fixture().put(
-            "sources",
-            JSONArray().put(JSONObject().put("name", "openphish").put("detail", "x".repeat(241)))
+        val oversizedDetail = fixture(
+            sources = "[{\"name\":\"openphish\",\"detail\":\"${"x".repeat(241)}\"}]"
         )
 
-        assertTrue(runCatching { CloudThreatManifest.parse(invalidName.toString().toByteArray()) }.isFailure)
-        assertTrue(runCatching { CloudThreatManifest.parse(oversizedDetail.toString().toByteArray()) }.isFailure)
+        assertTrue(runCatching { CloudThreatManifest.parse(invalidName.toByteArray()) }.isFailure)
+        assertTrue(runCatching { CloudThreatManifest.parse(oversizedDetail.toByteArray()) }.isFailure)
     }
 
-    private fun fixture(): JSONObject {
-        val files = JSONObject()
-        CloudThreatManifest.REQUIRED_FILES.forEach { name ->
-            files.put(
-                name,
-                JSONObject()
-                    .put("sha256", "a".repeat(64))
-                    .put("entries", 0)
-                    .put("bytes", 0)
-            )
+    private fun fixture(sources: String = "[]"): String {
+        val files = CloudThreatManifest.REQUIRED_FILES.joinToString(",") { name ->
+            "\"$name\":{\"sha256\":\"${"a".repeat(64)}\",\"entries\":0,\"bytes\":0}"
         }
-        return JSONObject()
-            .put("schema", 1)
-            .put("serial", 20260815120000L)
-            .put("version", "2026.08.15.1200")
-            .put("generatedAt", "2026-08-15T12:00:00Z")
-            .put("minAppVersionCode", 44)
-            .put("bundlePath", "aman-threat-db-20260815120000.zip")
-            .put("bundleSha256", "b".repeat(64))
-            .put("bundleBytes", 1)
-            .put("files", files)
+        return """
+            {
+              "schema":1,
+              "serial":20260815120000,
+              "version":"2026.08.15.1200",
+              "generatedAt":"2026-08-15T12:00:00Z",
+              "minAppVersionCode":44,
+              "bundlePath":"aman-threat-db-20260815120000.zip",
+              "bundleSha256":"${"b".repeat(64)}",
+              "bundleBytes":1,
+              "files":{$files},
+              "sources":$sources
+            }
+        """.trimIndent()
     }
 }
