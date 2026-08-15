@@ -83,6 +83,9 @@ jobs:
           touch .nojekyll
           git add .nojekyll latest
           git commit -m "Aman threat intelligence $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # actions/checkout stores its GITHUB_TOKEN in local Git config; remove it so the
+          # repository-scoped mirror token below is the only Authorization header sent.
+          git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
           push_succeeded=0
           if [ -n "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
             # Use an explicit Authorization header so Git cannot silently fall back to GITHUB_TOKEN.
