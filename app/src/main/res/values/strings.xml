@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Aman Security</string>
+    <string name="app_name">Maen Shield</string>
     <string name="app_subtitle">Multi-engine mobile anti-malware, app, link, and background protection</string>
     <string name="security_status_title">Threat intelligence</string>
-    <string name="security_status_body">Aman scans files, apps, and links locally and refreshes public threat indicators automatically when internet is available.</string>
+    <string name="security_status_body">Maen Shield scans files, apps, and links locally and refreshes public threat indicators automatically when internet is available.</string>
     <string name="choose_file">Choose file</string>
     <string name="scan_file">Scan file</string>
     <string name="change_language">Language</string>
@@ -49,13 +49,13 @@
     <string name="update_checking">Fetching the latest threat intelligence from public sources…</string>
     <string name="update_up_to_date">Sources were checked and no newer indicators were found.</string>
     <string name="update_success">Updated: %1$s malware file hashes • %2$s phishing indicators • %3$s command-and-control hosts • %4$s Android CVEs in the latest bulletin.</string>
-    <string name="update_network_error">No public source could be reached now. Aman kept the last valid data and will retry automatically.</string>
+    <string name="update_network_error">No public source could be reached now. Maen Shield kept the last valid data and will retry automatically.</string>
     <string name="safe_wording_note">A clean result only means no known signature was found. It is not a guarantee that a file is safe.</string>
     <string name="installed_apps_title">Installed apps</string>
     <string name="installed_apps_body">Review user-installed apps using local threat signatures, requested permissions, install source, accessibility services, and package fingerprints.</string>
     <string name="scan_installed_apps">Scan installed apps</string>
     <string name="installed_apps_disclosure_title">Installed-app scan</string>
-    <string name="installed_apps_disclosure_body">To perform the full security scan, Aman Security reads the installed app list and locally analyzes package fingerprints, signing certificates, permissions, components, code markers, network indicators, and install source. The app files and inventory stay on this device and are not uploaded.</string>
+    <string name="installed_apps_disclosure_body">To perform the full security scan, Maen Shield reads the installed app list and locally analyzes package fingerprints, signing certificates, permissions, components, code markers, network indicators, and install source. The app files and inventory stay on this device and are not uploaded.</string>
     <string name="continue_scan">Continue</string>
     <string name="cancel">Cancel</string>
     <string name="scanning_installed_apps">Running a full deep scan of installed apps…</string>
@@ -98,7 +98,7 @@
     <string name="add_exclusion_action">Add exclusion</string>
     <string name="remove_exclusion_action">Remove exclusion</string>
     <string name="quarantine_confirm_title">Quarantine this file?</string>
-    <string name="quarantine_confirm_body">Aman will encrypt the selected file inside private app storage, verify its SHA-256 again, and remove the original only if the provider allows deletion. If removal is not possible, quarantine is cancelled.</string>
+    <string name="quarantine_confirm_body">Maen Shield will encrypt the selected file inside private app storage, verify its SHA-256 again, and remove the original only if the provider allows deletion. If removal is not possible, quarantine is cancelled.</string>
     <string name="quarantine_progress">Encrypting and verifying the file…</string>
     <string name="quarantine_success">The file was quarantined successfully.</string>
     <string name="quarantine_source_changed">The file changed after the scan. It was not quarantined. Scan it again before taking action.</string>
@@ -128,7 +128,7 @@
     <string name="exclusion_item_hash">SHA-256: %1$s</string>
     <string name="exclusion_item_date">Added: %1$s</string>
     <string name="exclusion_confirm_title">Add this exact hash to exclusions?</string>
-    <string name="exclusion_confirm_body">Use exclusions only for files you trust. Aman will continue to display the underlying detection, but will not recommend quarantine for this exact SHA-256 until you remove the exclusion.</string>
+    <string name="exclusion_confirm_body">Use exclusions only for files you trust. Maen Shield will continue to display the underlying detection, but will not recommend quarantine for this exact SHA-256 until you remove the exclusion.</string>
     <string name="exclusion_added_success">The exact file hash was added to exclusions.</string>
     <string name="exclusion_removed_success">The exclusion was removed.</string>
     <string name="result_excluded_reason">Excluded by you. Underlying detection: %1$s</string>
@@ -142,10 +142,10 @@
     <string name="clear_history_confirm_title">Clear scan history?</string>
     <string name="clear_history_confirm_body">This removes saved scan-history records. It does not delete quarantined files or exclusions.</string>
     <string name="url_protection_title">Link protection</string>
-    <string name="url_protection_body">Scan a web link locally before opening it. Aman checks active local link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
+    <string name="url_protection_body">Scan a web link locally before opening it. Maen Shield checks active local link indicators and combines several phishing-risk signals without treating any single heuristic as proof.</string>
     <string name="url_input_hint">Paste or type a web link</string>
     <string name="scan_link_action">Scan link</string>
-    <string name="url_result_not_scanned">Enter a link or share one to Aman Security.</string>
+    <string name="url_result_not_scanned">Enter a link or share one to Maen Shield.</string>
     <string name="url_result_invalid">Invalid or unsupported link</string>
     <string name="url_result_low">No known link threat found</string>
     <string name="url_result_review">Link needs review</string>
@@ -171,8 +171,8 @@
     <string name="url_score_line">Indicator score: %1$s/100</string>
     <string name="url_normalized_line">Normalized link: %1$s</string>
     <string name="url_threat_reference_line">Link threat reference: %1$s</string>
-    <string name="url_privacy_note">Link scanning is on-device. The link is not sent to Aman or to a third-party lookup service.</string>
-    <string name="url_share_note">You can also use the Android Share menu on a text link and choose Aman Security.</string>
+    <string name="url_privacy_note">Link scanning is on-device. The link is not sent to Maen Shield or to a third-party lookup service.</string>
+    <string name="url_share_note">You can also use the Android Share menu on a text link and choose Maen Shield.</string>
     <string name="apk_analysis_title">Advanced APK analysis</string>
     <string name="apk_analysis_low">No elevated static indicators</string>
     <string name="apk_analysis_review">Static indicators need review</string>
@@ -215,8 +215,8 @@
     <string name="apk_analysis_note">Static analysis never runs the APK. It inspects package metadata, bounded archive structure, signing identity, and selected code markers locally on the device.</string>
     <string name="reason_apk_identity_test">A safe local package-identity test indicator matched. It is not a malware verdict.</string>
     <string name="background_protection_title">Background protection</string>
-    <string name="background_protection_body">When enabled, Aman deeply scans new or updated apps, watches new Downloads, and uses cached hashes plus scheduled catch-up checks instead of continuously rereading storage.</string>
-    <string name="background_protection_note">Protection is local and event-driven. Aman never uploads the scan cache or file/app inventory. Public threat intelligence refreshes about every 24 hours when Android allows network work; unchanged APKs/files are rechecked by cached SHA-256 instead of being read again.</string>
+    <string name="background_protection_body">When enabled, Maen Shield deeply scans new or updated apps, watches new Downloads, and uses cached hashes plus scheduled catch-up checks instead of continuously rereading storage.</string>
+    <string name="background_protection_note">Protection is local and event-driven. Maen Shield never uploads the scan cache or file/app inventory. Public threat intelligence refreshes about every 24 hours when Android allows network work; unchanged APKs/files are rechecked by cached SHA-256 instead of being read again.</string>
     <string name="protection_state_enabled">Protection is enabled</string>
     <string name="protection_state_disabled">Protection is disabled</string>
     <string name="protection_state_notifications_off">Protection is enabled, but Android notification permission is off. Alerts remain in recent protection activity.</string>
@@ -239,19 +239,19 @@
     <string name="protection_severity_known">Known threat</string>
     <string name="clear_protection_alerts_action">Clear protection activity</string>
     <string name="protection_disclosure_title">Enable background protection?</string>
-    <string name="protection_disclosure_body">Aman will locally inspect newly installed or updated user apps and, if you choose a folder, periodically inspect new or changed files in that folder. File and app inventories are not uploaded. Nothing is deleted or quarantined automatically. Android notification permission is used only for high-risk or known-threat alerts.</string>
+    <string name="protection_disclosure_body">Maen Shield will locally inspect newly installed or updated user apps and, if you choose a folder, periodically inspect new or changed files in that folder. File and app inventories are not uploaded. Nothing is deleted or quarantined automatically. Android notification permission is used only for high-risk or known-threat alerts.</string>
     <string name="protection_continue_action">Enable protection</string>
     <string name="protection_folder_permission_lost">Access to the protected folder is no longer available. Choose the folder again to resume folder checks.</string>
     <string name="protection_checking">Checking new or changed files…</string>
     <string name="protection_check_result">Folder check complete: %1$s file(s) scanned, %2$s alert(s).</string>
     <string name="protection_check_failed">The protected-folder check could not be completed.</string>
     <string name="protection_choose_folder_first">Choose a protected folder first.</string>
-    <string name="protection_channel_name">Aman protection alerts</string>
+    <string name="protection_channel_name">Maen Shield protection alerts</string>
     <string name="protection_channel_description">High-risk and known-threat alerts from enabled background protection.</string>
     <string name="protection_notification_known_title">Known threat detected</string>
     <string name="protection_notification_high_title">High-risk security alert</string>
-    <string name="protection_notification_file_body">Aman detected a security alert in file: %1$s</string>
-    <string name="protection_notification_app_body">Aman detected a security alert after installing or updating: %1$s</string>
+    <string name="protection_notification_file_body">Maen Shield detected a security alert in file: %1$s</string>
+    <string name="protection_notification_app_body">Maen Shield detected a security alert after installing or updating: %1$s</string>
     <string name="spyware_high_notification_title">High-risk spyware capability review</string>
     <string name="spyware_high_notification_body">%1$s has active privileged or surveillance signals (%2$d). Review the app and its Android access settings.</string>
     <string name="app_version">Version %1$s</string>
@@ -274,18 +274,18 @@
     <string name="family_riskware">Riskware</string>
     <string name="family_adware">Adware</string>
     <string name="family_test">Safe test indicator</string>
-    <string name="web_guard_title">Aman Web Guard</string>
+    <string name="web_guard_title">Maen Shield Web Guard</string>
     <string name="web_guard_checking">Checking this link before opening it…</string>
     <string name="web_guard_safe_title">Link check passed</string>
-    <string name="web_guard_safe_body">No known malicious link indicator or elevated phishing pattern was found. Aman will hand the link to an external browser.</string>
+    <string name="web_guard_safe_body">No known malicious link indicator or elevated phishing pattern was found. Maen Shield will hand the link to an external browser.</string>
     <string name="web_guard_caution_title">Review this link</string>
-    <string name="web_guard_caution_body">Aman found a combination of link indicators that deserves review. The link has not been opened.</string>
+    <string name="web_guard_caution_body">Maen Shield found a combination of link indicators that deserves review. The link has not been opened.</string>
     <string name="web_guard_blocked_title">Dangerous link blocked</string>
-    <string name="web_guard_blocked_body">This link or host matches an active local phishing or malware indicator. Aman did not open it.</string>
+    <string name="web_guard_blocked_body">This link or host matches an active local phishing or malware indicator. Maen Shield did not open it.</string>
     <string name="web_guard_test_title">Safe Web Guard test</string>
     <string name="web_guard_test_body">The harmless test signature was detected correctly. No malicious site was opened.</string>
     <string name="web_guard_invalid_title">Unsupported link</string>
-    <string name="web_guard_invalid_body">Aman opens only valid standard web links through Web Guard.</string>
+    <string name="web_guard_invalid_body">Maen Shield opens only valid standard web links through Web Guard.</string>
     <string name="web_guard_open_warning_title">Open a risky link?</string>
     <string name="web_guard_open_warning_body">The link has elevated risk indicators. Continue only if you understand the warning and trust the destination.</string>
     <string name="web_guard_open_anyway">Open anyway</string>
@@ -299,7 +299,7 @@
     <string name="web_guard_configure_action">Enable Web Guard</string>
     <string name="web_guard_manage_action">Manage Web Guard</string>
     <string name="message_scan_title">Scan a message</string>
-    <string name="message_scan_subtitle">Paste or share a suspicious message. Aman checks its wording and links on this device only.</string>
+    <string name="message_scan_subtitle">Paste or share a suspicious message. Maen Shield checks its wording and links on this device only.</string>
     <string name="message_input_hint">Paste the message text here</string>
     <string name="scan_message_action">Scan message locally</string>
     <string name="message_result_not_scanned">No message scanned yet</string>
@@ -308,8 +308,8 @@
     <string name="message_result_review">Message needs review</string>
     <string name="message_result_high">High-risk message pattern</string>
     <string name="message_result_known_threat">Known dangerous link found</string>
-    <string name="message_reason_invalid">Paste message text or share it with Aman, then scan again.</string>
-    <string name="message_reason_low">Aman did not find strong local smishing indicators. Stay careful with unexpected requests.</string>
+    <string name="message_reason_invalid">Paste message text or share it with Maen Shield, then scan again.</string>
+    <string name="message_reason_low">Maen Shield did not find strong local smishing indicators. Stay careful with unexpected requests.</string>
     <string name="message_reason_review">The message contains signals commonly used in scams. Do not share codes, passwords, or payment details.</string>
     <string name="message_reason_known_threat">A link in this message matches a local phishing or malware indicator. Do not open it.</string>
     <string name="message_score_line">Local message risk score: %1$s/100</string>
@@ -351,7 +351,7 @@
 
     <string name="dashboard_score_placeholder">--</string>
     <string name="dashboard_checking">Checking protection</string>
-    <string name="dashboard_subtitle">Aman combines device posture, installed-app scanning, web protection, and threat intelligence.</string>
+    <string name="dashboard_subtitle">Maen Shield combines device posture, installed-app scanning, web protection, and threat intelligence.</string>
     <string name="smart_scan_action">Smart scan</string>
     <string name="smart_scan_preparing">Smart scan is running</string>
     <string name="smart_scan_detail">Analyzing installed apps, signatures, permissions, and current protection posture.</string>
@@ -360,7 +360,7 @@
     <string name="quick_scan_file">Scan a file</string>
     <string name="file_scan_title">Scan file</string>
     <string name="storage_scan_title">Storage scan</string>
-    <string name="storage_scan_subtitle">Choose a folder to scan its files locally. Aman does not scan continuously or delete files automatically.</string>
+    <string name="storage_scan_subtitle">Choose a folder to scan its files locally. Maen Shield does not scan continuously or delete files automatically.</string>
     <string name="storage_scan_none_selected">No storage folder selected</string>
     <string name="storage_scan_selected">Selected folder: %1$s</string>
     <string name="storage_scan_choose_folder">Choose folder</string>
@@ -401,7 +401,7 @@
     <string name="smart_scan_result_safe_detail">No high-risk or known malicious installed app was found in this scan.</string>
     <string name="smart_scan_result_review_detail">Review the flagged applications below before deciding what action to take.</string>
     <string name="smart_scan_failed_title">Smart scan could not finish</string>
-    <string name="smart_scan_failed_detail">Aman could not complete the installed-app scan. Try again after checking system access.</string>
+    <string name="smart_scan_failed_detail">Maen Shield could not complete the installed-app scan. Try again after checking system access.</string>
     <string name="file_scan_running_title">Scanning selected file</string>
     <string name="file_scan_running_detail">Checking file hash, identity, static APK behavior, and local threat intelligence.</string>
     <string name="file_result_safe">File scan complete</string>
@@ -415,7 +415,7 @@
     <string name="smart_scan_disclosure_title">Smart Scan privacy</string>
     <string name="smart_scan_disclosure_body">Smart Scan analyzes installed user apps locally, reviews device security settings, checks the active network security state, inventories granted privacy-sensitive permissions, and scans your protected folder when configured. App inventory, files, and permission data are not uploaded.</string>
     <string name="smart_scan_full_detail">Checking installed apps, malware indicators, device hardening, network security, privacy exposure, and the configured protected folder.</string>
-    <string name="smart_scan_failed_full_detail">Aman could not complete every Smart Scan layer. Review protection permissions and try again.</string>
+    <string name="smart_scan_failed_full_detail">Maen Shield could not complete every Smart Scan layer. Review protection permissions and try again.</string>
     <string name="smart_scan_audit_summary">Security audit: %1$s high-priority findings • %2$s recommendations • %3$s apps with broad sensitive-permission access</string>
     <string name="smart_scan_folder_summary">Protected folder: %1$s changed files scanned • %2$s alerts</string>
     <string name="smart_scan_folder_not_configured">Protected folder: not configured; app, device, network, and privacy layers were still checked.</string>
@@ -456,10 +456,10 @@
 
     <string name="privacy_control_open">Permissions Control</string>
     <string name="privacy_control_title">Permissions Control</string>
-    <string name="privacy_control_body">Review user-installed apps that currently hold privacy-sensitive permissions. Aman does not revoke permissions automatically; use Android app settings to make the final decision.</string>
+    <string name="privacy_control_body">Review user-installed apps that currently hold privacy-sensitive permissions. Maen Shield does not revoke permissions automatically; use Android app settings to make the final decision.</string>
     <string name="privacy_control_loading">Reviewing app permissions…</string>
     <string name="privacy_control_refresh">Refresh permission inventory</string>
-    <string name="privacy_control_none">No user app currently has the sensitive permissions tracked by Aman.</string>
+    <string name="privacy_control_none">No user app currently has the sensitive permissions tracked by Maen Shield.</string>
     <string name="privacy_control_summary">%1$s apps currently have one or more sensitive permissions.</string>
     <string name="privacy_control_permission_count">Granted sensitive permissions: %1$s</string>
     <string name="privacy_control_manage">Manage app permissions</string>
@@ -472,7 +472,7 @@
     <string name="protection_snapshot">Protection status</string>
     <string name="open_protection_center">Open Protection Center</string>
     <string name="scan_center_title">Scan</string>
-    <string name="scan_center_subtitle">See exactly what Aman is scanning, where it is scanning, and how far it has progressed.</string>
+    <string name="scan_center_subtitle">See exactly what Maen Shield is scanning, where it is scanning, and how far it has progressed.</string>
     <string name="protection_center_title">Protection</string>
     <string name="protection_center_subtitle">Real-time app, file, web, device, network, and privacy protection controls.</string>
     <string name="settings_title">Settings</string>
@@ -480,7 +480,7 @@
     <string name="general_settings">General</string>
     <string name="notification_settings">Notification settings</string>
     <string name="protection_updates_title">Protection updates</string>
-    <string name="about_title">About Aman Security</string>
+    <string name="about_title">About Maen Shield</string>
     <string name="security_records_title">Security records</string>
     <string name="nav_home">Home</string>
     <string name="nav_scan">Scan</string>
@@ -513,10 +513,10 @@
     <string name="security_audit_unavailable">Security audit temporarily unavailable</string>
 
     <!-- Real-time antivirus / Kaspersky-style protection center -->
-    <string name="protection_status_channel_name">Aman real-time protection</string>
+    <string name="protection_status_channel_name">Maen Shield real-time protection</string>
     <string name="protection_status_channel_description">Persistent device protection status while Automatic Anti-Virus is enabled.</string>
-    <string name="protection_status_notification_protected">Aman Security — Device protected</string>
-    <string name="protection_status_notification_attention">Aman Security — Protection needs attention</string>
+    <string name="protection_status_notification_protected">Maen Shield — Device protected</string>
+    <string name="protection_status_notification_attention">Maen Shield — Protection needs attention</string>
     <string name="protection_status_notification_body">Local real-time protection is active • Event-driven app and Downloads monitoring</string>
     <string name="protection_status_notification_apps_off">Real-time service is active • New-app monitoring is turned off</string>
     <string name="protection_status_notification_downloads_access">App monitoring is active • Grant file access to protect Downloads</string>
@@ -524,7 +524,7 @@
     <string name="protection_status_open_action">Protection</string>
     <string name="protection_status_scan_action">Scan now</string>
     <string name="timeline_realtime_started">Real-time protection started</string>
-    <string name="timeline_realtime_started_detail">Aman is monitoring new and updated apps and will monitor Downloads when file access is available.</string>
+    <string name="timeline_realtime_started_detail">Maen Shield is monitoring new and updated apps and will monitor Downloads when file access is available.</string>
     <string name="activity_realtime_active">Real-time protection is active</string>
     <string name="activity_download_detected">New download detected: %1$s</string>
     <string name="activity_download_checked">Checked download: %1$s</string>
@@ -563,11 +563,11 @@
     <string name="last_protection_activity_none">Last protection activity: waiting for first event</string>
     <string name="last_protection_activity_line">Last activity: %1$s • %2$s</string>
     <string name="protection_stats_line">Lifetime checks: %1$s apps • %2$s files • %3$s threat alerts</string>
-    <string name="downloads_access_granted">File access granted. Aman can monitor and scan Downloads.</string>
+    <string name="downloads_access_granted">File access granted. Maen Shield can monitor and scan Downloads.</string>
     <string name="downloads_access_missing">File access is not granted. Android blocks automatic Downloads scanning until you allow “Manage all files”.</string>
     <string name="grant_file_access_action">Allow file protection</string>
     <string name="file_access_disclosure_title">Allow antivirus file protection?</string>
-    <string name="file_access_disclosure_body">Android provides “Manage all files” access for core antivirus use cases. Aman uses it only to locally scan shared files and Downloads for threats. Files are not uploaded, modified, or deleted automatically.</string>
+    <string name="file_access_disclosure_body">Android provides “Manage all files” access for core antivirus use cases. Maen Shield uses it only to locally scan shared files and Downloads for threats. Files are not uploaded, modified, or deleted automatically.</string>
     <string name="app_install_monitor_setting">Scan new and updated apps automatically</string>
     <string name="downloads_protection_setting">Protect new files in Downloads</string>
     <string name="periodic_app_rescan_setting">Daily lightweight app inventory check</string>
@@ -582,13 +582,13 @@
     <string name="scan_scope_shared_storage">Shared storage: %1$s</string>
     <string name="full_scan_running_detail">Checking installed apps first, then scanning accessible shared files and installation packages.</string>
     <string name="full_scan_result">Full scan: %1$s apps and %2$s files checked • %3$s threat alerts</string>
-    <string name="full_scan_truncated_note">The file walk reached Aman’s safety limit. Run a selective scan for any folder you still want to inspect.</string>
+    <string name="full_scan_truncated_note">The file walk reached Maen Shield’s safety limit. Run a selective scan for any folder you still want to inspect.</string>
     <string name="downloads_scan_result">Downloads scan: %1$s changed files checked • %2$s alerts</string>
     <string name="downloads_scan_access_missing">Downloads scan skipped because antivirus file access is not granted.</string>
     <string name="protection_running_badge">ACTIVE</string>
     <string name="protection_off_badge">OFF</string>
 
-    <string name="protection_state_service_down">Automatic Anti-Virus is enabled, but the real-time service is not running. Open Aman to restart protection.</string>
+    <string name="protection_state_service_down">Automatic Anti-Virus is enabled, but the real-time service is not running. Open Maen Shield to restart protection.</string>
     <string name="scan_stage_downloads">Scanning Downloads</string>
     <string name="downloads_scan_running_detail">Checking changed files in Downloads against local threat intelligence and APK analysis.</string>
     <string name="full_scan_cancelled_partial">Full scan stopped after checking %1$s apps and %2$s files.</string>
@@ -613,7 +613,7 @@
     <string name="spyware_monitor_off">Spyware/stalkerware monitor: off with app monitoring</string>
     <string name="local_engine_lightweight_status">Local engine: event-driven • unchanged APK/file hashes are cached • threat refresh about every 6 hours</string>
 
-    <!-- Aman 3.1 local attack prevention -->
+    <!-- Maen Shield 3.1 local attack prevention -->
     <string name="web_protection_center_title">Web Protection</string>
     <string name="local_web_shield_switch">System-wide local domain shield</string>
     <string name="browser_link_guard_subtitle">Link Guard fallback</string>
@@ -623,15 +623,15 @@
     <string name="local_web_shield_status_active">Local Web Shield: active • known malicious domains are blocked before connection</string>
     <string name="local_web_shield_status_private_dns">Local Web Shield: active with limited DNS visibility because Private DNS was enabled when the shield started</string>
     <string name="local_web_shield_disclosure_title">Enable Local Web Shield?</string>
-    <string name="local_web_shield_disclosure_body">Aman uses Android’s local VPN slot only to receive DNS requests at a synthetic on-device DNS address. Normal app traffic is not proxied, decrypted, uploaded or stored. Known malicious/phishing domains are blocked locally. Android allows only one VPN at a time, so enabling this may replace another VPN. Private DNS can reduce DNS visibility.</string>
+    <string name="local_web_shield_disclosure_body">Maen Shield uses Android’s local VPN slot only to receive DNS requests at a synthetic on-device DNS address. Normal app traffic is not proxied, decrypted, uploaded or stored. Known malicious/phishing domains are blocked locally. Android allows only one VPN at a time, so enabling this may replace another VPN. Private DNS can reduce DNS visibility.</string>
     <string name="local_web_shield_enable_action">Enable shield</string>
-    <string name="local_web_shield_vpn_session">Aman Local Web Shield</string>
-    <string name="local_web_shield_notification_title">Aman Web Shield is active</string>
+    <string name="local_web_shield_vpn_session">Maen Shield Local Web Shield</string>
+    <string name="local_web_shield_notification_title">Maen Shield Web Shield is active</string>
     <string name="local_web_shield_notification_body">Local DNS threat filtering is running on this device. HTTPS content is not decrypted.</string>
     <string name="local_web_shield_blocked_notification_title">Malicious domain blocked</string>
-    <string name="local_web_shield_blocked_notification_body">Aman blocked a connection to %1$s before the app could resolve the domain.</string>
+    <string name="local_web_shield_blocked_notification_body">Maen Shield blocked a connection to %1$s before the app could resolve the domain.</string>
     <string name="timeline_web_shield_started">Local Web Shield started</string>
-    <string name="timeline_web_shield_started_detail">System-wide DNS requests are checked locally against Aman’s threat database; normal traffic is not proxied.</string>
+    <string name="timeline_web_shield_started_detail">System-wide DNS requests are checked locally against Maen Shield’s threat database; normal traffic is not proxied.</string>
     <string name="timeline_web_threat_blocked">Blocked malicious domain: %1$s</string>
     <string name="timeline_web_threat_blocked_detail">The DNS request was answered locally as blocked before a connection to the domain was made.</string>
     <string name="activity_web_threat_blocked">Blocked malicious domain: %1$s</string>
@@ -650,7 +650,7 @@
     <string name="timeline_intrusion_change">New privileged access detected: %1$d change(s)</string>
     <string name="activity_intrusion_checked">Privileged-access changes checked</string>
     <string name="intrusion_change_notification_title">New powerful app access detected</string>
-    <string name="intrusion_change_notification_body">Aman found %1$d new privileged-access change(s); %2$d require high-priority review.</string>
+    <string name="intrusion_change_notification_body">Maen Shield found %1$d new privileged-access change(s); %2$d require high-priority review.</string>
 
     <string name="banking_protection_title">Banking Protection</string>
     <string name="banking_protection_switch">Enable local banking-environment checks</string>
@@ -663,8 +663,8 @@
     <string name="banking_status_manual">Banking Protection: local on-demand checks • %1$d protected app(s)</string>
     <string name="banking_manual_complete">Banking environment check complete • status: %1$s</string>
     <string name="banking_status_last_check">Last banking risk check: %1$s • %2$s</string>
-    <string name="banking_accessibility_service_label">Aman Banking Guard</string>
-    <string name="banking_accessibility_service_description">Observes only which app enters the foreground so Aman can run an on-device banking risk check. Aman Banking Guard cannot retrieve window content, typed text, passwords, messages or account data.</string>
+    <string name="banking_accessibility_service_label">Maen Shield Banking Guard</string>
+    <string name="banking_accessibility_service_description">Observes only which app enters the foreground so Maen Shield can run an on-device banking risk check. Maen Shield Banking Guard cannot retrieve window content, typed text, passwords, messages or account data.</string>
     <string name="banking_accessibility_disclosure_title">Enable Banking Protection?</string>
     <string name="banking_accessibility_disclosure_body">This sideload-safe build does not request Android Accessibility access. Banking Protection runs a local risk check only when you tap Check now and does not read passwords, messages or banking data.</string>
     <string name="banking_open_accessibility_settings">Check now</string>
@@ -672,9 +672,9 @@
     <string name="banking_choose_apps_empty">No launchable user apps were found.</string>
     <string name="banking_save_apps">Save</string>
     <string name="banking_block_notification_title">Banking session stopped</string>
-    <string name="banking_block_notification_body">Aman found high-risk privileged control from %1$d app(s) and exited the banking app. Review privileged access before reopening it.</string>
+    <string name="banking_block_notification_body">Maen Shield found high-risk privileged control from %1$d app(s) and exited the banking app. Review privileged access before reopening it.</string>
     <string name="banking_review_notification_title">Banking protection needs review</string>
-    <string name="banking_review_notification_body">Aman found %1$d app(s) with privileged-control combinations worth reviewing while a protected finance app was opened.</string>
+    <string name="banking_review_notification_body">Maen Shield found %1$d app(s) with privileged-control combinations worth reviewing while a protected finance app was opened.</string>
     <string name="timeline_banking_safe">Banking environment checked</string>
     <string name="timeline_banking_review">Banking environment needs review</string>
     <string name="timeline_banking_blocked">Banking session stopped due to high-risk local control</string>
@@ -709,8 +709,8 @@
     <string name="attack_center_critical">Critical attack indicators detected</string>
     <string name="attack_center_incomplete">Attack monitoring is not fully active</string>
     <string name="attack_center_clear_summary">The local protection layers have not recorded malware, high-priority privilege changes or banking-control alerts in the last 24 hours.</string>
-    <string name="attack_center_watch_summary">Aman recorded %1$d review/block signal(s) in the last 24 hours. A blocked malicious domain is an attempted contact, not proof that the phone was compromised.</string>
-    <string name="attack_center_critical_summary">Aman recorded %1$d critical and %2$d review signal(s) in the last 24 hours. Open the timeline and review the named app, file or control change.</string>
+    <string name="attack_center_watch_summary">Maen Shield recorded %1$d review/block signal(s) in the last 24 hours. A blocked malicious domain is an attempted contact, not proof that the phone was compromised.</string>
+    <string name="attack_center_critical_summary">Maen Shield recorded %1$d critical and %2$d review signal(s) in the last 24 hours. Open the timeline and review the named app, file or control change.</string>
     <string name="attack_center_incomplete_summary">Real-time protection is disabled or its foreground service is not healthy. Restore protection before relying on attack monitoring.</string>
     <string name="attack_center_last_signal">Latest signal: %1$s • %2$s</string>
     <string name="attack_center_no_signal">Latest signal: none in the last 24 hours</string>
@@ -719,9 +719,9 @@
     <string name="attack_home_watch">Attack detection: review recent activity</string>
     <string name="attack_home_critical">Attack detection: critical indicators</string>
     <string name="attack_home_incomplete">Attack detection: protection incomplete</string>
-    <string name="protection_status_attack_critical_title">Aman detected critical attack indicators</string>
+    <string name="protection_status_attack_critical_title">Maen Shield detected critical attack indicators</string>
     <string name="protection_status_attack_critical_body">Open Attack Detection Center to review the latest local malware, privilege or banking-control signal.</string>
-    <string name="protection_status_attack_watch_title">Aman blocked or flagged suspicious activity</string>
+    <string name="protection_status_attack_watch_title">Maen Shield blocked or flagged suspicious activity</string>
     <string name="protection_status_attack_watch_body">Review the recent event in Attack Detection Center. A blocked web threat does not by itself mean the phone was compromised.</string>
 
     <string name="attack_center_coverage">Live layers • Core %1$s • Web %2$s • privilege monitor %3$s • Banking Guard %4$s • data-outflow guard %5$s</string>
@@ -735,26 +735,26 @@
     <string name="data_exfil_usage_access_action">Grant Usage Access</string>
     <string name="data_exfil_check_now">Check unusual uploads now</string>
     <string name="data_exfil_disclosure_title">Enable Data Exfiltration Guard?</string>
-    <string name="data_exfil_disclosure_body">Aman reads Android’s per-app network usage totals locally to look for unusual background upload combined with risky control or spyware signals. It does not read packet contents, photos, messages, passwords or HTTPS data, and it does not upload the statistics. Android Usage Access must be granted manually. The normal background check uses one lightweight total-upload counter and only runs the more expensive per-app query after a meaningful upload burst or about every 6 hours.</string>
+    <string name="data_exfil_disclosure_body">Maen Shield reads Android’s per-app network usage totals locally to look for unusual background upload combined with risky control or spyware signals. It does not read packet contents, photos, messages, passwords or HTTPS data, and it does not upload the statistics. Android Usage Access must be granted manually. The normal background check uses one lightweight total-upload counter and only runs the more expensive per-app query after a meaningful upload burst or about every 6 hours.</string>
     <string name="timeline_data_exfil_high">Possible data extraction: %1$s</string>
     <string name="timeline_data_exfil_review">Unusual background upload: %1$s</string>
     <string name="timeline_data_exfil_detail">Background upload %1$s • recent DNS destinations %2$d • confidence score %3$d/100. Volume alone is never treated as theft.</string>
     <string name="activity_data_exfil_clean">Data-outflow check clean</string>
     <string name="activity_data_exfil_review">Data-outflow check found %1$d app(s) to review</string>
     <string name="data_exfil_notification_title">Possible data extraction detected</string>
-    <string name="data_exfil_notification_body">%1$s uploaded %2$s in the background with multiple local risk signals. Open Aman to review the evidence.</string>
+    <string name="data_exfil_notification_body">%1$s uploaded %2$s in the background with multiple local risk signals. Open Maen Shield to review the evidence.</string>
     <string name="data_exfil_manual_complete">Data-outflow check complete • review %1$d • high %2$d</string>
     <string name="data_exfil_manual_needs_access">Grant Android Usage Access before running the data-outflow check.</string>
     <string name="timeline_high_risk_network_contact">High-risk app opened a network contact: %1$s</string>
-    <string name="timeline_high_risk_network_contact_detail">Destination %1$s. Aman is warning because the app already has a HIGH correlated spyware profile; this contact alone does not prove that data was transferred.</string>
+    <string name="timeline_high_risk_network_contact_detail">Destination %1$s. Maen Shield is warning because the app already has a HIGH correlated spyware profile; this contact alone does not prove that data was transferred.</string>
     <string name="activity_high_risk_network_contact">High-risk network contact: %1$s</string>
     <string name="high_risk_network_contact_notification_title">High-risk app contacted the network</string>
-    <string name="high_risk_network_contact_notification_body">%1$s, already classified HIGH by correlated spyware signals, tried to resolve %2$s. Aman cannot see encrypted content, so this is an urgent network-contact warning rather than proof that data was stolen.</string>
+    <string name="high_risk_network_contact_notification_body">%1$s, already classified HIGH by correlated spyware signals, tried to resolve %2$s. Maen Shield cannot see encrypted content, so this is an urgent network-contact warning rather than proof that data was stolen.</string>
     <string name="data_exfil_dns_correlation_active">Immediate high-risk DNS correlation: active</string>
     <string name="data_exfil_dns_correlation_off">Immediate high-risk DNS correlation: enable Local Web Shield</string>
 
-    <string name="persistent_scan_notification_title">Aman scan is running</string>
-    <string name="persistent_scan_notification_body">%1$d%% complete • %2$s continues even when Aman is closed.</string>
+    <string name="persistent_scan_notification_title">Maen Shield scan is running</string>
+    <string name="persistent_scan_notification_body">%1$d%% complete • %2$s continues even when Maen Shield is closed.</string>
     <string name="persistent_scan_finished_safe_title">Scan complete — no high-risk findings</string>
     <string name="persistent_scan_finished_attention_title">Scan complete — review findings</string>
     <string name="persistent_scan_finished_body">Checked %1$d apps and %2$d files • %3$d high-risk alerts.</string>
@@ -764,17 +764,17 @@
     <string name="persistent_scan_attention_ui">Review: %1$d high-risk alerts • %2$d additional items need attention</string>
     <string name="persistent_scan_safe_ui">No high-risk findings were detected in this scan.</string>
     <string name="persistent_scan_failed_ui">The scan failed: %1$s</string>
-    <string name="persistent_scan_already_running">A scan is already running. Aman will keep it running in the background.</string>
-    <string name="threat_update_queued">Threat update queued. It will continue if you leave Aman.</string>
-    <string name="threat_update_notification">Aman is applying the signed protection package.</string>
+    <string name="persistent_scan_already_running">A scan is already running. Maen Shield will keep it running in the background.</string>
+    <string name="threat_update_queued">Threat update queued. It will continue if you leave Maen Shield.</string>
+    <string name="threat_update_notification">Maen Shield is applying the signed protection package.</string>
     <string name="threat_update_running">Updating threat intelligence • %1$d%% • %2$s</string>
-    <string name="threat_update_success_persistent">Signed Aman intelligence package verified • %1$d package change(s) applied.</string>
-    <string name="threat_update_already_current_persistent">Signed Aman intelligence package verified • Protection is already up to date.</string>
+    <string name="threat_update_success_persistent">Signed Maen Shield intelligence package verified • %1$d package change(s) applied.</string>
+    <string name="threat_update_already_current_persistent">Signed Maen Shield intelligence package verified • Protection is already up to date.</string>
     <string name="threat_update_partial_persistent">Threat package update completed partially • %1$d succeeded • %2$d failed.</string>
-    <string name="threat_update_failed_persistent">A signed Aman threat package could not be verified or downloaded. Last-known-good protection data was kept.</string>
+    <string name="threat_update_failed_persistent">A signed Maen Shield threat package could not be verified or downloaded. Last-known-good protection data was kept.</string>
     <string name="threat_update_failure_reason">Reason: %1$s</string>
     <string name="threat_source_starting">Preparing secure update</string>
-    <string name="threat_source_cloud_bundle">Aman signed intelligence package</string>
+    <string name="threat_source_cloud_bundle">Maen Shield signed intelligence package</string>
     <string name="threat_source_malware">Android malware hashes</string>
     <string name="threat_source_phishing">Phishing protection</string>
     <string name="threat_source_malware_urls">Malware URLs</string>
@@ -784,7 +784,7 @@
     <string name="scan_findings_view_default">View detected items</string>
     <string name="scan_findings_view_action">View %1$d detected / review items</string>
     <string name="scan_findings_title">Threat &amp; review details</string>
-    <string name="scan_findings_explanation">A high-risk result is not automatically confirmed malware. Aman shows the exact app, file, device setting, or network condition and the evidence that raised it.</string>
+    <string name="scan_findings_explanation">A high-risk result is not automatically confirmed malware. Maen Shield shows the exact app, file, device setting, or network condition and the evidence that raised it.</string>
     <string name="scan_findings_missing_detail">The scan reported findings, but detailed records are not available for this older session. Run the scan again to capture exact evidence.</string>
     <string name="scan_findings_high_heading">High-risk / confirmed (%1$d)</string>
     <string name="scan_findings_review_heading">Needs review — not confirmed malware (%1$d)</string>
@@ -794,7 +794,7 @@
     <string name="scan_finding_review">Needs review — not detected as malware</string>
     <string name="scan_finding_category_line">Category: %1$s</string>
     <string name="scan_finding_evidence_score">Evidence score: %1$d/100</string>
-    <string name="scan_finding_why">Why Aman flagged this:</string>
+    <string name="scan_finding_why">Why Maen Shield flagged this:</string>
     <string name="scan_finding_location_line">Location: %1$s</string>
     <string name="scan_finding_sha256_line">SHA-256: %1$s</string>
     <string name="scan_finding_open_app_info">Tap to open Android app info</string>
@@ -841,12 +841,12 @@
     <string name="threat_update_phase_parsing">Verifying signed package</string>
     <string name="threat_update_phase_indexing">Validating compact indexes</string>
     <string name="threat_update_phase_applying">Applying update</string>
-    <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the signed Aman package</string>
-    <string name="threat_update_transfer_unknown">Downloaded %1$s of the signed Aman package</string>
+    <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the signed Maen Shield package</string>
+    <string name="threat_update_transfer_unknown">Downloaded %1$s of the signed Maen Shield package</string>
     <string name="threat_update_last_success">Last successful update: %1$s</string>
     <string name="threat_update_next_check">Next automatic daily Wi-Fi check: around %1$s (Android may delay background work)</string>
     <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
-    <string name="threat_update_never_success">No signed Aman cloud-intelligence package has been installed yet.</string>
+    <string name="threat_update_never_success">No signed Maen Shield cloud-intelligence package has been installed yet.</string>
     <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing indicators • %3$s C2 hosts • %4$s Android CVEs</string>
     <string name="threat_update_source_ok">✓ %1$s — updated</string>
     <string name="threat_update_source_failed">⚠ %1$s — failed; last-known-good data kept</string>
@@ -863,31 +863,31 @@
     <string name="web_shield_diagnostics_not_tested">Verification: not tested yet • the DNS self-test stays entirely on this device</string>
     <string name="web_shield_diagnostics_running">Verification: running the local DNS interception test…</string>
     <string name="web_shield_diagnostics_passed">Verification: PASS • VPN/DNS block path verified at %1$s</string>
-    <string name="web_shield_diagnostics_failed">Verification: FAIL • Aman did not observe its local test query. Restart Web Shield and try again.</string>
+    <string name="web_shield_diagnostics_failed">Verification: FAIL • Maen Shield did not observe its local test query. Restart Web Shield and try again.</string>
     <string name="web_shield_diagnostics_off">Verification unavailable while Local Web Shield is off</string>
     <string name="web_shield_self_test_action">Run Web Shield self-test</string>
-    <string name="web_shield_amtso_test_action">Run AMTSO phishing test through Aman</string>
+    <string name="web_shield_amtso_test_action">Run AMTSO phishing test through Maen Shield</string>
     <string name="web_shield_self_test_requires_shield">Enable Local Web Shield first, then run the self-test.</string>
     <string name="web_shield_self_test_passed_dialog_title">Web Shield self-test passed</string>
-    <string name="web_shield_self_test_passed_dialog_body">Aman intercepted a harmless local DNS test request and blocked it inside the VPN. No external test site was contacted.</string>
+    <string name="web_shield_self_test_passed_dialog_body">Maen Shield intercepted a harmless local DNS test request and blocked it inside the VPN. No external test site was contacted.</string>
     <string name="web_shield_self_test_failed_dialog_title">Web Shield self-test failed</string>
-    <string name="web_shield_self_test_failed_dialog_body">The VPN service is enabled, but the local DNS test did not complete through Aman. Restart Local Web Shield and retry before relying on browser protection.</string>
+    <string name="web_shield_self_test_failed_dialog_body">The VPN service is enabled, but the local DNS test did not complete through Maen Shield. Restart Local Web Shield and retry before relying on browser protection.</string>
     <string name="amtso_test_explanation_title">AMTSO test support</string>
-    <string name="amtso_test_explanation_body">This verifies automatic external-link interception, not just the scanner. Aman must hold Android’s browser role. The test launches AMTSO as a normal system web link; Android should route it into Aman, where the exact harmless phishing-test URL is stopped. The DNS shield cannot see an encrypted HTTPS path, so typing or navigating to this test from inside another browser is outside this URL-level test.</string>
+    <string name="amtso_test_explanation_body">This verifies automatic external-link interception, not just the scanner. Maen Shield must hold Android’s browser role. The test launches AMTSO as a normal system web link; Android should route it into Maen Shield, where the exact harmless phishing-test URL is stopped. The DNS shield cannot see an encrypted HTTPS path, so typing or navigating to this test from inside another browser is outside this URL-level test.</string>
     <string name="amtso_test_continue">Run test</string>
     <string name="timeline_web_shield_test_passed">Web Shield verification passed</string>
     <string name="timeline_web_shield_test_passed_detail">A harmless on-device DNS test was intercepted and blocked. It was not counted as a threat.</string>
     <string name="web_guard_status_active_verified">Web Guard is active and the AMTSO external-link interception test has passed. External links routed by Android are checked before a browser opens them.</string>
     <string name="amtso_enable_and_test">Enable Web Guard &amp; test</string>
     <string name="amtso_role_required_title">Web Guard was not enabled</string>
-    <string name="amtso_role_required_body">Android did not grant Aman the browser role, so automatic external-link interception cannot be verified. Enable Aman for web links, then run the AMTSO test again.</string>
+    <string name="amtso_role_required_body">Android did not grant Maen Shield the browser role, so automatic external-link interception cannot be verified. Enable Maen Shield for web links, then run the AMTSO test again.</string>
     <string name="amtso_test_failed_title">AMTSO interception test could not start</string>
-    <string name="amtso_test_failed_body">Aman could not launch the normal system web-link test. Check the default-app settings and try again.</string>
+    <string name="amtso_test_failed_body">Maen Shield could not launch the normal system web-link test. Check the default-app settings and try again.</string>
     <string name="timeline_web_guard_test_passed">AMTSO link interception verified</string>
-    <string name="timeline_web_guard_test_passed_detail">Android routed the harmless AMTSO phishing-test link through Aman and Link Guard stopped the exact test URL before handing it to another browser.</string>
-    <string name="web_guard_status_active_test_failed">Web Guard is selected, but the last AMTSO external-link test did not return through Aman. Re-run the test and verify the Android default-app selection.</string>
+    <string name="timeline_web_guard_test_passed_detail">Android routed the harmless AMTSO phishing-test link through Maen Shield and Link Guard stopped the exact test URL before handing it to another browser.</string>
+    <string name="web_guard_status_active_test_failed">Web Guard is selected, but the last AMTSO external-link test did not return through Maen Shield. Re-run the test and verify the Android default-app selection.</string>
     <string name="background_activity_title">Background activity review</string>
-    <string name="background_activity_privacy_note">A local capability review only. Aman does not stop apps or upload app activity.</string>
+    <string name="background_activity_privacy_note">A local capability review only. Maen Shield does not stop apps or upload app activity.</string>
     <string name="background_activity_check_now">Review background activity</string>
     <string name="background_activity_status_off">Protection is off. Enable protection to review background activity.</string>
     <string name="background_activity_status_never">No review has run yet. Run a local review when you notice unusual battery use.</string>
@@ -899,5 +899,5 @@
     <string name="timeline_background_activity_clean_detail">The local review found no unusual combination of background capabilities. This is not a direct battery measurement.</string>
     <string name="timeline_background_activity_review">Background activity review: %1$d app(s) need review</string>
     <string name="background_activity_notification_title">Review background activity</string>
-    <string name="background_activity_notification_body">%1$d app(s) show higher-impact background indicators. Review permissions and battery settings; Aman did not stop any app.</string>
+    <string name="background_activity_notification_body">%1$d app(s) show higher-impact background indicators. Review permissions and battery settings; Maen Shield did not stop any app.</string>
 </resources>

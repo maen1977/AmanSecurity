@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AmanSecurity"
+rootProject.name = "MaenShield"
 include(":app")

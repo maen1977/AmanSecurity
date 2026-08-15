@@ -19,7 +19,7 @@ def main() -> None:
     english = (ROOT / "app/src/main/res/values/strings.xml").read_text()
     arabic = (ROOT / "app/src/main/res/values-ar/strings.xml").read_text()
 
-    need('versionName = "3.6.1"' in build and "versionCode = 41" in build, "version")
+    need('versionName = "3.6.2"' in build and "versionCode = 42" in build, "version")
     need("MAX_TEXT_LENGTH = 4096" in extractor and "MAX_URLS_PER_MESSAGE = 8" in extractor, "bounded_extraction")
     need("class MessageScanner" in scanner and "KNOWN_THREAT_URL" in scanner, "message_scanner")
     for signal in ("URGENT_LANGUAGE", "CREDENTIAL_REQUEST", "PAYMENT_REQUEST", "IMPERSONATION", "SHORTENED_URL"):
@@ -30,7 +30,7 @@ def main() -> None:
     need("READ_SMS" not in manifest and "RECEIVE_SMS" not in manifest and "READ_CALL_LOG" not in manifest, "sensitive_sms_permissions")
     for key in ("message_input_hint", "scan_message_action", "message_result_high", "message_scan_subtitle"):
         need(f'name="{key}"' in english and f'name="{key}"' in arabic, f"localization_{key}")
-    print("MESSAGE_SCAN_GATE_OK version=3.6.1 local_only=1 bounded_text=1 bounded_urls=1 sms_permissions=0 tests=1")
+    print("MESSAGE_SCAN_GATE_OK version=3.6.2 local_only=1 bounded_text=1 bounded_urls=1 sms_permissions=0 tests=1")
 
 
 if __name__ == "__main__":

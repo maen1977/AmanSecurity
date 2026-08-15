@@ -12,7 +12,7 @@ KOTLIN_DIR = ROOT / "app/src/main/java"
 
 ARABIC_RE = re.compile(r"[\u0600-\u06FF]")
 LATIN_WORD_RE = re.compile(r"\b[A-Za-z]{2,}(?:-[A-Za-z0-9]+)?\b")
-ALLOWED_AR_LATIN = {"SHA-256", "APK"}
+ALLOWED_AR_LATIN = {"SHA-256", "APK", "MAEN", "SHIELD"}
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 
 def load_strings(path: Path):
