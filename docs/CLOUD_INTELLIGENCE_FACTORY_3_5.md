@@ -34,7 +34,7 @@ The mobile ZIP contains only compact indicator indexes and Android CVE identifie
 Required for publishing in the private `AmanSecurity` repository:
 
 - `AMAN_THREAT_DB_PRIVATE_KEY_B64` — base64-encoded private RSA signing key. Never commit it to the repository or place it in the APK.
-- `AMAN_THREAT_DEPLOY_KEY` — the passwordless SSH private key whose public half is installed as a write-enabled deploy key on `AmanSecurity-Threat-DB`. It grants no access to the private application repository and is used only by the CI runner to publish the signed package. Never place this key in the APK or source files.
+- `AMAN_THREAT_PUBLISH_TOKEN` — a write-capable GitHub token used only by the CI runner to publish the signed package to `AmanSecurity-Threat-DB` over HTTPS. Never place this token in the APK or source files.
 
 Optional enrichment:
 
@@ -44,13 +44,13 @@ The matching **public** RSA key is intentionally bundled at `app/src/main/assets
 
 ## First deployment
 
-1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_DEPLOY_KEY` in **Repository Settings → Secrets and variables → Actions** of the private `AmanSecurity` repository.
+1. Add `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_PUBLISH_TOKEN` in **Repository Settings → Secrets and variables → Actions** of the private `AmanSecurity` repository.
 2. Optionally add `ABUSECH_AUTH_KEY`.
 3. Run **Aman Security Pipeline** manually once.
 4. Confirm the public `AmanSecurity-Threat-DB` repository contains `latest/manifest.json`, `latest/manifest.sig`, and the dynamic `latest/aman-threat-db-{RUN_ID}.zip` referenced by the manifest.
 5. Confirm these anonymous URLs return HTTP 200: `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.json` and `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest/manifest.sig`.
 6. The normal Android build embeds `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest` and the client allowlist accepts only this host, owner, repository, and branch.
-7. Install the generated 3.5.8 APK and run **Settings → Protection updates → Update protection now**.
+7. Install the generated 3.6.1 APK and run **Settings → Protection updates → Update protection now**.
 
 The mobile client uses anonymous HTTPS, so only the signed package mirror is public. The source repository and both private signing/publishing credentials remain private.
 
