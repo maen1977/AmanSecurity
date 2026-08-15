@@ -17,6 +17,13 @@ data class CloudThreatFileMeta(
     val bytes: Long
 )
 
+data class CloudThreatSourceMeta(
+    val name: String,
+    val ok: Boolean,
+    val count: Int,
+    val detail: String
+)
+
 data class CloudThreatManifest(
     val schema: Int,
     val serial: Long,
@@ -28,7 +35,8 @@ data class CloudThreatManifest(
     val bundleSha256: String,
     val bundleBytes: Long,
     val latestAndroidSecurityPatch: String?,
-    val files: Map<String, CloudThreatFileMeta>
+    val files: Map<String, CloudThreatFileMeta>,
+    val sources: List<CloudThreatSourceMeta> = emptyList()
 ) {
     companion object {
         val REQUIRED_FILES = linkedSetOf(
@@ -71,6 +79,26 @@ data class CloudThreatManifest(
             require(fileObject.keys().asSequence().toSet() == REQUIRED_FILES)
             val patch = json.optString("latestAndroidSecurityPatch", "").takeIf(String::isNotBlank)
             if (patch != null) require(patch.matches(Regex("^20\\d{2}-\\d{2}-(?:01|05)$")))
+            val sourceItems = mutableListOf<CloudThreatSourceMeta>()
+            val sourceArray = json.optJSONArray("sources")
+            if (sourceArray != null) {
+                require(sourceArray.length() in 0..32) { "Cloud source metadata too large" }
+                for (index in 0 until sourceArray.length()) {
+                    val item = sourceArray.getJSONObject(index)
+                    val name = item.getString("name")
+                    val detail = item.optString("detail", "")
+                    require(name.matches(Regex("^[a-z0-9_]{1,64}$"))) { "Invalid cloud source name" }
+                    require(detail.length <= 240) { "Cloud source detail too long" }
+                    val count = item.optInt("count", 0)
+                    require(count in 0..2_000_000) { "Cloud source count invalid" }
+                    sourceItems += CloudThreatSourceMeta(
+                        name = name,
+                        ok = item.optBoolean("ok", false),
+                        count = count,
+                        detail = detail
+                    )
+                }
+            }
             return CloudThreatManifest(
                 schema = schema,
                 serial = json.getLong("serial").also { require(it >= 1L) },
@@ -84,7 +112,8 @@ data class CloudThreatManifest(
                 bundleSha256 = json.getString("bundleSha256").lowercase(Locale.ROOT).also { require(it.matches(HASH)) },
                 bundleBytes = json.getLong("bundleBytes").also { require(it in 1L..MAX_BUNDLE_BYTES) },
                 latestAndroidSecurityPatch = patch,
-                files = files
+                files = files,
+                sources = sourceItems.toList()
             ).also {
                 require(it.minAppVersionCode <= BuildConfig.VERSION_CODE) { "Threat database requires a newer Aman version" }
             }

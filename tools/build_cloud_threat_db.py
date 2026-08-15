@@ -8,6 +8,7 @@ No malware binaries are downloaded by this builder.
 from __future__ import annotations
 
 import argparse
+import bz2
 import csv
 import hashlib
 import io
@@ -15,6 +16,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import socket
 import sys
 import time
@@ -22,6 +24,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +46,11 @@ ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overvi
 MALWARE_BAZAAR_BROWSE = "https://bazaar.abuse.ch/browse/tag/Android/"
 MALWARE_BAZAAR_API = "https://mb-api.abuse.ch/api/v1/"
 THREATFOX_API = "https://threatfox-api.abuse.ch/api/v1/"
+PHISHTANK_DATA = "https://data.phishtank.com/data"
+try:
+    SOURCE_TIMEOUT_SECONDS = max(5, min(30, int(os.environ.get("AMAN_INTEL_FETCH_TIMEOUT", "20"))))
+except ValueError:
+    SOURCE_TIMEOUT_SECONDS = 20
 
 FILES = {
     "malware_files.sha256": 100_000,
@@ -69,28 +77,53 @@ def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def fetch(url: str, *, max_bytes: int, timeout: int = 35, method: str = "GET", data: bytes | None = None,
+@contextmanager
+def source_deadline(seconds: int):
+    """Bound total wall-clock time for one source on the Linux CI runner."""
+    if not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    previous_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+
+    def on_alarm(_signum, _frame):
+        raise TimeoutError(f"source deadline exceeded after {seconds}s")
+
+    signal.signal(signal.SIGALRM, on_alarm)
+    signal.setitimer(signal.ITIMER_REAL, max(1, seconds))
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
+        if previous_timer[0] > 0:
+            signal.setitimer(signal.ITIMER_REAL, previous_timer[0], previous_timer[1])
+
+
+def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "AmanSecurity-IntelFactory/3.5 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/3.6.4 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
         req_headers.update(headers)
     req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        length = resp.headers.get("Content-Length")
-        if length and int(length) > max_bytes:
-            raise ValueError(f"response too large: {length}")
-        out = bytearray()
-        while True:
-            chunk = resp.read(64 * 1024)
-            if not chunk:
-                break
-            out += chunk
-            if len(out) > max_bytes:
-                raise ValueError("response exceeded byte limit")
-        return bytes(out)
+    with source_deadline(timeout):
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            length = resp.headers.get("Content-Length")
+            if length and int(length) > max_bytes:
+                raise ValueError(f"response too large: {length}")
+            out = bytearray()
+            while True:
+                chunk = resp.read(64 * 1024)
+                if not chunk:
+                    break
+                out += chunk
+                if len(out) > max_bytes:
+                    raise ValueError("response exceeded byte limit")
+            return bytes(out)
 
 
 def post_form(url: str, fields: dict[str, str], *, max_bytes: int, headers: dict[str, str]) -> bytes:
@@ -103,6 +136,15 @@ def post_json(url: str, payload: dict, *, max_bytes: int, headers: dict[str, str
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     merged = {"Content-Type": "application/json", **headers}
     return fetch(url, max_bytes=max_bytes, method="POST", data=body, headers=merged)
+
+
+def safe_source_detail(value: object, *secrets: str) -> str:
+    """Keep diagnostics useful while preventing accidental credential disclosure."""
+    detail = str(value)[:240]
+    for secret in secrets:
+        if secret:
+            detail = detail.replace(secret, "[redacted]")
+    return detail
 
 
 def normalize_host(host: str) -> str | None:
@@ -181,6 +223,39 @@ def url_indicators(values, cap: int) -> set[str]:
 def extract_urls(payload: bytes) -> list[str]:
     text = payload.decode("utf-8", "ignore").replace("\\/", "/")
     return [m.group(0).rstrip(",;.)]}") for m in HTTP_RE.finditer(text)]
+
+
+def decompress_bz2_limited(payload: bytes, *, max_bytes: int = 96 * 1024 * 1024) -> bytes:
+    """Decompress a provider archive with an explicit expansion limit."""
+    if not payload.startswith(b"BZh"):
+        return payload
+    decoder = bz2.BZ2Decompressor()
+    out = bytearray()
+    for offset in range(0, len(payload), 64 * 1024):
+        out.extend(decoder.decompress(payload[offset:offset + 64 * 1024]))
+        if len(out) > max_bytes:
+            raise ValueError("compressed feed expanded beyond safety limit")
+    return bytes(out)
+
+
+def phishtank_verified_online_urls(payload: bytes) -> list[str]:
+    """Return only verified, online PhishTank records; discard all metadata."""
+    decoded = decompress_bz2_limited(payload)
+    data = json.loads(decoded)
+    if not isinstance(data, list):
+        raise ValueError("PhishTank feed is not a JSON array")
+    urls: list[str] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        verified = str(item.get("verified", "")).strip().lower()
+        online = str(item.get("online", "")).strip().lower()
+        if verified not in {"yes", "y", "true", "1"} or online not in {"yes", "y", "true", "1"}:
+            continue
+        value = item.get("url")
+        if isinstance(value, str) and value:
+            urls.append(value)
+    return urls
 
 
 def load_bundled_malware_seed() -> set[str]:
@@ -314,13 +389,14 @@ def main() -> int:
         sources.append(FetchResult("offline_fixture", True, len(phish_open) + len(malware_urls) + len(c2_hosts)))
     else:
         abuse_key = os.environ.get("ABUSECH_AUTH_KEY", "").strip() or None
+        phishtank_key = os.environ.get("PHISHTANK_APP_KEY", "").strip()
 
         try:
             hashes, detail = malware_bazaar_hashes(abuse_key)
             malware_files |= hashes
             sources.append(FetchResult("malware_bazaar_android", True, len(hashes), detail))
         except Exception as e:
-            sources.append(FetchResult("malware_bazaar_android", False, len(malware_files), str(e)[:160]))
+            sources.append(FetchResult("malware_bazaar_android", False, len(malware_files), safe_source_detail(e, abuse_key, phishtank_key)))
 
         for name, url, target, cap in [
             ("openphish", OPENPHISH, phish_open, FILES["phishing_openphish.sha256"]),
@@ -332,7 +408,23 @@ def main() -> int:
                 target |= url_indicators(extract_urls(raw), cap)
                 sources.append(FetchResult(name, True, len(target)))
             except Exception as e:
-                sources.append(FetchResult(name, False, 0, str(e)[:160]))
+                sources.append(FetchResult(name, False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
+
+        if phishtank_key:
+            try:
+                key_path = urllib.parse.quote(phishtank_key, safe="")
+                raw = fetch(
+                    f"{PHISHTANK_DATA}/{key_path}/online-valid.json.bz2",
+                    max_bytes=32 * 1024 * 1024,
+                    headers={"Accept": "application/json,application/x-bzip2"},
+                )
+                urls = phishtank_verified_online_urls(raw)
+                phish_community |= set(url_indicators(urls, FILES["phishing_community.sha256"]))
+                sources.append(FetchResult("phishtank", True, len(urls), "verified+online JSON feed"))
+            except Exception as e:
+                sources.append(FetchResult("phishtank", False, 0, safe_source_detail(e, phishtank_key, abuse_key)))
+        else:
+            sources.append(FetchResult("phishtank", True, 0, "skipped: PHISHTANK_APP_KEY not configured"))
 
         try:
             raw = fetch(URLHAUS, max_bytes=40 * 1024 * 1024)
@@ -340,7 +432,7 @@ def main() -> int:
             malware_urls |= url_indicators(lines, FILES["malware_url_hosts.sha256"])
             sources.append(FetchResult("urlhaus", True, len(malware_urls)))
         except Exception as e:
-            sources.append(FetchResult("urlhaus", False, 0, str(e)[:160]))
+            sources.append(FetchResult("urlhaus", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
             raw = fetch(FEODO, max_bytes=4 * 1024 * 1024)
@@ -352,22 +444,22 @@ def main() -> int:
             sources.append(FetchResult("feodo", True, len(c2_hosts)))
         except Exception as e:
             # Feodo can legitimately be empty; an unavailable C2 source must not discard other feeds.
-            sources.append(FetchResult("feodo", False, 0, str(e)[:160]))
+            sources.append(FetchResult("feodo", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
             t_hashes, t_net, t_c2 = threatfox_enrichment(abuse_key)
             malware_files |= t_hashes
             malware_urls |= t_net
             c2_hosts |= t_c2
-            sources.append(FetchResult("threatfox", bool(abuse_key), len(t_hashes) + len(t_net) + len(t_c2), "auth-key enabled" if abuse_key else "skipped: ABUSECH_AUTH_KEY not configured"))
+            sources.append(FetchResult("threatfox", True, len(t_hashes) + len(t_net) + len(t_c2), "auth-key enabled" if abuse_key else "skipped: ABUSECH_AUTH_KEY not configured"))
         except Exception as e:
-            sources.append(FetchResult("threatfox", False, 0, str(e)[:160]))
+            sources.append(FetchResult("threatfox", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
             android_patch, android_cves = fetch_android_bulletin()
             sources.append(FetchResult("android_security_bulletin", True, len(android_cves), android_patch or ""))
         except Exception as e:
-            sources.append(FetchResult("android_security_bulletin", False, 0, str(e)[:160]))
+            sources.append(FetchResult("android_security_bulletin", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
     counts = {}
     counts["malware_files.sha256"] = write_hash_file(payload_dir / "malware_files.sha256", malware_files, FILES["malware_files.sha256"])

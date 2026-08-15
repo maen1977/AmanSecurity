@@ -616,7 +616,9 @@ class MainActivity : AppCompatActivity() {
             R.string.source_health_summary,
             NumberFormat.getIntegerInstance().format(info.freshSources),
             NumberFormat.getIntegerInstance().format(info.staleSources),
-            NumberFormat.getIntegerInstance().format(info.failedSourcesLastRun)
+            NumberFormat.getIntegerInstance().format(info.upstreamSourceCount),
+            NumberFormat.getIntegerInstance().format(info.upstreamSourceSkipped),
+            NumberFormat.getIntegerInstance().format(info.upstreamSourceFailures)
         )
         val devicePatch = Build.VERSION.SECURITY_PATCH.orEmpty()
         val latest = info.latestAndroidSecurityPatch

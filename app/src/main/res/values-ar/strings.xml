@@ -336,7 +336,7 @@
     <string name="update_partial">اكتمل تحديث جزئي من %1$s من أصل %2$s مصادر، وتم الاحتفاظ بآخر بيانات سليمة للمصادر الأخرى.</string>
 
     <string name="source_health_waiting">ستظهر حالة مصادر التهديدات بعد أول محاولة تحديث.</string>
-    <string name="source_health_summary">حالة مصادر التهديدات: %1$s حديثة • %2$s قديمة • الإخفاقات في آخر تشغيل: %3$s.</string>
+    <string name="source_health_summary">حالة مصادر التهديدات: %1$s حديثة • %2$s قديمة • إجمالي الخلاصات: %3$s • الاختيارية المتجاوزة: %4$s • الفاشلة: %5$s.</string>
     <string name="protection_posture_waiting">يجري تقييم جاهزية الحماية.</string>
     <string name="protection_posture_strong">جاهزية الحماية: قوية • %1$s من 100</string>
     <string name="protection_posture_attention">جاهزية الحماية: تحتاج إلى انتباه • %1$s من 100</string>

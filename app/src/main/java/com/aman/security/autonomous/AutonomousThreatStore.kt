@@ -134,6 +134,10 @@ class AutonomousThreatStore(context: Context) {
         state.put("cloudGeneratedAtEpochMs", manifest.generatedAtEpochMs)
         state.put("latestAndroidSecurityPatch", manifest.latestAndroidSecurityPatch ?: "")
         state.put("androidCveCount", manifest.files.getValue(FILE_ANDROID_CVES).entries)
+        val upstream = manifest.sources
+        state.put("upstreamSourceCount", upstream.size)
+        state.put("upstreamSourceFailures", upstream.count { !it.ok })
+        state.put("upstreamSourceSkipped", upstream.count { it.detail.startsWith("skipped:", ignoreCase = true) })
         state.put("lastRunChanged", if (changed) 1 else 0)
         atomicWrite(stateFile, state.toString().toByteArray(Charsets.UTF_8))
     }
@@ -176,6 +180,9 @@ class AutonomousThreatStore(context: Context) {
             androidCveCount = state.optInt("androidCveCount", 0),
             successfulSourcesLastRun = state.optInt("successfulSourcesLastRun", 0),
             failedSourcesLastRun = state.optInt("failedSourcesLastRun", 0),
+            upstreamSourceCount = state.optInt("upstreamSourceCount", 0),
+            upstreamSourceFailures = state.optInt("upstreamSourceFailures", 0),
+            upstreamSourceSkipped = state.optInt("upstreamSourceSkipped", 0),
             freshSources = health.count { it.fresh },
             staleSources = health.count { !it.fresh },
             totalSources = 1,

@@ -336,7 +336,7 @@
     <string name="update_partial">Partial update completed from %1$s of %2$s sources; the last valid data was kept for the others.</string>
 
     <string name="source_health_waiting">Threat-source health will appear after the first update attempt.</string>
-    <string name="source_health_summary">Threat-source health: %1$s fresh • %2$s stale • failures in the last run: %3$s.</string>
+    <string name="source_health_summary">Threat-source health: %1$s fresh • %2$s stale • upstream feeds: %3$s • skipped optional: %4$s • failed: %5$s.</string>
     <string name="protection_posture_waiting">Protection readiness is being evaluated.</string>
     <string name="protection_posture_strong">Protection readiness: strong • %1$s/100</string>
     <string name="protection_posture_attention">Protection readiness: needs attention • %1$s/100</string>
