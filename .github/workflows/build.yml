@@ -53,7 +53,9 @@ jobs:
           echo "publish=true" >> "$GITHUB_OUTPUT"
 
       - name: Publish immutable-format latest package to public threat repository
+        id: publish
         if: steps.intel.outcome == 'success'
+        continue-on-error: true
         shell: bash
         env:
           AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
@@ -80,8 +82,13 @@ jobs:
           git push --force threat-public HEAD:main
           git remote remove threat-public
 
+      - name: Report threat mirror publish warning
+        if: steps.publish.outcome == 'failure'
+        shell: bash
+        run: echo "::warning::Threat mirror publish failed; Android build continues, but remote threat updates remain pending."
+
       - name: Smoke-test public threat mirror
-        if: steps.intel.outcome == 'success'
+        if: steps.intel.outcome == 'success' && steps.publish.outcome == 'success'
         shell: bash
         env:
           AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
