@@ -100,7 +100,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.6.2-Cloud-Threat-Package
+          name: MaenShield-3.6.3-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -179,14 +179,21 @@ jobs:
       - name: Run release lint
         run: gradle :app:lintRelease --stacktrace
 
-      - name: Build installable debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Build installable release test APK
+        run: gradle :app:assembleRelease --stacktrace
 
-      - name: Prepare direct-install APK
+      - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk MaenShield-3.6.2-DirectInstall.apk
-          test -s MaenShield-3.6.2-DirectInstall.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-3.6.3-TestRelease-unsigned.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks "$HOME/.android/debug.keystore" \
+            --ks-key-alias AndroidDebugKey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out MaenShield-3.6.3-TestRelease.apk \
+            MaenShield-3.6.3-TestRelease-unsigned.apk
+          test -s MaenShield-3.6.3-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -194,21 +201,21 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-3.6.2-DirectInstall.apk app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-3.6.3-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.6.2-DirectInstall-APK
-          path: MaenShield-3.6.2-DirectInstall.apk
+          name: MaenShield-3.6.3-TestRelease-APK
+          path: MaenShield-3.6.3-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.6.2-Unsigned-Release-AAB
+          name: MaenShield-3.6.3-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -217,7 +224,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.6.2-Verification-Reports
+          name: MaenShield-3.6.3-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/
