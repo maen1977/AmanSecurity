@@ -116,6 +116,7 @@ import com.aman.security.security.ProtectionPostureLevel
 import com.aman.security.security.ProtectionReadinessEvaluator
 import com.aman.security.security.ProtectionReadinessInput
 import com.aman.security.security.ProtectionReadinessLevel
+import com.aman.security.security.ProtectionVerificationFreshness
 import com.aman.security.security.ExclusionEntry
 import com.aman.security.security.QuarantineEntry
 import com.aman.security.security.QuarantineManager
@@ -1415,6 +1416,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderProtectionReadiness() {
         if (!::binding.isInitialized || !::database.isInitialized || !::protectionPreferences.isInitialized) return
+        val now = System.currentTimeMillis()
         val serviceHealthy = protectionPreferences.enabled && ProtectionServiceController.isHealthy(this)
         val readiness = ProtectionReadinessEvaluator.evaluate(
             ProtectionReadinessInput(
@@ -1427,8 +1429,15 @@ class MainActivity : AppCompatActivity() {
                     (protectionPreferences.localWebShieldEnabled && LocalWebShieldController.isHealthy(this)) ||
                         isWebGuardActive()
                     ),
-                webProtectionVerified = protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED ||
-                    protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_PASSED,
+                webProtectionVerified = ProtectionVerificationFreshness.isFresh(
+                    passed = protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED,
+                    testedAt = protectionPreferences.lastWebShieldSelfTestAt,
+                    now = now
+                ) || ProtectionVerificationFreshness.isFresh(
+                    passed = protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_PASSED,
+                    testedAt = protectionPreferences.lastWebGuardTestAt,
+                    now = now
+                ),
                 intrusionCheckReady = serviceHealthy && protectionPreferences.intrusionMonitorEnabled &&
                     protectionPreferences.lastIntrusionCheckAt > 0L,
                 dataExfiltrationCheckReady = serviceHealthy && protectionPreferences.dataExfiltrationGuardEnabled &&

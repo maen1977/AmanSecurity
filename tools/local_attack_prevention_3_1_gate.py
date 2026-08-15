@@ -23,7 +23,7 @@ scheduler = text('app/src/main/java/com/aman/security/protection/ProtectionSched
 main = text('app/src/main/java/com/aman/security/MainActivity.kt')
 watcher = text('app/src/main/java/com/aman/security/protection/SecurityControlChangeWatcher.kt')
 
-need('versionName = "3.6.4"' in gradle and 'versionCode = 44' in gradle, 'version')
+need('versionName = "3.6.5"' in gradle and 'versionCode = 45' in gradle, 'version')
 need('android.permission.BIND_VPN_SERVICE' in manifest and '.web.LocalDnsVpnService' in manifest and 'android:foregroundServiceType="specialUse"' in manifest and 'android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE' in manifest, 'vpn_service')
 need('.addRoute(VPN_DNS_ADDRESS, 32)' in vpn, 'dns_only_route')
 need('.addRoute("0.0.0.0", 0)' not in vpn and '.addRoute("::", 0)' not in vpn, 'no_full_tunnel')
