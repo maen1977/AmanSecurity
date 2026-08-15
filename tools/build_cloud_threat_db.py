@@ -38,8 +38,11 @@ HTTP_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
 
 OPENPHISH = "https://openphish.com/feed.txt"
-PRIMARY_PHISH = "https://api.destroy.tools/v1/feed/primary_active"
-COMMUNITY_PHISH = "https://api.destroy.tools/v1/feed/community_active"
+# The former destroy.tools endpoints are intentionally retired: they returned HTTP 500
+# during live builds and are not required for the compact schema. The legacy output files
+# remain for backward compatibility, while OpenPhish/PhishTank provide phishing feeds.
+PRIMARY_PHISH = None
+COMMUNITY_PHISH = None
 URLHAUS = "https://urlhaus.abuse.ch/downloads/text/"
 FEODO = "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"
 ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overview?hl=en"
@@ -343,7 +346,9 @@ def fetch_android_bulletin() -> tuple[str | None, set[str]]:
     if not patch:
         return None, set()
     month = patch[:7] + "-01"
-    url = f"https://source.android.com/docs/security/bulletin/{month}?hl=en"
+    # Current official Android URLs include the year directory:
+    # /docs/security/bulletin/2026/2026-08-01
+    url = f"https://source.android.com/docs/security/bulletin/{month[:4]}/{month}?hl=en"
     page = fetch(url, max_bytes=6 * 1024 * 1024).decode("utf-8", "ignore")
     return patch, {x.upper() for x in CVE_RE.findall(page)}
 
@@ -398,11 +403,15 @@ def main() -> int:
         except Exception as e:
             sources.append(FetchResult("malware_bazaar_android", False, len(malware_files), safe_source_detail(e, abuse_key, phishtank_key)))
 
-        for name, url, target, cap in [
+        feed_specs = [
             ("openphish", OPENPHISH, phish_open, FILES["phishing_openphish.sha256"]),
             ("primary_phishing", PRIMARY_PHISH, phish_primary, FILES["phishing_primary.sha256"]),
             ("community_phishing", COMMUNITY_PHISH, phish_community, FILES["phishing_community.sha256"]),
-        ]:
+        ]
+        for name, url, target, cap in feed_specs:
+            if not url:
+                sources.append(FetchResult(name, True, 0, "skipped: retired provider endpoint"))
+                continue
             try:
                 raw = fetch(url, max_bytes=32 * 1024 * 1024)
                 target |= url_indicators(extract_urls(raw), cap)

@@ -47,3 +47,12 @@ PHISHTANK_APP_KEY
 ```
 
 This secret is optional. It must be created and stored only in the private `AmanSecurity` repository’s Actions secrets. It must not be pasted into chat, committed to Git, included in the APK, or printed in CI logs.
+
+
+## Operational corrections after live CI validation
+
+The former `destroy.tools` primary and community phishing endpoints are retired from active fetching after returning HTTP 500 during bounded live checks. The legacy `phishing_primary.sha256` and `phishing_community.sha256` files remain in the seven-file schema for compatibility and are reported as optional `skipped` sources. OpenPhish and optional PhishTank provide the active phishing-feed paths.
+
+The Android bulletin fetcher uses the official year-qualified URL form, for example `https://source.android.com/docs/security/bulletin/2026/2026-08-01?hl=en`. The bare `latest` mirror prefix is not itself a file; smoke tests must request `latest/manifest.json`, `latest/manifest.sig`, `latest/build-report.json`, and the ZIP named in the manifest.
+
+The public-mirror publish step accepts either `AMAN_THREAT_PUBLISH_TOKEN` or `AMAN_THREAT_DEPLOY_KEY`. It no longer permits a failed publication to pass silently: if the mirror cannot be updated, the release job fails so users are not led to believe that the daily intelligence package was published when devices would still receive an older package.

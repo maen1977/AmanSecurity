@@ -8,6 +8,7 @@ import sys
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -45,6 +46,29 @@ class ThreatIntelFactoryTest(unittest.TestCase):
         self.assertTrue(all(builder.HASH_RE.fullmatch(value) for value in indicators))
         self.assertNotIn("safe.example", indicators)
         self.assertNotIn("https://safe.example/login?next=%2Fbank", indicators)
+
+    def test_android_bulletin_uses_year_directory(self) -> None:
+        requested: list[str] = []
+
+        def fake_fetch(url: str, **_kwargs: object) -> bytes:
+            requested.append(url)
+            if url == builder.ANDROID_OVERVIEW:
+                return b"latest patch 2026-08-01"
+            return b"Android Security Bulletin CVE-2026-12345"
+
+        with patch.object(builder, "fetch", side_effect=fake_fetch):
+            patch_level, cves = builder.fetch_android_bulletin()
+
+        self.assertEqual(patch_level, "2026-08-01")
+        self.assertIn("CVE-2026-12345", cves)
+        self.assertEqual(
+            requested[1],
+            "https://source.android.com/docs/security/bulletin/2026/2026-08-01?hl=en",
+        )
+
+    def test_retired_destroy_tools_feeds_are_skipped(self) -> None:
+        self.assertIsNone(builder.PRIMARY_PHISH)
+        self.assertIsNone(builder.COMMUNITY_PHISH)
 
     def test_source_error_details_redact_credentials(self) -> None:
         detail = builder.safe_source_detail(

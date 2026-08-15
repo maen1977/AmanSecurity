@@ -61,3 +61,17 @@ Official source: https://www.phishtank.net/developer_info.php
 A bounded curl check showed that the Android Malware Bazaar browse page returned HTTP 200 in about 8.5 seconds, OpenPhish returned HTTP 200 in about 2.8 seconds, the destroy.tools primary and community feeds returned HTTP 500, Feodo Tracker returned HTTP 200 in about 3.0 seconds, while URLhaus and the Android Security Bulletin continued streaming beyond the 10-second bound. The factory therefore treats destroy.tools feeds as optional failures, keeps socket/read limits bounded, and must not let a slow upstream block the daily CI job indefinitely. No threat samples were downloaded or retained during this check.
 
 Sources checked: https://bazaar.abuse.ch/browse/tag/Android/ ; https://openphish.com/feed.txt ; https://api.destroy.tools/v1/feed/primary_active ; https://api.destroy.tools/v1/feed/community_active ; https://urlhaus.abuse.ch/downloads/text/ ; https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json ; https://source.android.com/docs/security/bulletin/asb-overview?hl=en
+
+## Live validation after source and publication fixes — 2026-08-15
+
+The live factory was rerun after the 3.6.4 CI investigation. It produced a valid seven-file package with 63,511 URLhaus-derived malware URL indicators, 471 OpenPhish indicators, 9 Android malware SHA-256 indicators, 1 Feodo C2 indicator, and zero Android CVEs in the current bulletin page parser output. The official Android bulletin source now resolves through the year-qualified path (`/docs/security/bulletin/2026/2026-08-01`) and reports the current patch level `2026-08-05`.
+
+The former `destroy.tools` primary/community endpoints returned HTTP 500 during live checks and were retired from active fetching. Their legacy output files remain in the schema for backward compatibility and are recorded as `skipped`, not as a false source failure. PhishTank and ThreatFox remain optional because they require their respective credentials; the factory continues safely with public sources when those secrets are absent.
+
+The public mirror is a directory prefix, not a file. The correct verification paths are `latest/manifest.json`, `latest/manifest.sig`, `latest/build-report.json`, and the immutable ZIP named by `manifest.bundlePath`; requesting the bare `/latest` path can legitimately return 404. The workflow now supports `AMAN_THREAT_DEPLOY_KEY` as an SSH fallback, and mirror publication is no longer non-blocking: a failed publish blocks the release instead of allowing devices to remain silently on an old package.
+
+No malware binaries or raw provider URLs are shipped. The package remains hashes-only and signed before Android accepts it.
+
+Additional official references used for the Android URL correction:
+- https://source.android.com/docs/security/bulletin
+- https://source.android.com/docs/security/bulletin/2026/2026-08-01
