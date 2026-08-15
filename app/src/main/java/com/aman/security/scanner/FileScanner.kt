@@ -75,6 +75,11 @@ class FileScanner(
                 reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
                 signatureId = archiveFinding.signatureId
             }
+            archiveFinding?.scanLimited == true -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
+                signatureId = null
+            }
             archiveFinding?.misleadingExtension == true -> {
                 classification = ScanClassification.SUSPICIOUS
                 reason = ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY
@@ -178,6 +183,11 @@ class FileScanner(
                 classification = ScanClassification.KNOWN_THREAT
                 reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
                 signatureId = archiveFinding.signatureId
+            }
+            archiveFinding?.scanLimited == true -> {
+                classification = ScanClassification.SUSPICIOUS
+                reason = ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
+                signatureId = null
             }
             archiveFinding?.misleadingExtension == true -> {
                 classification = ScanClassification.SUSPICIOUS

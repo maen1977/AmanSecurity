@@ -47,7 +47,10 @@ object ProtectionPolicy {
         if (excluded) return false
         if (result.classification == ScanClassification.KNOWN_THREAT) return true
         return result.classification == ScanClassification.SUSPICIOUS &&
-            result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK
+            result.detectionReason in setOf(
+                ScanDetectionReason.APK_STATIC_HIGH_RISK,
+                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
+            )
     }
 
     fun shouldNotifyApp(level: AppRiskLevel): Boolean =
@@ -56,7 +59,10 @@ object ProtectionPolicy {
     fun severityForFile(result: ScanResult): ProtectionSeverity? = when {
         result.classification == ScanClassification.KNOWN_THREAT -> ProtectionSeverity.KNOWN_THREAT
         result.classification == ScanClassification.SUSPICIOUS &&
-            result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK -> ProtectionSeverity.HIGH_RISK
+            result.detectionReason in setOf(
+                ScanDetectionReason.APK_STATIC_HIGH_RISK,
+                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
+            ) -> ProtectionSeverity.HIGH_RISK
         else -> null
     }
 

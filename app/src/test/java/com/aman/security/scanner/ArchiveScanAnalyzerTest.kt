@@ -21,6 +21,27 @@ class ArchiveScanAnalyzerTest {
     }
 
     @Test
+    fun marksArchiveLimitedWhenEntryCountExceedsBound() {
+        val entries = Array(129) { index -> "entry-$index.txt" to "payload-$index" }
+        val archive = zipOf(*entries)
+
+        val finding = ArchiveScanAnalyzer { null }.scan(ByteArrayInputStream(archive))
+
+        assertTrue(finding?.scanLimited == true)
+        assertEquals("entry-128.txt", finding?.entryName)
+    }
+
+    @Test
+    fun doesNotMarkArchiveLimitedAtExactEntryBound() {
+        val entries = Array(128) { index -> "entry-$index.txt" to "payload-$index" }
+        val archive = zipOf(*entries)
+
+        val finding = ArchiveScanAnalyzer { null }.scan(ByteArrayInputStream(archive))
+
+        assertTrue(finding == null)
+    }
+
+    @Test
     fun detectsKnownEntrySignatureInsideArchive() {
         val payload = "known payload".toByteArray()
         val sha256 = MessageDigest.getInstance("SHA-256")
