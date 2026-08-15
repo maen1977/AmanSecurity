@@ -83,14 +83,15 @@ jobs:
           touch .nojekyll
           git add .nojekyll latest
           git commit -m "Aman threat intelligence $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          if [ -n "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
+          if [ -n "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
+            # Prefer a repository-scoped write token. A deploy key may exist but be read-only.
+            git remote add threat-public "https://x-access-token:${AMAN_THREAT_PUBLISH_TOKEN}@github.com/maen1977/AmanSecurity-Threat-DB.git"
+          else
             install -d -m 700 "$HOME/.ssh"
             printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
             chmod 600 "$HOME/.ssh/id_ed25519"
             ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
             git remote add threat-public "git@github.com:maen1977/AmanSecurity-Threat-DB.git"
-          else
-            git remote add threat-public "https://x-access-token:${AMAN_THREAT_PUBLISH_TOKEN}@github.com/maen1977/AmanSecurity-Threat-DB.git"
           fi
           git push --force threat-public HEAD:main
           git remote remove threat-public
