@@ -1,12 +1,15 @@
 package com.aman.security.security
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
+import android.app.admin.DevicePolicyManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 
 
 data class SpywareAppFinding(
@@ -41,14 +44,32 @@ class SpywareAuditor(private val context: Context) {
 
     private fun evaluatePackage(info: PackageInfo): SpywareAppFinding? {
         val signals = linkedSetOf<SpywareCapabilitySignal>()
-        if (info.services.orEmpty().any { it.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE }) {
+        val accessibilityDeclared = info.services.orEmpty().any {
+            it.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE
+        }
+        if (accessibilityDeclared) {
             signals += SpywareCapabilitySignal.ACCESSIBILITY_SERVICE
+            if (isEnabledAccessibilityService(info.packageName)) {
+                signals += SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE
+            }
         }
-        if (info.services.orEmpty().any { it.permission == Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE }) {
+        val notificationListenerDeclared = info.services.orEmpty().any {
+            it.permission == Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE
+        }
+        if (notificationListenerDeclared) {
             signals += SpywareCapabilitySignal.NOTIFICATION_LISTENER
+            if (isEnabledNotificationListener(info.packageName)) {
+                signals += SpywareCapabilitySignal.NOTIFICATION_LISTENER_ACTIVE
+            }
         }
-        if (info.receivers.orEmpty().any { it.permission == Manifest.permission.BIND_DEVICE_ADMIN }) {
+        val deviceAdminReceivers = info.receivers.orEmpty().filter {
+            it.permission == Manifest.permission.BIND_DEVICE_ADMIN
+        }
+        if (deviceAdminReceivers.isNotEmpty()) {
             signals += SpywareCapabilitySignal.DEVICE_ADMIN
+            if (isActiveDeviceAdmin(info.packageName, deviceAdminReceivers.mapNotNull { it.name })) {
+                signals += SpywareCapabilitySignal.DEVICE_ADMIN_ACTIVE
+            }
         }
         val requested = info.requestedPermissions?.toSet().orEmpty()
         if (Manifest.permission.RECEIVE_BOOT_COMPLETED in requested) signals += SpywareCapabilitySignal.BOOT_PERSISTENCE
@@ -70,6 +91,25 @@ class SpywareAuditor(private val context: Context) {
 
     private fun isGranted(packageName: String, permission: String): Boolean =
         packageManager.checkPermission(permission, packageName) == PackageManager.PERMISSION_GRANTED
+
+    private fun isEnabledAccessibilityService(packageName: String): Boolean =
+        enabledPackages(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).contains(packageName)
+
+    private fun isEnabledNotificationListener(packageName: String): Boolean =
+        enabledPackages(Settings.Secure.ENABLED_NOTIFICATION_LISTENERS).contains(packageName)
+
+    private fun enabledPackages(setting: String): Set<String> = runCatching {
+        Settings.Secure.getString(context.contentResolver, setting)
+            .orEmpty()
+            .split(':')
+            .mapNotNull { ComponentName.unflattenFromString(it)?.packageName }
+            .toSet()
+    }.getOrDefault(emptySet())
+
+    private fun isActiveDeviceAdmin(packageName: String, receiverNames: List<String>): Boolean = runCatching {
+        val manager = context.getSystemService(DevicePolicyManager::class.java) ?: return@runCatching false
+        receiverNames.any { manager.isAdminActive(ComponentName(packageName, it)) }
+    }.getOrDefault(false)
 
     private fun isConfirmedSideload(packageName: String): Boolean = runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

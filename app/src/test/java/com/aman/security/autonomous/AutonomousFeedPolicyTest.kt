@@ -19,4 +19,10 @@ class AutonomousFeedPolicyTest {
         assertTrue(AutonomousFeedPolicy.c2TtlMs <= TimeUnit.DAYS.toMillis(2))
         assertTrue(AutonomousFeedPolicy.phishingPrimaryTtlMs <= TimeUnit.DAYS.toMillis(7))
     }
+
+    @Test fun cloudBundleFreshnessCoversDailyRefreshButExpiresPromptly() {
+        assertTrue(AutonomousFeedPolicy.cloudBundle.statusFreshMs >= TimeUnit.HOURS.toMillis(24))
+        assertTrue(AutonomousFeedPolicy.cloudBundle.statusFreshMs <= TimeUnit.HOURS.toMillis(30))
+        assertTrue(AutonomousFeedPolicy.cloudBundle.lookupTtlMs <= TimeUnit.DAYS.toMillis(7))
+    }
 }

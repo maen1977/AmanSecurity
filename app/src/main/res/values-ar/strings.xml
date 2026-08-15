@@ -252,6 +252,8 @@
     <string name="protection_notification_high_title">تنبيه أمني عالي الخطورة</string>
     <string name="protection_notification_file_body">اكتشف أمان تنبيهًا أمنيًا في الملف: %1$s</string>
     <string name="protection_notification_app_body">اكتشف أمان تنبيهًا أمنيًا بعد تثبيت أو تحديث: %1$s</string>
+    <string name="spyware_high_notification_title">مراجعة قدرات تجسس عالية الخطورة</string>
+    <string name="spyware_high_notification_body">لدى %1$s مؤشرات تحكم أو مراقبة حساسة مفعّلة (%2$d). راجع التطبيق وصلاحياته في إعدادات أندرويد.</string>
     <string name="app_version">الإصدار %1$s</string>
     <string name="database_baseline_date">قاعدة الكشف المضمنة • أُنشئت %1$s</string>
     <string name="database_date_unknown">تاريخ غير معروف</string>
@@ -804,8 +806,11 @@
     <string name="scan_finding_kind_privacy">صلاحيات الخصوصية</string>
     <string name="scan_finding_kind_file">فحص الملفات</string>
     <string name="spyware_signal_accessibility">يعلن خدمة إمكانية وصول</string>
+    <string name="spyware_signal_accessibility_active">خدمة إمكانية الوصول مفعّلة في إعدادات أندرويد</string>
     <string name="spyware_signal_notification_listener">يعلن وصول مستمع الإشعارات</string>
+    <string name="spyware_signal_notification_listener_active">وصول مستمع الإشعارات مفعّل في إعدادات أندرويد</string>
     <string name="spyware_signal_device_admin">يعلن تحكم مسؤول الجهاز</string>
+    <string name="spyware_signal_device_admin_active">تحكم مسؤول الجهاز مفعّل</string>
     <string name="spyware_signal_boot">يمكنه الاستمرار بعد تشغيل الجهاز</string>
     <string name="spyware_signal_overlay">يمكنه الظهور فوق التطبيقات الأخرى</string>
     <string name="spyware_signal_sms">لديه وصول إلى الرسائل النصية</string>

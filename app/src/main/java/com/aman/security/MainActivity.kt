@@ -3605,8 +3605,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun spywareSignalLabel(code: String): String? = when (runCatching { SpywareCapabilitySignal.valueOf(code) }.getOrNull()) {
         SpywareCapabilitySignal.ACCESSIBILITY_SERVICE -> getString(R.string.spyware_signal_accessibility)
+        SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE -> getString(R.string.spyware_signal_accessibility_active)
         SpywareCapabilitySignal.NOTIFICATION_LISTENER -> getString(R.string.spyware_signal_notification_listener)
+        SpywareCapabilitySignal.NOTIFICATION_LISTENER_ACTIVE -> getString(R.string.spyware_signal_notification_listener_active)
         SpywareCapabilitySignal.DEVICE_ADMIN -> getString(R.string.spyware_signal_device_admin)
+        SpywareCapabilitySignal.DEVICE_ADMIN_ACTIVE -> getString(R.string.spyware_signal_device_admin_active)
         SpywareCapabilitySignal.BOOT_PERSISTENCE -> getString(R.string.spyware_signal_boot)
         SpywareCapabilitySignal.OVERLAY_DECLARED -> getString(R.string.spyware_signal_overlay)
         SpywareCapabilitySignal.SMS_ACCESS -> getString(R.string.spyware_signal_sms)

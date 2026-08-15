@@ -62,9 +62,10 @@ class NewPackageScanWorker(
 
             val spywareReview = SpywareAuditor(applicationContext).auditPackage(packageName)
             if (spywareReview != null && spywareReview.assessment.level != SpywareReviewLevel.LOW) {
+                val isHighRisk = spywareReview.assessment.level == SpywareReviewLevel.HIGH
                 timeline.add(
                     kind = ProtectionActivityKind.SECURITY_AUDIT,
-                    state = ProtectionActivityState.ATTENTION,
+                    state = if (isHighRisk) ProtectionActivityState.THREAT else ProtectionActivityState.ATTENTION,
                     title = applicationContext.getString(com.aman.security.R.string.timeline_spyware_review, spywareReview.appName),
                     detail = applicationContext.getString(
                         com.aman.security.R.string.timeline_spyware_review_detail,
@@ -72,6 +73,14 @@ class NewPackageScanWorker(
                     ),
                     dedupeKey = "spyware:${spywareReview.packageName}:${spywareReview.assessment.level}"
                 )
+                if (isHighRisk) {
+                    ProtectionNotifier.notifySpywareHighRisk(
+                        applicationContext,
+                        spywareReview.appName,
+                        spywareReview.packageName,
+                        spywareReview.assessment.signals.size
+                    )
+                }
             }
             ProtectionServiceController.refresh(applicationContext)
             Result.success()

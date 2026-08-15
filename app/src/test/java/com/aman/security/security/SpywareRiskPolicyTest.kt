@@ -24,6 +24,7 @@ class SpywareRiskPolicyTest {
         val result = SpywareRiskPolicy.evaluate(
             setOf(
                 SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
+                SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE,
                 SpywareCapabilitySignal.SIDELOADED,
                 SpywareCapabilitySignal.BOOT_PERSISTENCE,
                 SpywareCapabilitySignal.MICROPHONE_ACCESS,
@@ -32,6 +33,19 @@ class SpywareRiskPolicyTest {
         )
         assertEquals(SpywareReviewLevel.HIGH, result.level)
         assertTrue(result.score >= 40)
+    }
+
+    @Test
+    fun declaredPrivilegedServiceWithoutActivationStaysReviewOnly() {
+        val result = SpywareRiskPolicy.evaluate(
+            setOf(
+                SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
+                SpywareCapabilitySignal.SIDELOADED,
+                SpywareCapabilitySignal.MICROPHONE_ACCESS
+            )
+        )
+        assertEquals(SpywareReviewLevel.REVIEW, result.level)
+        assertTrue(result.score < 65)
     }
 
     @Test

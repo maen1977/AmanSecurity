@@ -2,8 +2,11 @@ package com.aman.security.security
 
 enum class SpywareCapabilitySignal {
     ACCESSIBILITY_SERVICE,
+    ACCESSIBILITY_ACTIVE,
     NOTIFICATION_LISTENER,
+    NOTIFICATION_LISTENER_ACTIVE,
     DEVICE_ADMIN,
+    DEVICE_ADMIN_ACTIVE,
     BOOT_PERSISTENCE,
     OVERLAY_DECLARED,
     SMS_ACCESS,
@@ -33,11 +36,18 @@ data class SpywareRiskAssessment(
  */
 object SpywareRiskPolicy {
     fun evaluate(signals: Set<SpywareCapabilitySignal>): SpywareRiskAssessment {
-        val controls = listOf(
+        val declaredControls = listOf(
             SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
             SpywareCapabilitySignal.NOTIFICATION_LISTENER,
             SpywareCapabilitySignal.DEVICE_ADMIN
         ).count(signals::contains)
+        val activeControls = listOf(
+            SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE,
+            SpywareCapabilitySignal.NOTIFICATION_LISTENER_ACTIVE,
+            SpywareCapabilitySignal.DEVICE_ADMIN_ACTIVE
+        ).count(signals::contains)
+        val controls = declaredControls
+        val hasActiveControl = activeControls > 0
         val surveillance = listOf(
             SpywareCapabilitySignal.SMS_ACCESS,
             SpywareCapabilitySignal.CALL_LOG_ACCESS,
@@ -49,14 +59,14 @@ object SpywareRiskPolicy {
         val overlay = SpywareCapabilitySignal.OVERLAY_DECLARED in signals
         val sideloaded = SpywareCapabilitySignal.SIDELOADED in signals
 
-        var score = controls * 13 + surveillance * 4
+        var score = controls * 13 + activeControls * 6 + surveillance * 4
         if (persistent) score += 7
         if (overlay) score += 5
         if (sideloaded) score += 10
 
         val level = when {
-            sideloaded && controls >= 1 && surveillance >= 2 && (persistent || overlay) -> SpywareReviewLevel.HIGH
-            controls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
+            sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay) -> SpywareReviewLevel.HIGH
+            hasActiveControl && activeControls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
             sideloaded && controls >= 1 && surveillance >= 1 -> SpywareReviewLevel.REVIEW
             controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
             else -> SpywareReviewLevel.LOW

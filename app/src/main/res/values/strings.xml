@@ -252,6 +252,8 @@
     <string name="protection_notification_high_title">High-risk security alert</string>
     <string name="protection_notification_file_body">Aman detected a security alert in file: %1$s</string>
     <string name="protection_notification_app_body">Aman detected a security alert after installing or updating: %1$s</string>
+    <string name="spyware_high_notification_title">High-risk spyware capability review</string>
+    <string name="spyware_high_notification_body">%1$s has active privileged or surveillance signals (%2$d). Review the app and its Android access settings.</string>
     <string name="app_version">Version %1$s</string>
     <string name="database_baseline_date">Bundled detection baseline • Generated %1$s</string>
     <string name="database_date_unknown">unknown date</string>
@@ -804,8 +806,11 @@
     <string name="scan_finding_kind_privacy">Privacy permissions</string>
     <string name="scan_finding_kind_file">File scan</string>
     <string name="spyware_signal_accessibility">Declares an Accessibility service</string>
+    <string name="spyware_signal_accessibility_active">Accessibility service is enabled in Android settings</string>
     <string name="spyware_signal_notification_listener">Declares Notification Listener access</string>
+    <string name="spyware_signal_notification_listener_active">Notification Listener access is enabled in Android settings</string>
     <string name="spyware_signal_device_admin">Declares Device Administrator control</string>
+    <string name="spyware_signal_device_admin_active">Device Administrator control is active</string>
     <string name="spyware_signal_boot">Can persist after device boot</string>
     <string name="spyware_signal_overlay">Can draw over other apps</string>
     <string name="spyware_signal_sms">Has SMS access</string>

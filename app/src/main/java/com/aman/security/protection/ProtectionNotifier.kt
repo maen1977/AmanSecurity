@@ -31,6 +31,7 @@ object ProtectionNotifier {
     private const val BANKING_ALERT_ID = 27300
     private const val DATA_EXFIL_ALERT_ID = 27400
     private const val BACKGROUND_ACTIVITY_ALERT_ID = 27500
+    private const val SPYWARE_ALERT_ID = 27600
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -469,6 +470,40 @@ object ProtectionNotifier {
             context = context,
             notificationId = event.id.hashCode(),
             notification = notification
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifySpywareHighRisk(context: Context, appName: String, packageName: String, signalCount: Int) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            SPYWARE_ALERT_ID + packageName.hashCode().and(0x1ff),
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(
+            R.string.spyware_high_notification_body,
+            appName,
+            signalCount
+        )
+        postNotificationSafely(
+            context,
+            SPYWARE_ALERT_ID + packageName.hashCode().and(0x1ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.spyware_high_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
         )
         updateProtectionStatus(context)
     }
