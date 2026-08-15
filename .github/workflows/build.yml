@@ -182,6 +182,23 @@ jobs:
       - name: Build installable release test APK
         run: gradle :app:assembleRelease --stacktrace
 
+      - name: Ensure CI test signing key exists
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -s "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias AndroidDebugKey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          test -s "$HOME/.android/debug.keystore"
+
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
