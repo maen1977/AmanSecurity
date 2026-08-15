@@ -15,7 +15,7 @@ notifier=text('app/src/main/java/com/aman/security/protection/ProtectionNotifier
 scheduler=text('app/src/main/java/com/aman/security/protection/ProtectionScheduler.kt')
 test=text('app/src/test/java/com/aman/security/security/AttackDetectionPolicyTest.kt')
 
-need('versionName = "3.6.5"' in gradle and 'versionCode = 45' in gradle,'version')
+need('versionName = "3.6.6"' in gradle and 'versionCode = 46' in gradle,'version')
 need('AttackDetectionLevel' in policy and 'AttackDetectionPolicy' in policy and 'RECENT_SIGNAL_WINDOW_MS' in center,'local_aggregation')
 need('ProtectionActivityStore' in center and 'ProtectionActivityKind.WEB_SHIELD' in center,'existing_signal_sources')
 need('entry.kind != ProtectionActivityKind.WEB_SHIELD' in center,'blocked_web_is_not_compromise')

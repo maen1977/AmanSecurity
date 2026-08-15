@@ -26,6 +26,7 @@
     <string name="reason_signature_match">بصمة SHA-256 مطابقة لتوقيع معروف في قاعدة التهديدات النشطة.</string>
     <string name="reason_archive_known_signature">تم العثور على بصمة تهديد معروفة داخل هذا الأرشيف.</string>
     <string name="reason_archive_misleading_entry">يستخدم ملف داخل هذا الأرشيف امتدادًا مزدوجًا مضللًا.</string>
+    <string name="reason_archive_scan_limit_reached">تجاوز الأرشيف حدود الفحص الآمن، لذلك لم يُعتبر نظيفًا. راجعه فقط إذا كان مصدره موثوقًا.</string>
     <string name="reason_eicar_test">هذا هو توقيع الاختبار القياسي الآمن لفحص برامج الحماية.</string>
     <string name="sha256_label">SHA-256</string>
     <string name="signature_id_label">الرقم المرجعي للتهديد</string>

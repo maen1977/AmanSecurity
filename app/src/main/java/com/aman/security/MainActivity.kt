@@ -2869,6 +2869,7 @@ class MainActivity : AppCompatActivity() {
             ScanDetectionReason.TEST_SIGNATURE -> R.string.reason_eicar_test
             ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE -> R.string.reason_archive_known_signature
             ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY -> R.string.reason_archive_misleading_entry
+            ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED -> R.string.reason_archive_scan_limit_reached
         }
 
         binding.txtClassification.setText(titleRes)
