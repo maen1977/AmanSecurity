@@ -4,7 +4,7 @@
 **Publisher:** AmanSecurity / maen1977
 **Contact:** Replace this line with a monitored publisher email address before publication.
 
-This draft describes the Android application **AmanSecurity** (`com.aman.security`) as configured for version 3.5.9. It must be reviewed by the publisher and hosted at a stable public HTTPS URL before it is entered into Google Play Console.
+This draft describes the Android application **AmanSecurity** (`com.aman.security`) as configured for version 3.6.0. It must be reviewed by the publisher and hosted at a stable public HTTPS URL before it is entered into Google Play Console.
 
 ## 1. Privacy commitment
 
@@ -55,7 +55,7 @@ AmanSecurity is not designed to collect children's personal information. Users s
 
 ## 7. Third-party libraries and services
 
-The application uses AndroidX, Material Components, and WorkManager libraries for its Android user interface and scheduled local work. The publisher must review the final dependency graph and the published versions of any additional libraries before completing Google Play's Data safety form. No analytics or advertising SDK is intended in the 3.5.9 build.
+The application uses AndroidX, Material Components, and WorkManager libraries for its Android user interface and scheduled local work. The publisher must review the final dependency graph and the published versions of any additional libraries before completing Google Play's Data safety form. No analytics or advertising SDK is intended in the 3.6.0 build.
 
 ## 8. Changes to this policy
 

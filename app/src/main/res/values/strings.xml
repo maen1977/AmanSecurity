@@ -546,6 +546,9 @@
     <string name="automatic_antivirus_title">Automatic Anti-Virus</string>
     <string name="automatic_antivirus_subtitle">Lightweight event-driven protection for app installs/updates and new Downloads, with a persistent protection status.</string>
     <string name="realtime_service_active">Real-time service: running</string>
+    <string name="protection_readiness_ready">Protection coverage: %1$d/%2$d local checks ready</string>
+    <string name="protection_readiness_attention">Protection coverage: %1$d/%2$d checks ready • finish the highlighted tests or permissions</string>
+    <string name="protection_readiness_limited">Protection coverage: %1$d/%2$d checks ready • protection is limited until core checks pass</string>
     <string name="realtime_service_starting">Real-time service: starting…</string>
     <string name="realtime_service_stopped">Real-time service: stopped</string>
     <string name="app_monitor_active">New and updated apps: protected</string>

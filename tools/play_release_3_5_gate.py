@@ -13,10 +13,10 @@ def main() -> None:
     manifest = (ROOT / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/build.yml").read_text(encoding="utf-8")
     privacy = (ROOT / "docs/PRIVACY_POLICY_DRAFT.md").read_text(encoding="utf-8")
-    checklist = (ROOT / "docs/PLAY_RELEASE_CHECKLIST_3_5_9.md").read_text(encoding="utf-8")
+    checklist = (ROOT / "docs/PLAY_RELEASE_CHECKLIST_3_6_0.md").read_text(encoding="utf-8")
 
     need('compileSdk = 36' in gradle and 'targetSdk = 36' in gradle, "target_api_36")
-    need('versionCode = 39' in gradle and 'versionName = "3.5.9"' in gradle, "release_version")
+    need('versionCode = 40' in gradle and 'versionName = "3.6.0"' in gradle, "release_version")
     need('isMinifyEnabled = true' in gradle and 'isShrinkResources = true' in gradle, "release_hardening")
     need('android.permission.READ_SMS' not in manifest, "read_sms_absent")
     need('android.permission.RECEIVE_SMS' not in manifest, "receive_sms_absent")
@@ -28,7 +28,7 @@ def main() -> None:
     need('QUERY_ALL_PACKAGES' in checklist and 'MANAGE_EXTERNAL_STORAGE' in checklist, "permission_declarations_present")
     need('upload key' in checklist and 'public HTTPS URL' in checklist, "owner_actions_present")
     need('References' in checklist and 'https://developer.android.com/google/play/requirements/target-sdk' in checklist, "official_references_present")
-    print('PLAY_RELEASE_GATE_OK version=3.5.9 target_api=36 sms_permissions=0 accessibility=0 docs=1 signed_aab_owner_action=1 public_privacy_url_owner_action=1')
+    print('PLAY_RELEASE_GATE_OK version=3.6.0 target_api=36 sms_permissions=0 accessibility=0 docs=1 signed_aab_owner_action=1 public_privacy_url_owner_action=1')
 
 
 if __name__ == '__main__':

@@ -546,6 +546,9 @@
     <string name="automatic_antivirus_title">مضاد الفيروسات التلقائي</string>
     <string name="automatic_antivirus_subtitle">حماية خفيفة تعتمد على الأحداث لتثبيت/تحديث التطبيقات والتنزيلات الجديدة، مع حالة حماية دائمة.</string>
     <string name="realtime_service_active">خدمة الحماية الفورية: تعمل</string>
+    <string name="protection_readiness_ready">تغطية الحماية: %1$d من %2$d فحوص محلية جاهزة</string>
+    <string name="protection_readiness_attention">تغطية الحماية: %1$d من %2$d فحوص جاهزة • أكمل الاختبارات أو الأذونات المبيّنة</string>
+    <string name="protection_readiness_limited">تغطية الحماية: %1$d من %2$d فحوص جاهزة • الحماية محدودة حتى تنجح الفحوص الأساسية</string>
     <string name="realtime_service_starting">خدمة الحماية الفورية: جارٍ تشغيلها…</string>
     <string name="realtime_service_stopped">خدمة الحماية الفورية: متوقفة</string>
     <string name="app_monitor_active">التطبيقات الجديدة والمحدّثة: محمية</string>

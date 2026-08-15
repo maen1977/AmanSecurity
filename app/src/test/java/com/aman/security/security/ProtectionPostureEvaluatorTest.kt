@@ -15,11 +15,30 @@ class ProtectionPostureEvaluatorTest {
                 webGuardActive = true,
                 devicePatchKnown = true,
                 devicePatchCurrent = true,
-                integrityStatus = AppIntegrityStatus.VERIFIED_RELEASE
+                integrityStatus = AppIntegrityStatus.VERIFIED_RELEASE,
+                webProtectionVerified = true
             )
         )
         assertEquals(100, result.score)
         assertEquals(ProtectionPostureLevel.STRONG, result.level)
+    }
+
+    @Test fun unverifiedWebProtectionNeverReportsStrong() {
+        val result = ProtectionPostureEvaluator.evaluate(
+            ProtectionPostureInput(
+                databaseHealthy = true,
+                freshSources = 5,
+                totalSources = 5,
+                backgroundProtectionEnabled = true,
+                webGuardActive = true,
+                devicePatchKnown = true,
+                devicePatchCurrent = true,
+                integrityStatus = AppIntegrityStatus.VERIFIED_RELEASE,
+                webProtectionVerified = false
+            )
+        )
+        assertTrue(result.score < 80)
+        assertEquals(ProtectionPostureLevel.ATTENTION, result.level)
     }
 
     @Test fun signatureMismatchAlwaysLimitsReadiness() {

@@ -113,6 +113,9 @@ import com.aman.security.security.AppIntegrityStatus
 import com.aman.security.security.ProtectionPostureEvaluator
 import com.aman.security.security.ProtectionPostureInput
 import com.aman.security.security.ProtectionPostureLevel
+import com.aman.security.security.ProtectionReadinessEvaluator
+import com.aman.security.security.ProtectionReadinessInput
+import com.aman.security.security.ProtectionReadinessLevel
 import com.aman.security.security.ExclusionEntry
 import com.aman.security.security.QuarantineEntry
 import com.aman.security.security.QuarantineManager
@@ -1381,7 +1384,9 @@ class MainActivity : AppCompatActivity() {
                 webGuardActive = isCombinedWebProtectionActive(),
                 devicePatchKnown = patchKnown,
                 devicePatchCurrent = patchKnown && devicePatch >= latestPatch,
-                integrityStatus = integrity.status
+                integrityStatus = integrity.status,
+                webProtectionVerified = protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED ||
+                    protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_PASSED
             )
         )
         val scoreText = NumberFormat.getIntegerInstance().format(posture.score)
@@ -1403,6 +1408,41 @@ class MainActivity : AppCompatActivity() {
             }
         )
         renderSmartDashboard(posture.score, posture.level)
+        renderProtectionReadiness()
+    }
+
+    private fun renderProtectionReadiness() {
+        if (!::binding.isInitialized || !::database.isInitialized || !::protectionPreferences.isInitialized) return
+        val serviceHealthy = protectionPreferences.enabled && ProtectionServiceController.isHealthy(this)
+        val readiness = ProtectionReadinessEvaluator.evaluate(
+            ProtectionReadinessInput(
+                databaseHealthy = database.canaryHealthy(),
+                serviceHealthy = serviceHealthy,
+                appInstallMonitorEnabled = serviceHealthy && protectionPreferences.appInstallMonitorEnabled,
+                downloadsProtectionReady = serviceHealthy && protectionPreferences.downloadsProtectionEnabled &&
+                    ProtectionAccess.hasDownloadsReadAccess(this),
+                webProtectionActive = serviceHealthy && (
+                    (protectionPreferences.localWebShieldEnabled && LocalWebShieldController.isHealthy(this)) ||
+                        isWebGuardActive()
+                    ),
+                webProtectionVerified = protectionPreferences.webShieldSelfTestState == ProtectionPreferences.WEB_SHIELD_SELF_TEST_PASSED ||
+                    protectionPreferences.webGuardTestState == ProtectionPreferences.WEB_GUARD_TEST_PASSED,
+                intrusionCheckReady = serviceHealthy && protectionPreferences.intrusionMonitorEnabled &&
+                    protectionPreferences.lastIntrusionCheckAt > 0L,
+                dataExfiltrationCheckReady = serviceHealthy && protectionPreferences.dataExfiltrationGuardEnabled &&
+                    DataExfiltrationAccess.isGranted(this) && protectionPreferences.lastDataExfilCheckAt > 0L
+            )
+        )
+        val textRes = when (readiness.level) {
+            ProtectionReadinessLevel.READY -> R.string.protection_readiness_ready
+            ProtectionReadinessLevel.ATTENTION -> R.string.protection_readiness_attention
+            ProtectionReadinessLevel.LIMITED -> R.string.protection_readiness_limited
+        }
+        binding.txtProtectionReadiness.text = getString(
+            textRes,
+            readiness.readyChecks,
+            readiness.totalChecks
+        )
     }
 
     private fun toggleBackgroundProtection() {

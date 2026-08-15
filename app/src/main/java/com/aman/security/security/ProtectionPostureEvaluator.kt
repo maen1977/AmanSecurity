@@ -14,7 +14,9 @@ data class ProtectionPostureInput(
     val webGuardActive: Boolean,
     val devicePatchKnown: Boolean,
     val devicePatchCurrent: Boolean,
-    val integrityStatus: AppIntegrityStatus
+    val integrityStatus: AppIntegrityStatus,
+    /** A completed local web-shield/link-guard verification, not merely an enabled switch. */
+    val webProtectionVerified: Boolean = false
 )
 
 data class ProtectionPosture(
@@ -41,6 +43,8 @@ object ProtectionPostureEvaluator {
             AppIntegrityStatus.SIGNATURE_MISMATCH -> 0
         }
         score = score.coerceIn(0, 100)
+        // Do not present an unverified web layer as strong production readiness.
+        if (!input.webProtectionVerified) score = minOf(score, 79)
         val level = when {
             input.integrityStatus == AppIntegrityStatus.SIGNATURE_MISMATCH -> ProtectionPostureLevel.LIMITED
             score < 55 -> ProtectionPostureLevel.LIMITED
