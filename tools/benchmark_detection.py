@@ -22,7 +22,7 @@ def p95(values):
     v=sorted(values); return v[max(0,min(len(v)-1,int(round(.95*(len(v)-1)))))]
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('csv',type=Path); ap.add_argument('--threshold',type=int,default=55)
+    ap=argparse.ArgumentParser(); ap.add_argument('csv',type=Path); ap.add_argument('--threshold',type=int,default=56)
     ap.add_argument('--min-detection-rate',type=float,default=None); ap.add_argument('--max-false-positive-rate',type=float,default=None)
     ap.add_argument('--min-precision',type=float,default=None); ap.add_argument('--min-family-accuracy',type=float,default=None)
     ap.add_argument('--min-samples',type=int,default=0); ap.add_argument('--min-malicious',type=int,default=0); ap.add_argument('--min-benign',type=int,default=0)

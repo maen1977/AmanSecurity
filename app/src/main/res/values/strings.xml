@@ -970,4 +970,35 @@
     <string name="explanation_spyware_confirmed">Reasoned verdict: multiple engines confirmed a coordinated surveillance pattern. This is treated as spyware even if individual signals looked light.</string>
     <string name="explanation_unknown_safe">Reasoned verdict: no engine found harmful evidence and the thinking model detected no harmful pattern. The item is considered clean.</string>
     <string name="contribution_banner">Developed in collaboration with Manus AI — the thinking intelligence inside Maen Shield is built by Manus. Maen Shield protects those who cannot afford paid antivirus, forever free.</string>
+    <!-- Runtime Shield (7.0.0 world-class live protection) -->
+    <string name="runtime_shield_section_title">Runtime Shield</string>
+    <string name="runtime_shield_section_body">Live protection that watches your sensitive sessions (banking, payments, OTP) and blocks covering windows, camera and microphone abuse, and secret copying in real time.</string>
+    <string name="runtime_overlay_guard_title">Screen covering protection</string>
+    <string name="runtime_overlay_guard_body">Alert and block any app that draws a window on top of your banking or payment session (overlay attacks and clickjacking).</string>
+    <string name="runtime_camera_mic_guard_title">Camera and microphone protection</string>
+    <string name="runtime_camera_mic_guard_body">Alert when an unknown app uses the camera or microphone while a sensitive app is in the foreground.</string>
+    <string name="runtime_clipboard_guard_title">Clipboard secret protection</string>
+    <string name="runtime_clipboard_guard_body">Detect secret content (codes, card numbers, passwords) entering the clipboard during sensitive sessions and clear it automatically.</string>
+    <string name="runtime_foreground_scanner_title">Live app scanner</string>
+    <string name="runtime_foreground_scanner_body">Immediately validate every app that rises to the foreground against the threat catalog and hardened-system checks.</string>
+    <string name="runtime_overlay_block">Coverage attack detected from %1$s. Your sensitive session is protected. Close the covering app.</string>
+    <string name="runtime_overlay_notification_title">Coverage attack blocked</string>
+    <string name="runtime_overlay_notification_body">An app (%1$s) drew a window on top of your sensitive session. This is a known trick used to steal clicks and data. Review it now.</string>
+    <string name="runtime_media_notification_title">Camera or microphone watched</string>
+    <string name="runtime_media_notification_body">The app %1$s is using the camera or microphone while a sensitive session is active.</string>
+    <string name="runtime_clipboard_notification_title">Secret protected</string>
+    <string name="runtime_clipboard_notification_body">Secret content (such as a code or card number) entered the clipboard during a sensitive session and was cleared automatically to protect you from thieves.</string>
+    <string name="runtime_hardening_notification_title">System weakening detected</string>
+    <string name="runtime_hardening_notification_body">System hardening score: %1$d out of 100. Some spyware-friendly settings are active (such as USB debugging or developer mode). Review them in settings.</string>
+    <string name="runtime_hardening_usb_debug">Universal Serial Bus debugging is active. Malware can push itself onto the device through this channel.</string>
+    <string name="runtime_hardening_dev_options">Developer options are enabled. This channel is often abused by spyware installers.</string>
+    <string name="runtime_hardening_mock_location">A mock-location app is active. Location faking is a common spyware companion.</string>
+    <string name="runtime_hardening_root">Root management traces were detected. Rooted devices are harder to defend.</string>
+    <string name="runtime_hardening_accessibility">An accessibility service from another app is active. This is the most powerful channel spyware uses to read and control your phone.</string>
+    <string name="runtime_hardening_summary">System hardening score: %1$d / 100</string>
+    <string name="runtime_overlay_alert_count">Coverage attack alerts: %1$d</string>
+    <string name="runtime_camera_mic_alert_count">Camera and microphone alerts: %1$d</string>
+    <string name="runtime_clipboard_guard_count">Clipboard secrets protected: %1$d</string>
+    <string name="runtime_foreground_check_count">Live app checks: %1$d</string>
+    <string name="runtime_shield_stats_line">Runtime Shield: %1$d overlay blocks, %2$d camera/mic alerts, %3$d clipboard secrets, %4$d live checks</string>
 </resources>

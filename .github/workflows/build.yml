@@ -44,7 +44,7 @@ jobs:
             echo "::error::Configure AMAN_THREAT_PUBLISH_TOKEN or AMAN_THREAT_DEPLOY_KEY with write access to AmanSecurity-Threat-DB."
             exit 1
           fi
-          python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 55
+          python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 56
           python3 tools/prepare_cloud_bundle.py \
             --dir dist/cloud-threat-db \
             --bundle-name "aman-threat-db-${GITHUB_RUN_ID}.zip"
@@ -104,8 +104,8 @@ jobs:
           fi
           if [ "$push_succeeded" -ne 1 ] && [ -n "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
             install -d -m 700 "$HOME/.ssh"
-            printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
-            chmod 600 "$HOME/.ssh/id_ed25519"
+            printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25619"
+            chmod 600 "$HOME/.ssh/id_ed25619"
             ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
             git remote add threat-public "git@github.com:maen1977/AmanSecurity-Threat-DB.git"
             if git push --force threat-public HEAD:main; then
@@ -136,7 +136,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-6.0.0-Cloud-Threat-Package
+          name: MaenShield-7.0.0-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -178,7 +178,7 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          sdkmanager "platforms;android-36" "build-tools;37.0.0"
 
       - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
@@ -238,15 +238,15 @@ jobs:
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-6.0.0-TestRelease-unsigned.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-7.0.0-TestRelease-unsigned.apk
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" sign \
             --ks "$HOME/.android/debug.keystore" \
             --ks-key-alias AndroidDebugKey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MaenShield-6.0.0-TestRelease.apk \
-            MaenShield-6.0.0-TestRelease-unsigned.apk
-          test -s MaenShield-6.0.0-TestRelease.apk
+            --out MaenShield-7.0.0-TestRelease.apk \
+            MaenShield-7.0.0-TestRelease-unsigned.apk
+          test -s MaenShield-7.0.0-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -254,21 +254,21 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-6.0.0-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-7.0.0-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-6.0.0-TestRelease-APK
-          path: MaenShield-6.0.0-TestRelease.apk
+          name: MaenShield-7.0.0-TestRelease-APK
+          path: MaenShield-7.0.0-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-6.0.0-Unsigned-Release-AAB
+          name: MaenShield-7.0.0-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -277,7 +277,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-6.0.0-Verification-Reports
+          name: MaenShield-7.0.0-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/

@@ -17,6 +17,7 @@ import com.aman.security.banking.BankingRiskAssessment
 import com.aman.security.security.AttackDetectionCenter
 import com.aman.security.security.AttackDetectionLevel
 import com.aman.security.security.DataExfiltrationFinding
+import com.aman.security.runtime.HardeningReport
 import com.aman.security.security.IntrusionMonitorSummary
 import com.aman.security.R
 import com.aman.security.web.LocalWebShieldController
@@ -34,6 +35,10 @@ object ProtectionNotifier {
     private const val SPYWARE_ALERT_ID = 27600
     private const val SIDELOAD_SENSITIVE_ALERT_ID = 27650
     private const val DOWNLOAD_REVIEW_ALERT_ID = 27700
+    private const val RUNTIME_OVERLAY_ALERT_ID = 27800
+    private const val RUNTIME_MEDIA_ALERT_ID = 27810
+    private const val RUNTIME_CLIPBOARD_ALERT_ID = 27820
+    private const val RUNTIME_HARDENING_ALERT_ID = 27830
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -205,6 +210,114 @@ object ProtectionNotifier {
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyOverlayAttack(context: Context, appName: String, packageName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_OVERLAY_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_overlay_notification_body, appName)
+        postNotificationSafely(
+            context, RUNTIME_OVERLAY_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_overlay_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyMediaAccess(context: Context, appName: String, packageName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_MEDIA_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_media_notification_body, appName)
+        postNotificationSafely(
+            context, RUNTIME_MEDIA_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_media_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyClipboardGuard(context: Context, contentSummary: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_CLIPBOARD_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_clipboard_notification_body)
+        postNotificationSafely(
+            context, RUNTIME_CLIPBOARD_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_clipboard_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyHardeningWeakness(context: Context, report: HardeningReport) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_HARDENING_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_hardening_notification_body, report.score)
+        postNotificationSafely(
+            context, RUNTIME_HARDENING_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_hardening_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .build()

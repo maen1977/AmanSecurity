@@ -5,15 +5,15 @@
   "dbPath": "signatures.csv",
   "dbSha256": "081086595187a4775ea27b40688be3ea4b5f954b332e5db3dcf9fb3cc2a1d3cc",
   "detectionDbPath": "detection_rules.csv",
-  "detectionDbSha256": "f63482618fc48a4979bd86f9539dbb8e1171337788662b445dc776f919a89f8e",
-  "detectionEntries": 119,
+  "detectionDbSha256": "052a1a3307bda33066999c15d465457962a71415066d7b9740c00edcaec86d3b",
+  "detectionEntries": 135,
   "entries": 11,
-  "generatedAt": "2026-08-10T17:10:27Z",
+  "generatedAt": "2026-08-16T19:50:07Z",
   "minAppVersionCode": 16,
   "schema": 4,
-  "serial": 13,
+  "serial": 15,
   "urlDbPath": "url_indicators.csv",
   "urlDbSha256": "7eac97ea04b1bfa5229012db535df952e3c8906f45dcae4a46d46319df576701",
   "urlEntries": 2,
-  "version": "2026.08.10.3"
+  "version": "2026.08.16.1"
 }

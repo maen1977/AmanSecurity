@@ -354,6 +354,26 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnBankingAccessibility.setOnClickListener { runBankingRiskCheckNow() }
         binding.btnChooseBankingApps.setOnClickListener { showBankingAppsDialog() }
+        binding.switchOverlayGuard.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.overlayGuardEnabled = checked
+            renderProtectionStatus()
+        }
+        binding.switchCameraMicGuard.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.cameraMicGuardEnabled = checked
+            renderProtectionStatus()
+        }
+        binding.switchClipboardGuard.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.clipboardGuardEnabled = checked
+            renderProtectionStatus()
+        }
+        binding.switchForegroundScanner.setOnCheckedChangeListener { _, checked ->
+            if (renderingProtectionControls) return@setOnCheckedChangeListener
+            protectionPreferences.foregroundAppScannerEnabled = checked
+            renderProtectionStatus()
+        }
         binding.btnUpdateDatabase.setOnClickListener { updateThreatDatabase() }
         binding.btnLanguage.setOnClickListener { showLanguageDialog() }
         binding.btnQuarantine.setOnClickListener { confirmQuarantine() }
@@ -1804,6 +1824,10 @@ class MainActivity : AppCompatActivity() {
             binding.switchDataExfilGuard.isChecked = enabled && protectionPreferences.dataExfiltrationGuardEnabled
             binding.switchBankingProtection.isChecked = enabled && protectionPreferences.bankingProtectionEnabled
             binding.switchBankingBlockHighRisk.isChecked = protectionPreferences.blockBankingOnHighRisk
+            binding.switchOverlayGuard.isChecked = enabled && protectionPreferences.overlayGuardEnabled
+            binding.switchCameraMicGuard.isChecked = enabled && protectionPreferences.cameraMicGuardEnabled
+            binding.switchClipboardGuard.isChecked = enabled && protectionPreferences.clipboardGuardEnabled
+            binding.switchForegroundScanner.isChecked = enabled && protectionPreferences.foregroundAppScannerEnabled
         } finally {
             renderingProtectionControls = false
         }
@@ -1823,6 +1847,10 @@ class MainActivity : AppCompatActivity() {
         binding.switchBankingBlockHighRisk.visibility = View.GONE
         binding.btnBankingAccessibility.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
         binding.btnChooseBankingApps.isEnabled = enabled && protectionPreferences.bankingProtectionEnabled
+        binding.switchOverlayGuard.isEnabled = enabled
+        binding.switchCameraMicGuard.isEnabled = enabled
+        binding.switchClipboardGuard.isEnabled = enabled
+        binding.switchForegroundScanner.isEnabled = enabled
 
         binding.txtDownloadsAccess.setText(if (downloadsAccess) R.string.downloads_access_granted else R.string.downloads_access_missing)
         binding.btnGrantFileAccess.visibility = if (downloadsAccess) View.GONE else View.VISIBLE
@@ -1833,6 +1861,13 @@ class MainActivity : AppCompatActivity() {
             formatter.format(protectionPreferences.totalAppsChecked),
             formatter.format(protectionPreferences.totalFilesChecked),
             formatter.format(protectionPreferences.totalThreatsDetected)
+        )
+        binding.txtRuntimeShieldStats.text = getString(
+            R.string.runtime_shield_stats_line,
+            formatter.format(protectionPreferences.totalOverlayAlerts),
+            formatter.format(protectionPreferences.totalCameraMicAlerts),
+            formatter.format(protectionPreferences.totalClipboardGuards),
+            formatter.format(protectionPreferences.totalForegroundChecks)
         )
         val lastActivity = protectionPreferences.lastActivityLabel
         val lastActivityLine = if (protectionPreferences.lastActivityAt > 0L && !lastActivity.isNullOrBlank()) {

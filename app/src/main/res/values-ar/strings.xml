@@ -970,4 +970,35 @@
     <string name="explanation_spyware_confirmed">الحكم المدروس: أكّدت عدة محركات نمط تجسس منسّق. يُعامل كتطبيق تجسس حتى لو بدت الإشارات المنفردة خفيفة.</string>
     <string name="explanation_unknown_safe">الحكم المدروس: لم يجد أي محرك دليلًا ضارًا، ولم يكتشف النموذج المفكر أي نمط ضار. العنصر نظيف.</string>
     <string name="contribution_banner">طُوّر هذا البرنامج بمشاركة ذكاء مَانِس الاصطناعي، والذكاء المفكر داخله من بنائه. البرنامج مجاني دائمًا ليحمي من لا يستطيعون شراء برامج الحماية المدفوعة.</string>
+    <!-- Runtime Shield (7.0.0) -->
+    <string name="runtime_shield_section_title">درع الحماية الحية</string>
+    <string name="runtime_shield_section_body">حماية حية تراقب جلساتك الحساسة (البنوك، الدفع، رموز التحقق) وتمنع النوافذ المغطية وسوء استخدام الكاميرا والميكروفون ونسخ الأسرار في الوقت الحقيقي.</string>
+    <string name="runtime_overlay_guard_title">حماية من النوافذ المغطية</string>
+    <string name="runtime_overlay_guard_body">تنبيه وحجب أي تطبيق يرسم نافذة فوق جلسة البنك أو الدفع (هجمات التغطية وسرقة النقرات).</string>
+    <string name="runtime_camera_mic_guard_title">حماية الكاميرا والميكروفون</string>
+    <string name="runtime_camera_mic_guard_body">تنبيه عند استخدام تطبيق مجهول للكاميرا أو الميكروفون أثناء جلسة حساسة.</string>
+    <string name="runtime_clipboard_guard_title">حماية أسرار الحافظة</string>
+    <string name="runtime_clipboard_guard_body">كشف المحتوى السري (الرموز، أرقام البطاقات، كلمات المرور) في الحافظة أثناء الجلسات الحساسة ومسحه تلقائيًا.</string>
+    <string name="runtime_foreground_scanner_title">فاحص التطبيقات الحي</string>
+    <string name="runtime_foreground_scanner_body">التحقق الفوري من كل تطبيق يظهر في المقدمة مقابل كتالوج التهديدات وفحوصات النظام الحصين.</string>
+    <string name="runtime_overlay_block">هجوم تغطية مكتشف من %1$s. جلستك الحساسة محمية. أغلق التطبيق المغطي.</string>
+    <string name="runtime_overlay_notification_title">تم حجب هجوم التغطية</string>
+    <string name="runtime_overlay_notification_body">تطبيق (%1$s) رسم نافذة فوق جلستك الحساسة. هذه حيلة معروفة لسرقة النقرات والبيانات. راجعه الآن.</string>
+    <string name="runtime_media_notification_title">مراقبة الكاميرا أو الميكروفون</string>
+    <string name="runtime_media_notification_body">التطبيق %1$s يستخدم الكاميرا أو الميكروفون أثناء جلسة حساسة نشطة.</string>
+    <string name="runtime_clipboard_notification_title">تمت حماية سر</string>
+    <string name="runtime_clipboard_notification_body">محتوى سري (مثل رمز أو رقم بطاقة) دخل الحافظة أثناء جلسة حساسة وتم مسحه تلقائيًا لحمايتك من السارقين.</string>
+    <string name="runtime_hardening_notification_title">اكتشاف إضعاف للنظام</string>
+    <string name="runtime_hardening_notification_body">درجة حصانة النظام: %1$d من 100. بعض الإعدادات المريحة للتجسس نشطة (مثل تصحيح الناقل التسلسلي العالمي أو وضع المطور). راجعها في الإعدادات.</string>
+    <string name="runtime_hardening_usb_debug">تصحيح واجهة يونيفرسال ناقل تسلسلي نشط. يمكن للبرمجيات الخبيثة دفع نفسها إلى الجهاز عبر هذه القناة.</string>
+    <string name="runtime_hardening_dev_options">خيارات المطور مفعّلة. هذه القناة يستغلها مثبتو التجسس كثيرًا.</string>
+    <string name="runtime_hardening_mock_location">تطبيق موقع وهمي نشط. انتحال الموقع مرافق شائع للتجسس.</string>
+    <string name="runtime_hardening_root">آثار إدارة صلاحيات الجذر (روت) مكتشفة. الأجهزة المجذرة أصعب في الدفاع عنها.</string>
+    <string name="runtime_hardening_accessibility">خدمة إتاحة من تطبيق آخر نشطة. هذه أقوى قناة تستخدمها برامج التجسس لقراءة هاتفك والتحكم به.</string>
+    <string name="runtime_hardening_summary">درجة حصانة النظام: %1$d من 100</string>
+    <string name="runtime_overlay_alert_count">تنبيهات هجمات التغطية: %1$d</string>
+    <string name="runtime_camera_mic_alert_count">تنبيهات الكاميرا والميكروفون: %1$d</string>
+    <string name="runtime_clipboard_guard_count">أسرار الحافظة المحمية: %1$d</string>
+    <string name="runtime_foreground_check_count">فحوصات التطبيقات الحية: %1$d</string>
+    <string name="runtime_shield_stats_line">درع الحماية الحية: %1$d هجمات تغطية محجوبة، %2$d تنبيهات كاميرا وميكروفون، %3$d أسرار حافظة محمية، %4$d فحصًا حيًّا</string>
 </resources>

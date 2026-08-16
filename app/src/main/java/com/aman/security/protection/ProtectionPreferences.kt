@@ -200,6 +200,37 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getString(KEY_LAST_BANKING_RISK_LEVEL, null)
         set(value) = prefs.edit().putString(KEY_LAST_BANKING_RISK_LEVEL, value).apply()
 
+    var overlayGuardEnabled: Boolean
+        get() = prefs.getBoolean(KEY_OVERLAY_GUARD_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_OVERLAY_GUARD_ENABLED, value).apply()
+    var cameraMicGuardEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CAMERA_MIC_GUARD_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_CAMERA_MIC_GUARD_ENABLED, value).apply()
+    var clipboardGuardEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CLIPBOARD_GUARD_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_CLIPBOARD_GUARD_ENABLED, value).apply()
+    var foregroundAppScannerEnabled: Boolean
+        get() = prefs.getBoolean(KEY_FOREGROUND_APP_SCANNER_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_FOREGROUND_APP_SCANNER_ENABLED, value).apply()
+    var lastOverlayAlertAt: Long
+        get() = prefs.getLong(KEY_LAST_OVERLAY_ALERT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_OVERLAY_ALERT_AT, value).apply()
+    var totalOverlayAlerts: Long
+        get() = prefs.getLong(KEY_TOTAL_OVERLAY_ALERTS, 0L)
+        set(value) = prefs.edit().putLong(KEY_TOTAL_OVERLAY_ALERTS, value).apply()
+    var totalCameraMicAlerts: Long
+        get() = prefs.getLong(KEY_TOTAL_CAMERA_MIC_ALERTS, 0L)
+        set(value) = prefs.edit().putLong(KEY_TOTAL_CAMERA_MIC_ALERTS, value).apply()
+    var totalClipboardGuards: Long
+        get() = prefs.getLong(KEY_TOTAL_CLIPBOARD_GUARDS, 0L)
+        set(value) = prefs.edit().putLong(KEY_TOTAL_CLIPBOARD_GUARDS, value).apply()
+    var totalForegroundChecks: Long
+        get() = prefs.getLong(KEY_TOTAL_FOREGROUND_CHECKS, 0L)
+        set(value) = prefs.edit().putLong(KEY_TOTAL_FOREGROUND_CHECKS, value).apply()
+    var lastClipboardProtectAt: Long
+        get() = prefs.getLong(KEY_LAST_CLIPBOARD_PROTECT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_CLIPBOARD_PROTECT_AT, value).apply()
+
     var dataExfiltrationGuardEnabled: Boolean
         get() = prefs.getBoolean(KEY_DATA_EXFIL_GUARD_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_DATA_EXFIL_GUARD_ENABLED, value).apply()
@@ -395,6 +426,16 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_BANKING_ACCESSIBILITY_HEARTBEAT_AT = "banking_accessibility_heartbeat_at"
         private const val KEY_LAST_BANKING_CHECK_AT = "last_banking_check_at"
         private const val KEY_LAST_BANKING_RISK_LEVEL = "last_banking_risk_level"
+        private const val KEY_OVERLAY_GUARD_ENABLED = "overlay_guard_enabled"
+        private const val KEY_CAMERA_MIC_GUARD_ENABLED = "camera_mic_guard_enabled"
+        private const val KEY_CLIPBOARD_GUARD_ENABLED = "clipboard_guard_enabled"
+        private const val KEY_FOREGROUND_APP_SCANNER_ENABLED = "foreground_app_scanner_enabled"
+        private const val KEY_LAST_OVERLAY_ALERT_AT = "last_overlay_alert_at"
+        private const val KEY_TOTAL_OVERLAY_ALERTS = "total_overlay_alerts"
+        private const val KEY_TOTAL_CAMERA_MIC_ALERTS = "total_camera_mic_alerts"
+        private const val KEY_TOTAL_CLIPBOARD_GUARDS = "total_clipboard_guards"
+        private const val KEY_TOTAL_FOREGROUND_CHECKS = "total_foreground_checks"
+        private const val KEY_LAST_CLIPBOARD_PROTECT_AT = "last_clipboard_protect_at"
         private const val KEY_DATA_EXFIL_GUARD_ENABLED = "data_exfiltration_guard_enabled"
         private const val KEY_LAST_DATA_EXFIL_PROBE_AT = "last_data_exfil_probe_at"
         private const val KEY_LAST_DATA_EXFIL_DEVICE_TX = "last_data_exfil_device_tx"

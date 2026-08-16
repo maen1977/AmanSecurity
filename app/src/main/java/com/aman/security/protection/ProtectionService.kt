@@ -17,6 +17,13 @@ import com.aman.security.scanner.FileScanner
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.runtime.CameraMicGuard
+import com.aman.security.runtime.ClipboardGuard
+import com.aman.security.runtime.ForegroundAppScanner
+import com.aman.security.runtime.ForegroundKind
+import com.aman.security.runtime.HardeningReport
+import com.aman.security.runtime.OverlayWatchdog
+import com.aman.security.runtime.SystemHardeningAuditor
 import com.aman.security.security.DataExfiltrationGuard
 import com.aman.security.security.DeviceSecurityAuditor
 import com.aman.security.security.NetworkSecurityAuditor
@@ -57,6 +64,11 @@ class ProtectionService : Service() {
     private val scanCancelRequested = AtomicBoolean(false)
     private var lastScanNotificationAt = 0L
     private var lastScanNotificationProgress = -1
+    private var overlayWatchdog: OverlayWatchdog? = null
+    private var cameraMicGuard: CameraMicGuard? = null
+    private var clipboardGuard: ClipboardGuard? = null
+    private var foregroundScanner: ForegroundAppScanner? = null
+    private var runtimeInitialized = false
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -70,6 +82,7 @@ class ProtectionService : Service() {
             ensureDownloadsObserver()
             ensureSecurityControlWatcher()
             maybeRunDataExfiltrationGuard()
+            runRuntimeShieldTick()
             handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
@@ -446,6 +459,51 @@ class ProtectionService : Service() {
             }
         }.also { it.startWatching() }
     }
+
+    private fun runRuntimeShieldTick() {
+        if (!preferences.enabled) return
+        ensureRuntimeGuards()
+        val scanner = foregroundScanner ?: return
+        val findings = runCatching { scanner.tick() }.getOrDefault(emptyList())
+        for (finding in findings) {
+            when (finding.kind) {
+                ForegroundKind.ENTERED_SESSION -> Unit
+                ForegroundKind.OVERLAY_ATTACK -> {
+                    val label = packageLabel(finding.detail)
+                    ProtectionNotifier.notifyOverlayAttack(this, label, finding.detail)
+                }
+                ForegroundKind.MEDIA_ACCESS -> {
+                    val label = packageLabel(finding.detail)
+                    ProtectionNotifier.notifyMediaAccess(this, label, finding.detail)
+                }
+                ForegroundKind.CLIPBOARD_GUARD ->
+                    ProtectionNotifier.notifyClipboardGuard(this, finding.detail)
+                ForegroundKind.HARDENING_WEAK -> {
+                    val report = SystemHardeningAuditor(this).audit()
+                    ProtectionNotifier.notifyHardeningWeakness(this, report)
+                }
+            }
+        }
+    }
+
+    private fun ensureRuntimeGuards() {
+        if (runtimeInitialized) return
+        val watchdog = OverlayWatchdog(this)
+        val cameraMic = CameraMicGuard(this)
+        val clipboard = ClipboardGuard(this)
+        val scanner = ForegroundAppScanner(this)
+        scanner.attach(watchdog, cameraMic, clipboard)
+        overlayWatchdog = watchdog
+        cameraMicGuard = cameraMic
+        clipboardGuard = clipboard
+        foregroundScanner = scanner
+        runtimeInitialized = true
+    }
+
+    private fun packageLabel(packageName: String): String = runCatching {
+        val info = packageManager.getPackageInfo(packageName, 0)
+        info.applicationInfo?.loadLabel(packageManager)?.toString().orEmpty()
+    }.getOrDefault(packageName)
 
     companion object {
         const val ACTION_START = "com.aman.security.action.START_PROTECTION"

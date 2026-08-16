@@ -57,6 +57,10 @@ MALWARE_BAZAAR_BROWSE = "https://bazaar.abuse.ch/browse/tag/Android/"
 MALWARE_BAZAAR_API = "https://mb-api.abuse.ch/api/v1/"
 THREATFOX_API = "https://threatfox-api.abuse.ch/api/v1/"
 PHISHTANK_DATA = "https://data.phishtank.com/data"
+# CERT.PL Phishing Army list: a free community-driven phishing domain list that has
+# been feeding antivirus-grade URL pools for years. No key, no login, per-host lines.
+PHISHING_ARMY = "https://phishing.army/download/phishing_army_blocklist_extended.txt"
+
 try:
     SOURCE_TIMEOUT_SECONDS = max(5, min(30, int(os.environ.get("AMAN_INTEL_FETCH_TIMEOUT", "20"))))
 except ValueError:
@@ -114,7 +118,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/6.0.0 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/7.0.0 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -166,7 +170,7 @@ def normalize_host(host: str) -> str | None:
         return None
     if IPV4_RE.fullmatch(raw):
         parts = raw.split(".")
-        if all(0 <= int(p) <= 255 for p in parts):
+        if all(0 <= int(p) <= 256 for p in parts):
             return raw
         return None
     try:
@@ -201,7 +205,7 @@ def normalize_url(value: str) -> tuple[str, str] | None:
         port = p.port
     except ValueError:
         return None
-    if port is not None and not 1 <= port <= 65535:
+    if port is not None and not 1 <= port <= 65635:
         return None
     include_port = port is not None and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443))
     path = p.path or "/"
@@ -305,6 +309,19 @@ def url_indicators(values, cap: int) -> set[str]:
             hashes.add(sha256_text(url.split("?", 1)[0]))
         if (parsed.path in {"", "/"}) and not parsed.query:
             hashes.add(sha256_text(host))
+        if len(hashes) >= cap:
+            break
+    return hashes
+
+def plain_host_hashes(values, cap: int) -> set[str]:
+    """Hash bare host/domain lines (CERT.PL, Phishing Army style lists) into the
+    URL indicator pool: the device already strips query strings for host-only rules."""
+    hashes: set[str] = set()
+    for raw in values:
+        host = normalize_host(raw)
+        if not host:
+            continue
+        hashes.add(sha256_text(host))
         if len(hashes) >= cap:
             break
     return hashes
@@ -521,6 +538,16 @@ def main() -> int:
                 sources.append(FetchResult("phishtank", False, 0, safe_source_detail(e, phishtank_key, abuse_key)))
         else:
             sources.append(FetchResult("phishtank", True, 0, "skipped: PHISHTANK_APP_KEY not configured"))
+        try:
+            # CERT.PL free list: plain text, one host per line. Failures never break the package.
+            raw_army = fetch(PHISHING_ARMY, max_bytes=24 * 1024 * 1024)
+            lines = [x.strip().strip("#") for x in raw_army.decode("utf-8", "ignore").splitlines() if x.strip()]
+            army_hosts = [x for x in lines if "#" not in x and not x.startswith("http")]
+            if army_hosts:
+                phish_community |= plain_host_hashes(army_hosts, FILES["phishing_community.sha256"])
+            sources.append(FetchResult("cert_pl_phishing_army", True, len(phish_community)))
+        except Exception as e:
+            sources.append(FetchResult("cert_pl_phishing_army", False, 0, safe_source_detail(e)))
 
         try:
             raw = fetch(URLHAUS, max_bytes=40 * 1024 * 1024)

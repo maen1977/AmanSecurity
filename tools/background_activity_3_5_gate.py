@@ -19,7 +19,7 @@ def main() -> None:
     english = (ROOT / "app/src/main/res/values/strings.xml").read_text()
     arabic = (ROOT / "app/src/main/res/values-ar/strings.xml").read_text()
 
-    need('versionName = "6.0.0"' in build and "versionCode = 55" in build, "version")
+    need('versionName = "7.0.0"' in build and "versionCode = 56" in build, "version")
     need("class BackgroundActivityAuditor" in auditor and "BackgroundActivitySummary" in auditor, "auditor_model")
     for signal in ("FOREGROUND_SERVICE", "START_ON_BOOT", "SENSITIVE_SENSOR", "OVERLAY_CAPABILITY", "VPN_SERVICE", "SIDELOADED"):
         need(signal in auditor, f"signal_{signal.lower()}")
@@ -33,7 +33,7 @@ def main() -> None:
     need("BackgroundActivityService" not in manifest and "UsageStatsManager" not in auditor, "no_new_background_service")
     for key in ("background_activity_title", "background_activity_check_now", "background_activity_status_clean", "background_activity_notification_body"):
         need(f'name="{key}"' in english and f'name="{key}"' in arabic, f"localization_{key}")
-    print("BACKGROUND_ACTIVITY_GATE_OK version=6.0.0 manual_only=1 local_only=1 non_destructive=1 sensitive_permissions=0 notification=1")
+    print("BACKGROUND_ACTIVITY_GATE_OK version=7.0.0 manual_only=1 local_only=1 non_destructive=1 sensitive_permissions=0 notification=1")
 
 
 if __name__ == "__main__":
