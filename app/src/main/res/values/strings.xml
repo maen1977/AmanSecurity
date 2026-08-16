@@ -937,7 +937,7 @@
     <string name="background_activity_notification_body">%1$d app(s) show higher-impact background indicators. Review permissions and battery settings; Maen Shield did not stop any app.</string>
     <string name="ai_reasoning_title">Thinking AI scan</string>
     <string name="ai_reasoning_summary">Maen Shield runs a tiny on-device intelligence model (no internet, no cost) that studies the overall shape of an application: surveillance signals, stealth tricks, data theft, persistence, hidden fees, privilege escalation, anti-analysis, and brand impersonation. It weighs these signals together and explains its decision in plain words.</string>
-    <string name="ai_reasoning_probability">On-device AI risk estimate: %1$d%%</string>
+    <string name="ai_reasoning_probability">On-device AI risk estimate: %1$s</string>
     <string name="ai_reasoning_probability_desc">This percentage comes from a small neural model trained on thousands of safe and harmful application profiles. It reasons about the whole application shape, not a single signature.</string>
     <string name="reasoning_dim_surveillance">Surveillance signals: the app watches what you type, say, or see</string>
     <string name="reasoning_dim_stealth">Stealth tricks: the app hides from normal inspection</string>

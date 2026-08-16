@@ -937,7 +937,7 @@
     <string name="background_activity_notification_body">تظهر مؤشرات خلفية أعلى أثرًا لدى %1$d تطبيق. راجع الصلاحيات وإعدادات البطارية؛ لم يوقف Maen Shield أي تطبيق.</string>
     <string name="ai_reasoning_title">فحص الذكاء الاصطناعي المفكر</string>
     <string name="ai_reasoning_summary">يشغّل Maen Shield نموذج ذكاء مصغرًا يعمل داخل جهازك بالكامل (بدون إنترنت وبدون أي تكلفة) يدرس الشكل العام للتطبيق: إشارات التجسس، أساليب التخفي، سرقة البيانات، البقاء بعد الإعادة، الفوترة الخفية، رفع الصلاحيات، منع التحليل، وانتحال العلامات التجارية. يزن هذه الإشارات معًا ويشرح قراره بكلمات واضحة.</string>
-    <string name="ai_reasoning_probability">تقدير الذكاء الاصطناعي المحلي للخطر: %1$d%%</string>
+    <string name="ai_reasoning_probability">تقدير الذكاء الاصطناعي المحلي للخطر: %1$s</string>
     <string name="ai_reasoning_probability_desc">هذه النسبة صادرة عن نموذج ذكاء صغير تدرّب على آلاف التطبيقات الآمنة والضارة. يستنتج من الشكل العام للتطبيق وليس من بصمة واحدة.</string>
     <string name="reasoning_dim_surveillance">إشارات التجسس: التطبيق يراقب ما تكتبه أو تقوله أو تراه</string>
     <string name="reasoning_dim_stealth">أساليب التخفي: التطبيق يحاول الاختباء من الفحص العادي</string>
