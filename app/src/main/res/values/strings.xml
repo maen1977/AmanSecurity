@@ -210,6 +210,10 @@
     <string name="apk_signal_runtime_execution">Code references runtime command execution</string>
     <string name="apk_signal_sms_api">Code references text-message sending interfaces</string>
     <string name="apk_signal_device_identifier">Code references device-identifier interfaces</string>
+    <string name="apk_signal_telephony_state">Code references telephony state interfaces such as SIM and carrier information</string>
+    <string name="apk_signal_billing_api">Code references in-app payment interfaces</string>
+    <string name="apk_signal_read_phone_state">Requires reading phone identity such as the line number or SIM serial</string>
+    <string name="apk_signal_manage_storage">Requests full access to all files on shared storage</string>
     <string name="reason_apk_static_high_risk">Several independent APK indicators combined to a high review score. This does not prove malware by itself.</string>
     <string name="reason_apk_invalid">The file uses an APK extension, but Android package metadata could not be parsed. Treat the archive as untrusted until its source is verified.</string>
     <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a local threat indicator even though the file SHA-256 may differ.</string>
@@ -338,6 +342,7 @@
     <string name="autonomous_last_update">Last autonomous update: %1$s • sources reached: %2$d/%3$d • currently fresh: %4$d/%3$d.</string>
     <string name="url_signal_community_feed">This host appears in a community threat feed and should be reviewed before opening.</string>
     <string name="url_signal_shortener">This link uses a URL shortener, so its final destination is hidden until opened.</string>
+    <string name="url_signal_c2_host">This address was identified as command-and-control infrastructure used by malware to receive stolen data or remote instructions.</string>
     <string name="device_patch_unknown">Not enough data yet to compare the device security patch.</string>
     <string name="device_patch_current">Device security patch %1$s is current with the latest published level %2$s.</string>
     <string name="device_patch_behind">Device security patch %1$s is older than the latest published level %2$s. Check for a system update.</string>

@@ -14,7 +14,7 @@ object WebProtectionPolicy {
     fun decide(level: UrlRiskLevel): WebProtectionDecision = when (level) {
         UrlRiskLevel.LOW -> WebProtectionDecision.ALLOW
         UrlRiskLevel.REVIEW, UrlRiskLevel.HIGH -> WebProtectionDecision.CAUTION
-        UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS -> WebProtectionDecision.BLOCK
+        UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2 -> WebProtectionDecision.BLOCK
         UrlRiskLevel.TEST_SIGNATURE -> WebProtectionDecision.TEST
         UrlRiskLevel.INVALID -> WebProtectionDecision.INVALID
     }

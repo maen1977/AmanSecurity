@@ -54,8 +54,8 @@ class AutonomousThreatStore(context: Context) {
                 UrlThreatIndicator(kind, h, "CLOUD_PHISHING_PRIMARY", UrlThreatClassification.PHISHING)
             malwareUrlIndex.contains(h) && age <= AutonomousFeedPolicy.malwareUrlsTtlMs ->
                 UrlThreatIndicator(kind, h, "CLOUD_MALWARE_URL", UrlThreatClassification.MALWARE)
-            kind == UrlIndicatorKind.HOST && c2Index.contains(h) && age <= AutonomousFeedPolicy.c2TtlMs ->
-                UrlThreatIndicator(kind, h, "CLOUD_C2_HOST", UrlThreatClassification.MALWARE)
+            kind == UrlIndicatorKind.C2_HOST && c2Index.contains(h) && age <= AutonomousFeedPolicy.c2TtlMs ->
+                UrlThreatIndicator(kind, h, "CLOUD_C2_HOST", UrlThreatClassification.C2_SERVER)
             phishCommunityIndex.contains(h) && age <= AutonomousFeedPolicy.phishingCommunityTtlMs ->
                 UrlThreatIndicator(kind, h, "CLOUD_PHISHING_COMMUNITY", UrlThreatClassification.SUSPICIOUS_SOURCE)
             else -> null

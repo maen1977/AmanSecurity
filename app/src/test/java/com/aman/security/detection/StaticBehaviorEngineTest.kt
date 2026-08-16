@@ -84,6 +84,51 @@ class StaticBehaviorEngineTest {
     }
 
     @Test
+    fun telephonyStateWithSmsAccessProducesSimOtpInterceptionFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.TELEPHONY_STATE_API, ApkRiskSignal.SMS_ACCESS),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_SIM_OTP_INTERCEPTION" && it.family == ThreatFamily.BANKER })
+    }
+
+    @Test
+    fun billingApiWithAccessibilityProducesOverlayFraudFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.BILLING_API, ApkRiskSignal.ACCESSIBILITY_SERVICE),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_BILLING_OVERLAY_FRAUD" && it.family == ThreatFamily.BANKER })
+    }
+
+    @Test
+    fun billingApiWithMicrophoneProducesMediaProfileFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.BILLING_API, ApkRiskSignal.MICROPHONE),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_BILLING_MEDIA_PROFILE" })
+    }
+
+    @Test
+    fun manageStorageWithSmsAccessProducesStorageSweepFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API, ApkRiskSignal.SMS_ACCESS),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_STORAGE_SWEEP" && it.family == ThreatFamily.SPYWARE })
+    }
+
+    @Test
+    fun readPhoneStateWithContactsProducesIdentityExfilFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.READ_PHONE_STATE_API, ApkRiskSignal.CONTACTS_ACCESS),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_IDENTITY_EXFIL" })
+    }
+
+    @Test
     fun partialChainDoesNotTriggerFalseBehaviorFinding() {
         // Only camera and microphone without location should not trigger media surveillance.
         val findings = StaticBehaviorEngine.evaluate(

@@ -45,6 +45,9 @@ PRIMARY_PHISH = None
 COMMUNITY_PHISH = None
 URLHAUS = "https://urlhaus.abuse.ch/downloads/text/"
 URLHAUS_CSV = "https://urlhaus.abuse.ch/downloads/csv/"
+# URLhaus JSON "recent" feed: verified recent malicious URLs with payload/tag metadata.
+# Hosts carrying real payload (apk/elf/exe/dll/rat...) feed the stronger host pool at zero cost.
+URLHAUS_JSON_RECENT = "https://urlhaus.abuse.ch/downloads/json_recent/"
 # URLhaus full CSV is a gzip archive; extracting file hashes (apk/xlsx/jse) carried by
 # malicious download URLs strengthens the Android file-level match at zero cost and
 # with no extra provider dependency beyond the same abuse.ch domain.
@@ -111,7 +114,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/3.7.0 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/3.8.0 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -207,6 +210,46 @@ def normalize_url(value: str) -> tuple[str, str] | None:
     netloc = host + (f":{port}" if include_port else "")
     query = f"?{p.query}" if p.query else ""
     return f"{scheme}://{netloc}{path}{query}", host
+
+
+def urlhaus_json_recent_hosts(payload: bytes, caps: dict[str, int]) -> tuple[set[str], set[str], int]:
+    """Parse the URLhaus JSON recent feed ({id: [records]}); hosts with real payload tags
+    join the stronger malware_url_hosts pool, hosts without verified payloads join the
+    generic URL host pool. Only verified online/offline records are considered."""
+    import json as _json
+    data = _json.loads(payload)
+    if not isinstance(data, dict):
+        raise ValueError("URLhaus JSON recent feed is not an object mapping ids to record lists")
+    hosts = set()
+    payload_hosts = set()
+    dropped = 0
+    malware_tokens = {"apk", "elf", "exe", "dll", "dropper", "rat", "ransomware", "banker", "stalkerware", "spyware"}
+    cap_host = caps.get("malware_url_hosts.sha256", 120_000)
+    records: list[dict] = []
+    for key, value in data.items():
+        if isinstance(value, list):
+            records.extend(item for item in value if isinstance(item, dict))
+    for item in records:
+        status = str(item.get("url_status", "")).strip().lower()
+        if status not in {"online", "offline"} and not status.startswith(("online", "offline")):
+            dropped += 1
+            continue
+        raw_url = str(item.get("url", "")).strip()
+        n = normalize_url(raw_url)
+        if not n:
+            dropped += 1
+            continue
+        url, host = n
+        tags = [str(t).strip().lower() for t in item.get("tags", []) or []]
+        threat = str(item.get("threat", "")).lower()
+        host_hash = sha256_text(host)
+        if any(token in tags for token in malware_tokens) or any(token in threat for token in malware_tokens):
+            if len(payload_hosts) < cap_host:
+                payload_hosts.add(host_hash)
+        hosts.add(sha256_text(url))
+        if "?" in url:
+            hosts.add(sha256_text(url.split("?", 1)[0]))
+    return hosts, payload_hosts, dropped
 
 
 def urlhaus_categorized_hashes(values, caps: dict[str, int]) -> dict[str, set[str]]:
@@ -511,6 +554,24 @@ def main() -> int:
         except Exception as e:
             # URLhaus CSV is optional enrichment; failure must not break the package.
             sources.append(FetchResult("urlhaus_csv", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
+
+        try:
+            json_payload = fetch(URLHAUS_JSON_RECENT, max_bytes=40 * 1024 * 1024)
+            recent_urls, recent_payload_hosts, dropped = urlhaus_json_recent_hosts(json_payload, FILES)
+            url_pool = sum(len(v) for v in (phish_primary, phish_open, phish_community))
+            added_urls = 0
+            for h in sorted(recent_urls):
+                if url_pool + added_urls >= sum(FILES[k] for k in ("phishing_primary.sha256", "phishing_openphish.sha256", "phishing_community.sha256")):
+                    break
+                if h not in phish_primary | phish_open | phish_community:
+                    added_urls += 1
+                    if len(phish_community) < FILES["phishing_community.sha256"]:
+                        phish_community.add(h)
+            added_payload = len(recent_payload_hosts - malware_urls)
+            malware_urls |= recent_payload_hosts
+            sources.append(FetchResult("urlhaus_json_recent", True, added_urls + added_payload, f"payload_hosts={len(recent_payload_hosts)} dropped={dropped}"))
+        except Exception as e:
+            sources.append(FetchResult("urlhaus_json_recent", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
             raw = fetch(FEODO, max_bytes=4 * 1024 * 1024)

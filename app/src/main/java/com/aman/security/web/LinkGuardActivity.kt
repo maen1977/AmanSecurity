@@ -69,7 +69,7 @@ class LinkGuardActivity : AppCompatActivity() {
         binding.txtWebGuardMessage.text = when (scan.riskLevel) {
             UrlRiskLevel.LOW -> getString(R.string.web_guard_safe_body)
             UrlRiskLevel.REVIEW, UrlRiskLevel.HIGH -> formatSignals(scan.signals)
-            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS -> getString(R.string.web_guard_blocked_body)
+            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2 -> getString(R.string.web_guard_blocked_body)
             UrlRiskLevel.TEST_SIGNATURE -> getString(R.string.web_guard_test_body)
             UrlRiskLevel.INVALID -> getString(R.string.web_guard_invalid_body)
         }
@@ -162,5 +162,6 @@ class LinkGuardActivity : AppCompatActivity() {
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
         UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
         UrlRiskSignal.SHORTENER_HOST -> R.string.url_signal_shortener
+        UrlRiskSignal.C2_SERVER_HOST -> R.string.url_signal_c2_host
     }
 }

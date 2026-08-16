@@ -127,6 +127,22 @@ class UrlScannerTest {
     }
 
     @Test
+    fun commandAndControlHostMatchBlocksEverythingImmediately() {
+        val hostHash = UrlScanner.sha256("botnet-control.example")
+        val scanner = UrlScanner { kind, hash ->
+            if (kind == UrlIndicatorKind.C2_HOST && hash == hostHash) {
+                UrlThreatIndicator(kind, hash, "C2_000001", UrlThreatClassification.C2_SERVER)
+            } else null
+        }
+        val result = scanner.scan("https://botnet-control.example/payload")
+        assertEquals(UrlRiskLevel.KNOWN_C2, result.riskLevel)
+        assertEquals(100, result.riskScore)
+        assertEquals("C2_000001", result.threatReference)
+        assertEquals(UrlIndicatorKind.C2_HOST, result.matchedKind)
+        assertTrue(UrlRiskSignal.C2_SERVER_HOST in result.signals)
+    }
+
+    @Test
     fun reservedTestIndicatorRemainsTestOnly() {
         val hostHash = UrlScanner.sha256("phishing.test")
         val scanner = UrlScanner { kind, hash ->

@@ -27,6 +27,10 @@ object ApkRiskEvaluator {
                 ApkRiskSignal.RUNTIME_EXECUTION -> 6
                 ApkRiskSignal.SMS_API -> 4
                 ApkRiskSignal.DEVICE_IDENTIFIER_API -> 4
+                ApkRiskSignal.TELEPHONY_STATE_API -> 6
+                ApkRiskSignal.BILLING_API -> 8
+                ApkRiskSignal.READ_PHONE_STATE_API -> 6
+                ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API -> 6
             }
         }
 
@@ -41,6 +45,24 @@ object ApkRiskEvaluator {
         if (ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE in signals && ApkRiskSignal.OVERLAY_PERMISSION in signals) score += 10
         if (ApkRiskSignal.DYNAMIC_CODE_LOADING in signals && ApkRiskSignal.RUNTIME_EXECUTION in signals) score += 8
         if (ApkRiskSignal.SMS_ACCESS in signals && ApkRiskSignal.SMS_API in signals) score += 5
+
+        // A spy/rat profile combines identity harvesting APIs with data exfiltration capability.
+        // A remote-access tool or banker profile combines privileged UI control with network output.
+        if (ApkRiskSignal.TELEPHONY_STATE_API in signals && ApkRiskSignal.SMS_ACCESS in signals) score += 40
+        if (ApkRiskSignal.BILLING_API in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) score += 35
+        if (ApkRiskSignal.BILLING_API in signals && ApkRiskSignal.MICROPHONE in signals) score += 32
+        if (ApkRiskSignal.READ_PHONE_STATE_API in signals && ApkRiskSignal.CONTACTS_ACCESS in signals) score += 45
+        if (
+            ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API in signals &&
+            (ApkRiskSignal.SMS_ACCESS in signals || ApkRiskSignal.CONTACTS_ACCESS in signals)
+        ) score += 28
+        if (
+            ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API in signals &&
+            ApkRiskSignal.SMS_ACCESS in signals &&
+            ApkRiskSignal.BOOT_START in signals
+        ) score += 15
+        if (ApkRiskSignal.CAMERA in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) score += 10
+        if (ApkRiskSignal.MICROPHONE in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) score += 10
 
         val bounded = score.coerceIn(0, 100)
         val level = when {

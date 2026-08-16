@@ -743,7 +743,7 @@ class MainActivity : AppCompatActivity() {
                 UrlRiskLevel.REVIEW -> R.string.url_result_review
                 UrlRiskLevel.HIGH -> R.string.url_result_high
                 UrlRiskLevel.KNOWN_PHISHING -> R.string.url_result_phishing
-                UrlRiskLevel.KNOWN_MALICIOUS -> R.string.url_result_malware
+                UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2 -> R.string.url_result_malware
                 UrlRiskLevel.TEST_SIGNATURE -> R.string.url_result_test
             }
         )
@@ -751,7 +751,7 @@ class MainActivity : AppCompatActivity() {
         binding.txtUrlReason.text = when (result.riskLevel) {
             UrlRiskLevel.INVALID -> getString(R.string.url_reason_invalid)
             UrlRiskLevel.LOW -> getString(R.string.url_reason_low)
-            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS -> getString(R.string.url_reason_known)
+            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2 -> getString(R.string.url_reason_known)
             UrlRiskLevel.TEST_SIGNATURE -> getString(R.string.url_reason_test)
             UrlRiskLevel.REVIEW, UrlRiskLevel.HIGH -> formatUrlSignals(result.signals)
         }
@@ -778,11 +778,11 @@ class MainActivity : AppCompatActivity() {
             UrlRiskLevel.REVIEW -> R.string.url_result_review
             UrlRiskLevel.HIGH -> R.string.url_result_high
             UrlRiskLevel.KNOWN_PHISHING -> R.string.url_result_phishing
-            UrlRiskLevel.KNOWN_MALICIOUS -> R.string.url_result_malware
+            UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2 -> R.string.url_result_malware
             UrlRiskLevel.TEST_SIGNATURE -> R.string.url_result_test
         }
         val dashboardColor = when (result.riskLevel) {
-            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.HIGH -> R.color.status_danger
+            UrlRiskLevel.KNOWN_PHISHING, UrlRiskLevel.KNOWN_MALICIOUS, UrlRiskLevel.KNOWN_C2, UrlRiskLevel.HIGH -> R.color.status_danger
             UrlRiskLevel.REVIEW, UrlRiskLevel.INVALID -> R.color.status_warn
             UrlRiskLevel.LOW, UrlRiskLevel.TEST_SIGNATURE -> R.color.status_ok
         }
@@ -818,8 +818,8 @@ class MainActivity : AppCompatActivity() {
         UrlRiskSignal.SUSPICIOUS_KEYWORDS -> R.string.url_signal_keywords
         UrlRiskSignal.COMMUNITY_THREAT_FEED -> R.string.url_signal_community_feed
         UrlRiskSignal.SHORTENER_HOST -> R.string.url_signal_shortener
+        UrlRiskSignal.C2_SERVER_HOST -> R.string.url_signal_c2_host
     }
-
     private fun runWebShieldSelfTest() {
         if (!protectionPreferences.enabled || !protectionPreferences.localWebShieldEnabled ||
             !LocalWebShieldController.isHealthy(this)
@@ -3026,6 +3026,10 @@ class MainActivity : AppCompatActivity() {
         ApkRiskSignal.RUNTIME_EXECUTION -> R.string.apk_signal_runtime_execution
         ApkRiskSignal.SMS_API -> R.string.apk_signal_sms_api
         ApkRiskSignal.DEVICE_IDENTIFIER_API -> R.string.apk_signal_device_identifier
+        ApkRiskSignal.TELEPHONY_STATE_API -> R.string.apk_signal_telephony_state
+        ApkRiskSignal.BILLING_API -> R.string.apk_signal_billing_api
+        ApkRiskSignal.READ_PHONE_STATE_API -> R.string.apk_signal_read_phone_state
+        ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API -> R.string.apk_signal_manage_storage
     }
 
     private fun threatFamilyString(family: ThreatFamily): Int = when (family) {

@@ -210,6 +210,10 @@
     <string name="apk_signal_runtime_execution">تشير الشفرة إلى تنفيذ أوامر أثناء التشغيل</string>
     <string name="apk_signal_sms_api">تشير الشفرة إلى واجهات برمجية لإرسال الرسائل النصية</string>
     <string name="apk_signal_device_identifier">تشير الشفرة إلى واجهات برمجية لمعرّفات الجهاز</string>
+    <string name="apk_signal_telephony_state">تشير الشفرة إلى واجهات حالة الهاتف مثل بيانات بطاقة الاتصال والمشغل</string>
+    <string name="apk_signal_billing_api">تشير الشفرة إلى واجهات برمجية للمدفوعات داخل التطبيق</string>
+    <string name="apk_signal_read_phone_state">يطلب قراءة هوية الهاتف مثل رقم الخط أو الرقم التسلسلي للشريحة</string>
+    <string name="apk_signal_manage_storage">يطلب وصولًا كاملًا إلى جميع الملفات في التخزين المشترك</string>
     <string name="reason_apk_static_high_risk">اجتمعت عدة مؤشرات مستقلة في ملف APK ووصلت إلى درجة مرتفعة للمراجعة، وهذا لا يثبت وحده وجود برمجية ضارة.</string>
     <string name="reason_apk_invalid">يستخدم الملف امتداد APK، لكن تعذر تحليل بيانات حزمة أندرويد. تعامل مع الحزمة على أنها غير موثوقة حتى تتحقق من مصدرها.</string>
     <string name="reason_apk_identity_match">تطابق اسم الحزمة أو بصمة شهادة التوقيع مع مؤشر تهديد محلي، حتى لو اختلفت بصمة SHA-256 للملف.</string>
@@ -338,6 +342,7 @@
     <string name="autonomous_last_update">آخر تحديث ذاتي: %1$s • المصادر التي تم الوصول إليها: %2$d من %3$d • المصادر الحديثة حاليًا: %4$d من %3$d.</string>
     <string name="url_signal_community_feed">ظهر هذا المضيف في مصدر تهديد مجتمعي، لذلك يحتاج إلى مراجعة قبل فتحه.</string>
     <string name="url_signal_shortener">يستخدم هذا الرابط خدمة اختصار، لذلك تكون وجهته النهائية مخفية حتى فتحه.</string>
+    <string name="url_signal_c2_host">تم التعرف على هذا العنوان كبنية تحتية للتحكم والإدارة تستخدمها البرمجيات الخبيثة لاستلام بيانات مسروقة أو أوامر عن بعد.</string>
     <string name="device_patch_unknown">لم تتوفر بعد بيانات كافية لمقارنة تصحيح أمان الجهاز.</string>
     <string name="device_patch_current">تصحيح أمان الجهاز %1$s يواكب أحدث مستوى منشور %2$s.</string>
     <string name="device_patch_behind">تصحيح أمان الجهاز %1$s أقدم من أحدث مستوى منشور %2$s. افحص تحديثات النظام.</string>

@@ -320,6 +320,8 @@ class ApkStaticAnalyzer(
         if (Manifest.permission.SYSTEM_ALERT_WINDOW in permissions) signals += ApkRiskSignal.OVERLAY_PERMISSION
         if (Manifest.permission.REQUEST_INSTALL_PACKAGES in permissions) signals += ApkRiskSignal.REQUEST_INSTALL_PACKAGES
         if (permissions.any { it in SMS_PERMISSIONS }) signals += ApkRiskSignal.SMS_ACCESS
+        if (permissions.any { it in PHONE_STATE_PERMISSIONS }) signals += ApkRiskSignal.READ_PHONE_STATE_API
+        if (Manifest.permission.MANAGE_EXTERNAL_STORAGE in permissions) signals += ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API
         if (Manifest.permission.READ_CONTACTS in permissions) signals += ApkRiskSignal.CONTACTS_ACCESS
         if (permissions.any { it in CALL_LOG_PERMISSIONS }) signals += ApkRiskSignal.CALL_LOG_ACCESS
         if (Manifest.permission.RECORD_AUDIO in permissions) signals += ApkRiskSignal.MICROPHONE
@@ -583,6 +585,10 @@ class ApkStaticAnalyzer(
         private const val MANY_DEX_THRESHOLD = 8
         private val DEX_NAME = Regex("classes(?:[0-9]+)?\\.dex", RegexOption.IGNORE_CASE)
         private val SMS_PERMISSIONS = setOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS, Manifest.permission.SEND_SMS)
+        private val PHONE_STATE_PERMISSIONS = setOf(
+            Manifest.permission.READ_PHONE_STATE,
+            "android.permission.READ_PRIVILEGED_PHONE_STATE"
+        )
         private val CALL_LOG_PERMISSIONS = setOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.WRITE_CALL_LOG)
         private val PACKER_ENTRY_MARKERS = setOf("libjiagu", "libsecexe", "libsecmain", "bangcle", "secneo", "ijiami", "dexhelper")
         private val PAYLOAD_EXTENSIONS = setOf(".dat", ".bin", ".blob", ".enc", ".pak", ".payload")
@@ -596,6 +602,11 @@ class ApkStaticAnalyzer(
             "Ljava/lang/ProcessBuilder;" to MarkerEffect("COMMAND_EXEC", ApkRiskSignal.RUNTIME_EXECUTION),
             "Landroid/telephony/SmsManager;" to MarkerEffect("SMS_API", ApkRiskSignal.SMS_API),
             "getDeviceId" to MarkerEffect("DEVICE_ID", ApkRiskSignal.DEVICE_IDENTIFIER_API),
+            "Landroid/telephony/TelephonyManager;" to MarkerEffect("TELEPHONY_STATE", ApkRiskSignal.TELEPHONY_STATE_API),
+            "getLine1Number" to MarkerEffect("READ_PHONE_STATE", ApkRiskSignal.READ_PHONE_STATE_API),
+            "getSimSerialNumber" to MarkerEffect("READ_PHONE_STATE", ApkRiskSignal.READ_PHONE_STATE_API),
+            "Lcom/android/vending/billing/IInAppBillingService;" to MarkerEffect("BILLING", ApkRiskSignal.BILLING_API),
+            "BillingClient" to MarkerEffect("BILLING", ApkRiskSignal.BILLING_API),
             "Landroid/media/projection/MediaProjection;" to MarkerEffect("SCREEN_CAPTURE"),
             "Landroid/content/ClipboardManager;" to MarkerEffect("CLIPBOARD_READ"),
             "performGlobalAction" to MarkerEffect("ACCESSIBILITY_ACTIONS"),

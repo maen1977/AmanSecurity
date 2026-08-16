@@ -84,7 +84,7 @@ class MessageScanner(private val urlScanner: UrlScanner) {
             // A hidden destination deserves review, but is not proof of phishing.
             score += 25
         }
-        if (urls.any { it.riskLevel == UrlRiskLevel.KNOWN_PHISHING || it.riskLevel == UrlRiskLevel.KNOWN_MALICIOUS }) {
+        if (urls.any { it.riskLevel == UrlRiskLevel.KNOWN_PHISHING || it.riskLevel == UrlRiskLevel.KNOWN_MALICIOUS || it.riskLevel == UrlRiskLevel.KNOWN_C2 }) {
             signals += MessageRiskSignal.KNOWN_THREAT_URL
             return MessageScanResult(text, MessageRiskLevel.KNOWN_THREAT, 100, signals, urls)
         }
@@ -125,22 +125,29 @@ class MessageScanner(private val urlScanner: UrlScanner) {
         )
         private val URGENT_TERMS = setOf(
             "urgent", "act now", "immediately", "last warning", "within 24", "expires today",
-            "عاجل", "فوراً", "فورا", "حالاً", "حالا", "آخر تحذير", "ينتهي اليوم", "خلال 24"
+            "عاجل", "فوراً", "فورا", "حالاً", "حالا", "آخر تحذير", "ينتهي اليوم", "خلال 24", "آخر فرصة", "قبل الإقفال"
         )
         private val CREDENTIAL_TERMS = setOf(
             "password", "passcode", "otp", "one-time code", "verification code", "verify your account",
-            "sign in", "login", "كلمة المرور", "رمز التحقق", "رمز الدخول", "تحقق من الحساب", "تسجيل الدخول"
+            "sign in", "login", "كلمة المرور", "رمز التحقق", "رمز الدخول", "تحقق من الحساب", "تسجيل الدخول",
+            "رقم البطاقة", "كود التفعيل", "أدخل الرمز", "أدخل الرمز المؤقت"
         )
         private val PAYMENT_TERMS = setOf(
             "bank", "banking", "payment", "wallet", "credit card", "debit card", "transfer", "refund", "invoice",
-            "بنك", "حساب بنكي", "محفظة", "بطاقة", "تحويل", "استرداد", "فاتورة", "دفع"
+            "rural bank", "money transfer", "bank account frozen", "blocked account", "suspended account",
+            "بنك", "حساب بنكي", "محفظة", "بطاقة", "تحويل", "استرداد", "فاتورة", "دفع", "الحساب معلق",
+            "تجميد الحساب", "حسابك مغلق", "تحويل مبالغ", "أموالك في خطر", "أموالك محمية"
         )
         private val PRIZE_TERMS = setOf(
             "winner", "you won", "prize", "gift", "free reward", "claim now", "مبروك", "ربحت", "جائزة", "هدية", "استلم الآن"
         )
         private val IMPERSONATION_TERMS = setOf(
             "support team", "security team", "administrator", "police", "customs", "tax office", "customer service",
-            "دعم", "فريق الأمان", "فريق الامن", "الإدارة", "الشرطة", "الجمارك", "الضريبة", "خدمة العملاء"
+            "central bank", "postal service", "delivery service", "ministry", "government", "identity verification",
+            "update your identity", "dhl", "aramex", "fedex",
+            "دعم", "فريق الأمان", "فريق الامن", "الإدارة", "الشرطة", "الجمارك", "الضريبة", "خدمة العملاء",
+            "البنك المركزي", "دائرة البريد", "مصلحة الجمارك", "الوزارة", "الحكومة", "تحديث الهوية",
+            "تحديث بياناتك", "توصيل", "شركة شحن", "رقم الهوية"
         )
         private val REMOTE_ACCESS_TERMS = setOf(
             "anydesk", "teamviewer", "rustdesk", "quick support", "remote support", "screen share",

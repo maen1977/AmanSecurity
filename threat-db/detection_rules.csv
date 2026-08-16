@@ -52,6 +52,22 @@ BRAND|BRAND_SIGNAL|org.thoughtcrime.securesms|signal
 BRAND|BRAND_FACEBOOK|com.facebook.katana|facebook
 BRAND|BRAND_INSTAGRAM|com.instagram.android|instagram
 BRAND|BRAND_MICROSOFT_AUTH|com.azure.authenticator|authenticator;microsoft
+BRAND|BRAND_SNAP|com.snapchat.android|snapchat
+BRAND|BRAND_GOOGLE_MAPS|com.google.android.apps.maps|maps;google
+BRAND|BRAND_ALRAJHI|com.alrajhi.bank|rajhi;rajhi bank;الراجحي
+BRAND|BRAND_ALINMA|com.inma.bank|inma;inma bank;الإنماء;مصرف الإنماء
+BRAND|BRAND_RIYAD_BANK|com.riyadbank.rbapp|riyad;riyad bank;بنك الرياض
+BRAND|BRAND_ALAHLI_BANK|com.alahli.mobile|alahli;alahli bank;البنك الأهلي;الأهلي
+BRAND|BRAND_SABB|com.sabb.mobile.saudi|sabb;بنك ساب
+BRAND|BRAND_STC_PAY|stc.com.sa.stcpay|stc pay;الدفع الرقمية
+BRAND|BRAND_ZAIN_SA|sa.com.zain.zainpay|zain;زين
+BRAND|BRAND_MOBILY|com.mobily|mobily;موبايلي
+BRAND|BRAND_BANK_MUSCAT|com.bankmuscat.mobile|bank muscat;بنك مسقط
+BRAND|BRAND_BOK|com.bok.mobile|bank of kuwait;بنك الكويت
+BRAND|BRAND_QNB|com.qnb.mobile|qnb;البنك التجاري
+BRAND|BRAND_STC|com.stc.play|stc;esim;الاتصالات السعودية
+BRAND|BRAND_ORANGE|com.orange.mobility|orange;أورانج
+BRAND|BRAND_AIRTEL_BANK|com.airtel.bank|airtel pay;airtel bank
 MODEL|BIAS|-3.2
 MODEL|ACCESSIBILITY|1.0
 MODEL|OVERLAY|0.8

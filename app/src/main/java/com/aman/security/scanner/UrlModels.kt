@@ -2,14 +2,16 @@ package com.aman.security.scanner
 
 enum class UrlIndicatorKind {
     HOST,
-    URL
+    URL,
+    C2_HOST
 }
 
 enum class UrlThreatClassification {
     PHISHING,
     MALWARE,
     SUSPICIOUS_SOURCE,
-    TEST_SIGNATURE
+    TEST_SIGNATURE,
+    C2_SERVER
 }
 
 data class UrlThreatIndicator(
@@ -25,6 +27,7 @@ enum class UrlRiskLevel {
     HIGH,
     KNOWN_PHISHING,
     KNOWN_MALICIOUS,
+    KNOWN_C2,
     TEST_SIGNATURE,
     INVALID
 }
@@ -39,7 +42,8 @@ enum class UrlRiskSignal {
     LONG_URL,
     SUSPICIOUS_KEYWORDS,
     COMMUNITY_THREAT_FEED,
-    SHORTENER_HOST
+    SHORTENER_HOST,
+    C2_SERVER_HOST
 }
 
 data class UrlScanResult(

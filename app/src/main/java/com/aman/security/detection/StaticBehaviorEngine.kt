@@ -87,6 +87,33 @@ object StaticBehaviorEngine {
         if (ApkRiskSignal.OVERLAY_PERMISSION in signals && ApkRiskSignal.REQUEST_INSTALL_PACKAGES in signals) {
             finding("BEHAVIOR_OVERLAY_INSTALLER", 24, FindingConfidence.MEDIUM, ThreatFamily.BANKER)
         }
+        // SIM/identity harvesting: telephony state access combined with SMS reading enables
+        // SIM-swap and OTP interception attacks against banking accounts.
+        if (ApkRiskSignal.TELEPHONY_STATE_API in signals && ApkRiskSignal.SMS_ACCESS in signals) {
+            finding("BEHAVIOR_SIM_OTP_INTERCEPTION", 26, FindingConfidence.HIGH, ThreatFamily.BANKER)
+        }
+        // Billing overlay fraud: payment APIs combined with privileged UI reading is the
+        // fingerprint of fake-payment overlays targeting users during transactions.
+        if (ApkRiskSignal.BILLING_API in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) {
+            finding("BEHAVIOR_BILLING_OVERLAY_FRAUD", 26, FindingConfidence.HIGH, ThreatFamily.BANKER)
+        }
+        // Media-based banker profile: billing APIs combined with audio capture.
+        if (ApkRiskSignal.BILLING_API in signals && ApkRiskSignal.MICROPHONE in signals) {
+            finding("BEHAVIOR_BILLING_MEDIA_PROFILE", 22, FindingConfidence.MEDIUM, ThreatFamily.BANKER)
+        }
+        // Storage sweep: full external storage control combined with sensitive data access
+        // indicates file-stealing spyware harvesting documents and images.
+        if (
+            ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API in signals &&
+            (ApkRiskSignal.SMS_ACCESS in signals || ApkRiskSignal.CONTACTS_ACCESS in signals)
+        ) {
+            finding("BEHAVIOR_STORAGE_SWEEP", 22, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
+        }
+        // Phone state exfiltration: line number/SIM harvesting combined with contacts access
+        // is the signature of credential-theft tooling used in account takeovers.
+        if (ApkRiskSignal.READ_PHONE_STATE_API in signals && ApkRiskSignal.CONTACTS_ACCESS in signals) {
+            finding("BEHAVIOR_IDENTITY_EXFIL", 22, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
+        }
         return out
     }
 }

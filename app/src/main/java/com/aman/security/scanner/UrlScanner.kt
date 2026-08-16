@@ -23,6 +23,25 @@ class UrlScanner(
         }
 
         val hostHash = sha256(normalized.host)
+        // Command-and-control hosts are checked first because they are confirmed attacker
+        // infrastructure; a C2 match outweighs any other heuristic on the same URL.
+        val c2 = lookup(UrlIndicatorKind.C2_HOST, hostHash)
+            ?: hostSuffixes(normalized.host)
+                .asSequence()
+                .mapNotNull { suffix -> lookup(UrlIndicatorKind.C2_HOST, sha256(suffix)) }
+                .firstOrNull()
+        if (c2 != null) {
+            return UrlScanResult(
+                originalInput = input,
+                normalizedUrl = normalized.url,
+                host = normalized.host,
+                riskLevel = UrlRiskLevel.KNOWN_C2,
+                riskScore = 100,
+                signals = setOf(UrlRiskSignal.C2_SERVER_HOST),
+                threatReference = c2.id,
+                matchedKind = c2.kind
+            )
+        }
         val known = urlLookupCandidates(normalized.url)
             .asSequence()
             .mapNotNull { candidate -> lookup(UrlIndicatorKind.URL, sha256(candidate)) }
@@ -38,6 +57,7 @@ class UrlScanner(
                 UrlThreatClassification.MALWARE -> UrlRiskLevel.KNOWN_MALICIOUS
                 UrlThreatClassification.SUSPICIOUS_SOURCE -> UrlRiskLevel.REVIEW
                 UrlThreatClassification.TEST_SIGNATURE -> UrlRiskLevel.TEST_SIGNATURE
+                UrlThreatClassification.C2_SERVER -> UrlRiskLevel.KNOWN_C2
             }
             val riskScore = when (known.classification) {
                 UrlThreatClassification.TEST_SIGNATURE -> 0

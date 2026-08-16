@@ -48,10 +48,15 @@ object ImpersonationDetector {
 
             val closePackage = editDistance(normalizedPackage, official) <= 3
             val labelTokenHit = normalizedLabel.isNotBlank() && profile.tokens.any { token ->
-                normalizedLabel.contains(token.lowercase())
+                val lowered = token.lowercase()
+                normalizedLabel.contains(lowered) ||
+                    (lowered.any(Char::isLetter) && !lowered.any { it in '0'..'9' } &&
+                        normalizedLabel.split(Regex("[\\s\\-_.()\"]+")).any { it == lowered })
             }
             val packageTokenHit = profile.tokens.any { token ->
-                normalizedPackage.split('.', '-', '_').any { segment -> segment == token.lowercase() }
+                val lowered = token.lowercase()
+                normalizedPackage.split('.', '-', '_').any { segment -> segment == lowered } ||
+                    (lowered.length >= 4 && normalizedPackage.contains(lowered, ignoreCase = true))
             }
             val suspiciousMarkerHit = SUSPICIOUS_MARKERS.any { marker ->
                 normalizedPackage.contains(marker) || normalizedLabel.contains(marker)
