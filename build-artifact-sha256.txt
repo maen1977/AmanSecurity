@@ -1,3 +1,3 @@
-87913a92522a06f769764f8cde822d20b340d7328c0c1d187dc62a53bd717f06  MaenShield-6.0.0-TestRelease.apk
-043c7a04579d433d8089de95061fd878d2c013e57a7b40b5f6d16f250537d2b4  app/build/outputs/apk/release/app-release-unsigned.apk
-8200521dc42e5ce5bad64b40647172b646a7fa5c95e0c67915d38bbbdf239c9a  app/build/outputs/bundle/release/app-release.aab
+080d61731fcee106587f3d90637a8bc88c595faa12d7ab029e82ad757be0baa2  MaenShield-9.0.0-TestRelease.apk
+8ddd7928164a3e3b9c112d5902099cb72dd0ebb267836b113202da3e20170093  app/build/outputs/apk/release/app-release-unsigned.apk
+7c44a83ea5adf793f24c063e8bab9d9198669afb77f578be500e38d24f5fed3e  app/build/outputs/bundle/release/app-release.aab

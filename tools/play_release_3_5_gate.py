@@ -16,7 +16,7 @@ def main() -> None:
     checklist = (ROOT / "docs/PLAY_RELEASE_CHECKLIST_3_6_0.md").read_text(encoding="utf-8")
 
     need('compileSdk = 36' in gradle and 'targetSdk = 36' in gradle, "target_api_36")
-    need('versionCode = 57' in gradle and 'versionName = "8.0.0"' in gradle, "release_version")
+    need('versionCode = 58' in gradle and 'versionName = "9.0.0"' in gradle, "release_version")
     need('isMinifyEnabled = true' in gradle and 'isShrinkResources = true' in gradle, "release_hardening")
     need('android.permission.READ_SMS' not in manifest, "read_sms_absent")
     need('android.permission.RECEIVE_SMS' not in manifest, "receive_sms_absent")

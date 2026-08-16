@@ -71,6 +71,8 @@ class ProtectionService : Service() {
     private var clipboardGuard: ClipboardGuard? = null
     private var foregroundScanner: ForegroundAppScanner? = null
     private var runtimeInitialized = false
+    private var lastStealthAuditAt = 0L
+
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -466,7 +468,14 @@ class ProtectionService : Service() {
         if (!preferences.enabled) return
         ensureRuntimeGuards()
         val scanner = foregroundScanner ?: return
-        val findings = runCatching { scanner.tick() }.getOrDefault(emptyList())
+        val findings = runCatching { scanner.tick().toMutableList() }.getOrDefault(mutableListOf())
+        val now = System.currentTimeMillis()
+        if (now - lastStealthAuditAt > STEALTH_AUDIT_INTERVAL_MS) {
+            lastStealthAuditAt = now
+            runCatching {
+                findings.addAll(scanner.stealthAuditTick())
+            }
+        }
         for (finding in findings) {
             when (finding.kind) {
                 ForegroundKind.ENTERED_SESSION -> {
@@ -489,6 +498,22 @@ class ProtectionService : Service() {
                     val report = SystemHardeningAuditor(this).audit()
                     ProtectionNotifier.notifyHardeningWeakness(this, report)
                 }
+                ForegroundKind.HIDDEN_APP -> {
+                    val label = packageLabel(finding.detail)
+                    preferences.lastStealthFindingAt = System.currentTimeMillis()
+                    ProtectionNotifier.notifyHiddenApp(this, label, finding.detail)
+                }
+                ForegroundKind.BATTERY_DRAIN -> {
+                    val label = packageLabel(finding.detail)
+                    preferences.lastStealthFindingAt = System.currentTimeMillis()
+                    ProtectionNotifier.notifyBatteryDrain(this, label, finding.detail)
+                }
+                ForegroundKind.NETWORK_BEACON -> {
+                    val label = packageLabel(finding.detail)
+                    preferences.lastStealthFindingAt = System.currentTimeMillis()
+                    ProtectionNotifier.notifyNetworkBeacon(this, label, finding.detail)
+                }
+                ForegroundKind.LINK_RISK -> ProtectionNotifier.notifyLinkRisk(this, finding.detail)
             }
         }
     }
@@ -522,5 +547,6 @@ class ProtectionService : Service() {
         const val EXTRA_SCAN_MODE = "scan_mode"
         private const val HEARTBEAT_MS = 10 * 60_000L
         private const val STALE_RESTART_MS = 25 * 60_000L
+        private const val STEALTH_AUDIT_INTERVAL_MS = 60 * 60_000L
     }
 }

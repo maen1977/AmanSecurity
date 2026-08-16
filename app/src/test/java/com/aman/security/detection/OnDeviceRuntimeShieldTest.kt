@@ -83,6 +83,10 @@ class OnDeviceRuntimeShieldTest {
         assertTrue("CLIPBOARD_GUARD missing", kinds.contains(ForegroundKind.CLIPBOARD_GUARD))
         assertTrue("HARDENING_WEAK missing", kinds.contains(ForegroundKind.HARDENING_WEAK))
         assertTrue("ENTERED_SESSION missing", kinds.contains(ForegroundKind.ENTERED_SESSION))
-        assertEquals("Exactly five foreground kinds expected", 5, kinds.size)
+        assertTrue("HIDDEN_APP missing", kinds.contains(ForegroundKind.HIDDEN_APP))
+        assertTrue("BATTERY_DRAIN missing", kinds.contains(ForegroundKind.BATTERY_DRAIN))
+        assertTrue("NETWORK_BEACON missing", kinds.contains(ForegroundKind.NETWORK_BEACON))
+        assertTrue("LINK_RISK missing", kinds.contains(ForegroundKind.LINK_RISK))
+        assertEquals("Exactly nine foreground kinds expected", 9, kinds.size)
     }
 }

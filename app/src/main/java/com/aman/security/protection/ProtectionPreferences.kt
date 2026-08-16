@@ -16,6 +16,9 @@ class ProtectionPreferences(context: Context) {
         get() = prefs.getString(KEY_TREE_URI, null)?.let(Uri::parse)
         set(value) = prefs.edit().putString(KEY_TREE_URI, value?.toString()).apply()
 
+    var lastStealthFindingAt: Long
+        get() = prefs.getLong(KEY_LAST_STEALTH_FINDING_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_STEALTH_FINDING_AT, value).apply()
     var lastCheckAt: Long
         get() = prefs.getLong(KEY_LAST_CHECK_AT, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_CHECK_AT, value).apply()
@@ -379,6 +382,7 @@ class ProtectionPreferences(context: Context) {
         private const val PREFS_NAME = "background_protection_v1"
         private const val KEY_ENABLED = "enabled"
         private const val KEY_TREE_URI = "protected_tree_uri"
+        private const val KEY_LAST_STEALTH_FINDING_AT = "last_stealth_finding_at"
         private const val KEY_LAST_CHECK_AT = "last_check_at"
         private const val KEY_LAST_SCANNED_COUNT = "last_scanned_count"
         private const val KEY_LAST_ALERT_COUNT = "last_alert_count"

@@ -9,19 +9,20 @@ import com.aman.security.protection.ProtectionPreferences
  * suites present a "protection readiness" posture to the user.
  *
  * Score basis (all local, no network):
- * - Runtime guard health (overlay / camera-mic / clipboard / hardening enabled)
+  * - Runtime guard health (overlay / camera-mic / clipboard / hardening enabled)
  * - System hardening audit grade
  * - Behavioral anomaly state (compound-attack likelihood)
  * - Privacy exposure state
+ * - Recent stealth findings (hidden apps, battery drain, network beaconing)
+ * - Package-integrity freshness
  */
 internal class RuntimeShieldCoordinator(private val context: Context) {
-
     private val preferences = ProtectionPreferences(context)
-
     fun protectionScore(): ProtectionScoreReport = runCatching {
         val hardening = SystemHardeningAuditor(context).audit()
         val anomaly = BehaviorAnomalyDetector(context).evaluate()
         val exposure = PrivacyExposureAssessor(context).evaluate()
+        val stealthPenalty = stealthFindingsPenalty()
 
         val healthScore = guardHealthScore()
         val hardeningScore = if (hardening.isHardened) HARDENING_FULL_POINTS else (hardening.score * HARDENING_SCALE).toInt()
@@ -35,7 +36,7 @@ internal class RuntimeShieldCoordinator(private val context: Context) {
             ExposureLevel.REVIEW -> EXPOSURE_REVIEW_PENALTY
             ExposureLevel.NONE -> 0
         }
-        val score = (healthScore + hardeningScore - anomalyPenalty - exposurePenalty).toInt()
+        val score = (healthScore + hardeningScore - anomalyPenalty - exposurePenalty - stealthPenalty).toInt()
             .coerceIn(0, 100)
         ProtectionScoreReport(
             score = score,
@@ -46,6 +47,19 @@ internal class RuntimeShieldCoordinator(private val context: Context) {
     }.getOrDefault(
         ProtectionScoreReport(score = 0, anomalyLevel = AnomalyLevel.NONE, exposureLevel = ExposureLevel.NONE, hardeningGrade = HardeningGrade.PARTIAL)
     )
+
+    /**
+     * Recent stealth audit penalty: hidden apps, battery-draining apps,
+     * and beaconing network behavior degrade the readiness posture.
+     */
+    private fun stealthFindingsPenalty(): Int {
+        val prefs = ProtectionPreferences(context)
+        val since = System.currentTimeMillis() - STEALTH_PENALTY_WINDOW_MS
+        var penalty = 0
+        if (prefs.lastStealthFindingAt > since) penalty += STEALTH_PENALTY_PER_FINDING
+        if (penalty > STEALTH_PENALTY_MAX) penalty = STEALTH_PENALTY_MAX
+        return penalty
+    }
 
     private fun guardHealthScore(): Int {
         var points = 0
@@ -64,6 +78,9 @@ internal class RuntimeShieldCoordinator(private val context: Context) {
         private const val ANOMALY_REVIEW_PENALTY = 12
         private const val EXPOSURE_HIGH_PENALTY = 20
         private const val EXPOSURE_REVIEW_PENALTY = 8
+        private const val STEALTH_PENALTY_WINDOW_MS = 2 * 60 * 60_000L
+        private const val STEALTH_PENALTY_PER_FINDING = 6
+        private const val STEALTH_PENALTY_MAX = 12
         internal const val STRONG_THRESHOLD = 85
         internal const val REVIEW_THRESHOLD = 60
     }

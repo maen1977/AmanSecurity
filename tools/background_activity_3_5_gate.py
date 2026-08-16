@@ -19,7 +19,7 @@ def main() -> None:
     english = (ROOT / "app/src/main/res/values/strings.xml").read_text()
     arabic = (ROOT / "app/src/main/res/values-ar/strings.xml").read_text()
 
-    need('versionName = "8.0.0"' in build and "versionCode = 57" in build, "version")
+    need('versionName = "9.0.0"' in build and "versionCode = 58" in build, "version")
     need("class BackgroundActivityAuditor" in auditor and "BackgroundActivitySummary" in auditor, "auditor_model")
     for signal in ("FOREGROUND_SERVICE", "START_ON_BOOT", "SENSITIVE_SENSOR", "OVERLAY_CAPABILITY", "VPN_SERVICE", "SIDELOADED"):
         need(signal in auditor, f"signal_{signal.lower()}")

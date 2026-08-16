@@ -1009,5 +1009,14 @@
     <string name="protection_score_detail_anomaly">رُصدت مجموعة أحداث حية عالية الخطورة. أبقِ قضبان الحراسة مفعّلة.</string>
     <string name="protection_score_detail_exposure">تعرض الخصوصية مرتفع. راجع الصلاحيات الحساسة وخدمات الإتاحة النشطة.</string>
     <string name="runtime_integrity_notification_title">تطبيق معدّل مكتشف</string>
+
+    <string name="runtime_hidden_app_notification_title">تم رصد تطبيق مخفي</string>
+    <string name="runtime_hidden_app_notification_body">%1$s لا يملك أيقونة في شاشة التطبيقات لكنه نشط في الخلفية. التطبيقات المخفية حيلة شائعة لبرامج التجسس.</string>
+    <string name="runtime_drain_notification_title">استنزاف بطارية مريب</string>
+    <string name="runtime_drain_notification_body">%1$s يستهلك البطارية وهو يعمل في الخلفية لفترات طويلة. هذا السلوك شائع في برامج التجسس وبرامج التعدين.</string>
+    <string name="runtime_beacon_notification_title">إشارة شبكية متكررة</string>
+    <string name="runtime_beacon_notification_body">%1$s يتصل بالشبكة بشكل دوري وبانتظام شديد. هذا السلوك الدوري نموذجي في قنوات التحكم عن بعد وبرامج التجسس.</string>
+    <string name="runtime_link_risk_notification_title">تحذير من رابط خطر</string>
+    <string name="runtime_link_risk_notification_body">%1$s لا تدخل كلمة المرور أو رقم البطاقة أو أكوادك الشخصية في هذه الصفحة.</string>
     <string name="runtime_integrity_notification_body">تطبيق «%1$s» وُقّع بشهادة مختلفة عن السابقة. قد يكون نسخة معدّلة من التطبيق الأصلي.</string>
 </resources>

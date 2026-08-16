@@ -40,6 +40,8 @@ object ProtectionNotifier {
     private const val RUNTIME_CLIPBOARD_ALERT_ID = 27820
     private const val RUNTIME_HARDENING_ALERT_ID = 27830
     private const val RUNTIME_INTEGRITY_ALERT_ID = 27840
+    private const val RUNTIME_HIDDEN_APP_ALERT_ID = 27850
+    private const val RUNTIME_DRAIN_ALERT_ID = 27860
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -741,4 +743,113 @@ object ProtectionNotifier {
             // Protection must continue running; the UI reports notification permission state.
         }
     }
+
+    fun notifyHiddenApp(context: Context, label: String, packageName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_HIDDEN_APP_ALERT_ID + packageName.hashCode().and(0x3ff), openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_hidden_app_notification_body, label)
+        postNotificationSafely(
+            context, RUNTIME_HIDDEN_APP_ALERT_ID + packageName.hashCode().and(0x3ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_hidden_app_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyBatteryDrain(context: Context, label: String, packageName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_DRAIN_ALERT_ID + packageName.hashCode().and(0x3ff), openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_drain_notification_body, label)
+        postNotificationSafely(
+            context, RUNTIME_DRAIN_ALERT_ID + packageName.hashCode().and(0x3ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_drain_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+                updateProtectionStatus(context)
+    }
+
+    fun notifyNetworkBeacon(context: Context, label: String, packageName: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_HIDDEN_APP_ALERT_ID + 1000 + packageName.hashCode().and(0x3ff), openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_beacon_notification_body, label)
+        postNotificationSafely(
+            context, RUNTIME_HIDDEN_APP_ALERT_ID + 1000 + packageName.hashCode().and(0x3ff),
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_beacon_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyLinkRisk(context: Context, summary: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_DRAIN_ALERT_ID + 1000, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_link_risk_notification_body, summary)
+        postNotificationSafely(
+            context, RUNTIME_DRAIN_ALERT_ID + 1000,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_link_risk_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
 }

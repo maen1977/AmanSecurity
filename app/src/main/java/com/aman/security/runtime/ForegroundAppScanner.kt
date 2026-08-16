@@ -111,6 +111,51 @@ internal class ForegroundAppScanner(private val context: Context) {
         return com.aman.security.banking.FinanceAppIdentityMatcher.matches(packageName, label)
     }
 
+    /**
+     * Periodic stealth audit executed by the protection service every hour.
+     * Merges hidden-app, battery-drain and network-beacon detection into the
+     * same finding stream so the service can surface unified alerts.
+     */
+    fun stealthAuditTick(): List<ForegroundFinding> {
+        val findings = mutableListOf<ForegroundFinding>()
+        runCatching {
+            val hiddenReport = HiddenAppDetector(context).scan()
+            if (!hiddenReport.isClean) {
+                for (finding in hiddenReport.findings) {
+                    findings += ForegroundFinding(ForegroundKind.HIDDEN_APP, finding.packageName)
+                }
+            }
+        }
+        runCatching {
+            val drainReport = BatteryDrainMonitor(context).check()
+            if (!drainReport.isClean) {
+                for (finding in drainReport.findings) {
+                    findings += ForegroundFinding(ForegroundKind.BATTERY_DRAIN, finding.packageName)
+                }
+            }
+        }
+        runCatching {
+            val inspector = NetworkTrafficInspector()
+            val beaconReport = inspector.inspect(
+                counters = { uid ->
+                    NetworkTrafficInspector.CounterSample(
+                        rxBytes = android.net.TrafficStats.getUidRxBytes(uid),
+                        txBytes = android.net.TrafficStats.getUidTxBytes(uid)
+                    )
+                },
+                uidToPackage = { uid ->
+                    runCatching { context.packageManager.getNameForUid(uid) }.getOrNull()
+                }
+            )
+            if (!beaconReport.isClean) {
+                for (finding in beaconReport.findings) {
+                    findings += ForegroundFinding(ForegroundKind.NETWORK_BEACON, finding.packageName)
+                }
+            }
+        }
+        return findings
+    }
+
     companion object {
         private const val EVENT_WINDOW_MS = 60_000L
         private const val HARDENING_AUDIT_INTERVAL_MS = 30 * 60_000L
@@ -118,7 +163,8 @@ internal class ForegroundAppScanner(private val context: Context) {
 }
 
 internal enum class ForegroundKind {
-    ENTERED_SESSION, OVERLAY_ATTACK, MEDIA_ACCESS, CLIPBOARD_GUARD, HARDENING_WEAK
+    ENTERED_SESSION, OVERLAY_ATTACK, MEDIA_ACCESS, CLIPBOARD_GUARD, HARDENING_WEAK,
+    HIDDEN_APP, BATTERY_DRAIN, NETWORK_BEACON, LINK_RISK
 }
 
 internal data class ForegroundFinding(

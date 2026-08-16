@@ -1009,5 +1009,14 @@
     <string name="protection_score_detail_anomaly">A cluster of high-risk live events was detected. Keep the guard rails turned on.</string>
     <string name="protection_score_detail_exposure">Privacy exposure is elevated. Review sensitive permissions and active accessibility services.</string>
     <string name="runtime_integrity_notification_title">Modified app detected</string>
+
+    <string name="runtime_hidden_app_notification_title">Hidden app detected</string>
+    <string name="runtime_hidden_app_notification_body">%1$s does not have a launcher icon but it is active in the background. Hidden apps are a common disguise for spyware.</string>
+    <string name="runtime_drain_notification_title">Suspicious battery drain</string>
+    <string name="runtime_drain_notification_body">%1$s is consuming battery while running in the background for long periods. This behavior is common in spyware and coin miners.</string>
+    <string name="runtime_beacon_notification_title">Recurring network signal</string>
+    <string name="runtime_beacon_notification_body">%1$s contacts the network periodically with a very regular pattern. This "beaconing" behavior is typical of remote-control and spyware channels.</string>
+    <string name="runtime_link_risk_notification_title">Dangerous link warning</string>
+    <string name="runtime_link_risk_notification_body">%1$s. Do not enter your password, card number, or personal codes on this page.</string>
     <string name="runtime_integrity_notification_body">%1$s was signed with a different certificate than before. It may be a modified copy of the original app.</string>
 </resources>
