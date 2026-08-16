@@ -1000,5 +1000,5 @@
     <string name="runtime_camera_mic_alert_count">Camera and microphone alerts: %1$d</string>
     <string name="runtime_clipboard_guard_count">Clipboard secrets protected: %1$d</string>
     <string name="runtime_foreground_check_count">Live app checks: %1$d</string>
-    <string name="runtime_shield_stats_line">Runtime Shield: %1$d overlay blocks, %2$d camera/mic alerts, %3$d clipboard secrets, %4$d live checks</string>
+    <string name="runtime_shield_stats_line">Runtime Shield: %1$s overlay blocks, %2$s camera/mic alerts, %3$s clipboard secrets, %4$s live checks</string>
 </resources>

@@ -52,7 +52,12 @@ internal class CameraMicGuard(private val context: Context) {
 
     private fun checkOpNoThrow(ops: AppOpsManager, op: String, packageName: String): Boolean =
         runCatching {
-            ops.unsafeCheckOpNoThrow(op, android.os.Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ops.unsafeCheckOpNoThrow(op, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+            } else {
+                @Suppress("DEPRECATION")
+                ops.checkOpNoThrow(op, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+            }
         }.getOrDefault(false)
 
     private fun isSystemApp(info: android.content.pm.PackageInfo): Boolean =

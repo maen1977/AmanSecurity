@@ -1,5 +1,6 @@
 package com.aman.security.runtime
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import com.aman.security.banking.FinanceAppIdentityMatcher
@@ -65,8 +66,13 @@ internal class ClipboardGuard(private val context: Context) {
         clearScheduledAt = now + CLEAR_AFTER_MS
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             runCatching {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                clipboard?.clearPrimaryClip()
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return@postDelayed
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    clipboard.clearPrimaryClip()
+                } else {
+                    @Suppress("DEPRECATION")
+                    clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+                }
             }
             clearScheduledAt = 0L
         }, CLEAR_AFTER_MS)

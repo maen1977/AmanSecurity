@@ -1000,5 +1000,5 @@
     <string name="runtime_camera_mic_alert_count">تنبيهات الكاميرا والميكروفون: %1$d</string>
     <string name="runtime_clipboard_guard_count">أسرار الحافظة المحمية: %1$d</string>
     <string name="runtime_foreground_check_count">فحوصات التطبيقات الحية: %1$d</string>
-    <string name="runtime_shield_stats_line">درع الحماية الحية: %1$d هجمات تغطية محجوبة، %2$d تنبيهات كاميرا وميكروفون، %3$d أسرار حافظة محمية، %4$d فحصًا حيًّا</string>
+    <string name="runtime_shield_stats_line">درع الحماية الحية: %1$s هجمات تغطية محجوبة، %2$s تنبيهات كاميرا وميكروفون، %3$s أسرار حافظة محمية، %4$s فحصًا حيًّا</string>
 </resources>
