@@ -126,6 +126,7 @@ class InstalledAppScanner(
         } else {
             hashComponents(apkFiles)
         }
+        val apkSha256 = componentHashes.firstOrNull()?.second
         val signerHashes = cachedArtifact?.signerHashes?.takeIf { it.isNotEmpty() }
             ?: signingCertificateSha256s(packageInfo)
         val signerHash = signerHashes.firstOrNull()
