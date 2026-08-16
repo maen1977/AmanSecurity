@@ -126,8 +126,6 @@ class InstalledAppScanner(
         } else {
             hashComponents(apkFiles)
         }
-        val apkFile = apkFiles.firstOrNull()
-        val apkSha256 = componentHashes.firstOrNull()?.second
         val signerHashes = cachedArtifact?.signerHashes?.takeIf { it.isNotEmpty() }
             ?: signingCertificateSha256s(packageInfo)
         val signerHash = signerHashes.firstOrNull()
@@ -194,8 +192,20 @@ class InstalledAppScanner(
         val trustedAllowlist = signerReputations.any { it.disposition == ReputationDisposition.SAFE } ||
             fileReputations.any { it.disposition == ReputationDisposition.SAFE }
 
-        val deepAnalysis = if (deep && apkFile != null && apkSha256 != null) deepAnalyzer.analyzeInstalledFile(apkFile, apkSha256) else null
-        deepAnalysis?.advancedVerdict?.findings?.let(findings::addAll)
+        // Analyze every APK component, not only the base APK. Split APKs can carry
+        // additional dex, native code, URLs, or suspicious manifest capabilities.
+        // The component hash/reputation checks above remain independent and cheap.
+        val deepAnalyses = if (deep) {
+            ApkComponentAnalysisPolicy
+                .selectForDeepAnalysis(componentHashes)
+                .mapNotNull { (file, hash) ->
+                    deepAnalyzer.analyzeInstalledFile(file, hash)
+                        .takeIf { it.state == ApkAnalysisState.VALID }
+                }
+        } else {
+            emptyList()
+        }
+        findings += ApkComponentAnalysisPolicy.mergeFindings(deepAnalyses)
         findings += ThreatGraphEngine.correlate(findings, database.detectionRuleset.graphLinks)
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
 
@@ -224,7 +234,7 @@ class InstalledAppScanner(
             signingCertificateSha256 = signerHash,
             threatReference = threatReference,
             advancedVerdict = verdict,
-            deepAnalysisPerformed = deepAnalysis != null
+            deepAnalysisPerformed = deepAnalyses.isNotEmpty()
         )
     }
 
@@ -263,7 +273,6 @@ class InstalledAppScanner(
             else -> AppInstallSource.OTHER
         }
     }
-
 
     private fun hashComponents(apkFiles: List<File>): List<Pair<File, String>> = apkFiles.mapNotNull { file ->
         runCatching { hashFile(file) }.getOrNull()?.let { hash -> file to hash }
