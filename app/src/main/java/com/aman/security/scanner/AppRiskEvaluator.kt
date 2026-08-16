@@ -13,6 +13,12 @@ object AppRiskEvaluator {
     private const val RECEIVE_BOOT_COMPLETED = "android.permission.RECEIVE_BOOT_COMPLETED"
     private const val SYSTEM_ALERT_WINDOW = "android.permission.SYSTEM_ALERT_WINDOW"
     private const val REQUEST_INSTALL_PACKAGES = "android.permission.REQUEST_INSTALL_PACKAGES"
+    private const val QUERY_ALL_PACKAGES = "android.permission.QUERY_ALL_PACKAGES"
+    private const val MANAGE_EXTERNAL_STORAGE = "android.permission.MANAGE_EXTERNAL_STORAGE"
+    private const val BIND_INPUT_METHOD = "android.permission.BIND_INPUT_METHOD"
+    private const val READ_MEDIA_IMAGES = "android.permission.READ_MEDIA_IMAGES"
+    private const val READ_MEDIA_VIDEO = "android.permission.READ_MEDIA_VIDEO"
+    private const val READ_MEDIA_AUDIO = "android.permission.READ_MEDIA_AUDIO"
 
     fun evaluate(input: AppRiskInput): AppRiskEvaluation {
         if (input.knownThreatReference != null) {
@@ -45,6 +51,11 @@ object AppRiskEvaluator {
         if (AppRiskSignal.SMS_ACCESS in signals && AppRiskSignal.CONTACTS_ACCESS in signals) score += 14
         if (AppRiskSignal.SMS_ACCESS in signals && AppRiskSignal.BOOT_START in signals) score += 8
         if (AppRiskSignal.MICROPHONE in signals && AppRiskSignal.PRECISE_LOCATION in signals && AppRiskSignal.BOOT_START in signals) score += 10
+        if (AppRiskSignal.INPUT_METHOD_SERVICE in signals) score += 12
+        if (AppRiskSignal.AUDIO_RECORDING_SERVICE in signals) score += 6
+        if (AppRiskSignal.CAMERA_MIC_COMBO in signals) score += 6
+        if (AppRiskSignal.QUERY_ALL_PACKAGES in signals && (AppRiskSignal.SMS_ACCESS in signals || AppRiskSignal.CALL_LOG_ACCESS in signals || AppRiskSignal.MICROPHONE in signals)) score += 8
+        if (AppRiskSignal.STORAGE_PERMISSION in signals && (AppRiskSignal.SMS_ACCESS in signals || AppRiskSignal.CONTACTS_ACCESS in signals)) score += 6
 
         val boundedScore = score.coerceIn(0, 99)
         val level = when {
@@ -55,11 +66,21 @@ object AppRiskEvaluator {
         return AppRiskEvaluation(boundedScore, level, signals)
     }
 
-    private fun collectSignals(input: AppRiskInput): Set<AppRiskSignal> {
+        private fun collectSignals(input: AppRiskInput): Set<AppRiskSignal> {
         val permissions = input.requestedPermissions
         val signals = linkedSetOf<AppRiskSignal>()
-
         if (input.hasAccessibilityService) signals += AppRiskSignal.ACCESSIBILITY_SERVICE
+        if (permissions.any { it == READ_MEDIA_IMAGES || it == READ_MEDIA_VIDEO || it == READ_MEDIA_AUDIO }) {
+            signals += AppRiskSignal.READ_MEDIA_ACCESS
+        }
+        if (MANAGE_EXTERNAL_STORAGE in permissions) signals += AppRiskSignal.STORAGE_PERMISSION
+        if (QUERY_ALL_PACKAGES in permissions) signals += AppRiskSignal.QUERY_ALL_PACKAGES
+        if (input.services.orEmpty().any { it.permission == BIND_INPUT_METHOD }) signals += AppRiskSignal.INPUT_METHOD_SERVICE
+        if (RECORD_AUDIO in permissions && input.services.orEmpty().any {
+                it.name.lowercase().contains("audio") || it.name.lowercase().contains("record") || it.name.lowercase().contains("voice")
+            }
+        ) signals += AppRiskSignal.AUDIO_RECORDING_SERVICE
+        if (RECORD_AUDIO in permissions && CAMERA in permissions) signals += AppRiskSignal.CAMERA_MIC_COMBO
         if (SYSTEM_ALERT_WINDOW in permissions) signals += AppRiskSignal.OVERLAY
         if (REQUEST_INSTALL_PACKAGES in permissions) signals += AppRiskSignal.INSTALL_PACKAGES
         if (permissions.any { it == READ_SMS || it == RECEIVE_SMS || it == SEND_SMS }) signals += AppRiskSignal.SMS_ACCESS

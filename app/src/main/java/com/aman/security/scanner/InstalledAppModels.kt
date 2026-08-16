@@ -28,14 +28,21 @@ enum class AppRiskSignal {
     CAMERA,
     PRECISE_LOCATION,
     BOOT_START,
-    NON_STORE_INSTALL
+    NON_STORE_INSTALL,
+    INPUT_METHOD_SERVICE,
+    AUDIO_RECORDING_SERVICE,
+    STORAGE_PERMISSION,
+    QUERY_ALL_PACKAGES,
+    READ_MEDIA_ACCESS,
+    CAMERA_MIC_COMBO
 }
 
 data class AppRiskInput(
     val requestedPermissions: Set<String>,
     val hasAccessibilityService: Boolean,
     val installSource: AppInstallSource,
-    val knownThreatReference: String? = null
+    val knownThreatReference: String? = null,
+    val services: List<android.content.pm.ServiceInfo> = emptyList()
 )
 
 data class AppRiskEvaluation(

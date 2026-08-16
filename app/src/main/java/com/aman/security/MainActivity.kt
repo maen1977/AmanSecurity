@@ -2759,6 +2759,12 @@ class MainActivity : AppCompatActivity() {
         AppRiskSignal.PRECISE_LOCATION -> R.string.indicator_location
         AppRiskSignal.BOOT_START -> R.string.indicator_boot
         AppRiskSignal.NON_STORE_INSTALL -> R.string.indicator_non_store
+        AppRiskSignal.INPUT_METHOD_SERVICE -> R.string.spyware_signal_input_method
+        AppRiskSignal.AUDIO_RECORDING_SERVICE -> R.string.spyware_signal_audio_recording
+        AppRiskSignal.STORAGE_PERMISSION -> R.string.spyware_signal_storage
+        AppRiskSignal.QUERY_ALL_PACKAGES -> R.string.spyware_signal_query_packages
+        AppRiskSignal.READ_MEDIA_ACCESS -> R.string.spyware_signal_read_media
+        AppRiskSignal.CAMERA_MIC_COMBO -> R.string.spyware_signal_camera_mic
     }
 
     private fun installSourceString(source: AppInstallSource): Int = when (source) {
@@ -3646,6 +3652,13 @@ class MainActivity : AppCompatActivity() {
         SpywareCapabilitySignal.PHONE_STATE_ACCESS -> getString(R.string.spyware_signal_phone)
         SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER -> getString(R.string.spyware_signal_sensitive_cluster)
         SpywareCapabilitySignal.SIDELOADED -> getString(R.string.spyware_signal_sideloaded)
+        SpywareCapabilitySignal.INPUT_METHOD_SERVICE -> getString(R.string.spyware_signal_input_method)
+        SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE -> getString(R.string.spyware_signal_audio_recording)
+        SpywareCapabilitySignal.STORAGE_PERMISSION -> getString(R.string.spyware_signal_storage)
+        SpywareCapabilitySignal.QUERY_ALL_PACKAGES -> getString(R.string.spyware_signal_query_packages)
+        SpywareCapabilitySignal.READ_MEDIA_ACCESS -> getString(R.string.spyware_signal_read_media)
+        SpywareCapabilitySignal.CAMERA_MIC_COMBO -> getString(R.string.spyware_signal_camera_mic)
+        SpywareCapabilitySignal.SURVEILLANCE_COMBO -> getString(R.string.spyware_signal_surveillance_combo)
         null -> null
     }
 

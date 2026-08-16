@@ -842,6 +842,13 @@
     <string name="spyware_signal_phone">Has phone-state or calling access</string>
     <string name="spyware_signal_sensitive_cluster">Combines three or more sensitive surveillance permissions</string>
     <string name="spyware_signal_sideloaded">Installed from a local or downloaded package</string>
+    <string name="spyware_signal_input_method">Declares a keyboard (Input Method) service</string>
+    <string name="spyware_signal_audio_recording">Grants microphone access to an audio-recording service</string>
+    <string name="spyware_signal_storage">Has full storage access (Manage all files)</string>
+    <string name="spyware_signal_query_packages">Can see all installed apps</string>
+    <string name="spyware_signal_read_media">Has access to photos, videos or audio files</string>
+    <string name="spyware_signal_camera_mic">Combines camera and microphone access at the same time</string>
+    <string name="spyware_signal_surveillance_combo">Combines five or more surveillance access signals</string>
     <string name="scan_audit_screen_lock">Secure screen lock is disabled</string>
     <string name="scan_audit_root_signals">Root / system-modification indicators were found</string>
     <string name="scan_audit_adb">ADB debugging is enabled</string>

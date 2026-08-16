@@ -842,6 +842,13 @@
     <string name="spyware_signal_phone">لديه وصول إلى حالة الهاتف أو إجراء المكالمات</string>
     <string name="spyware_signal_sensitive_cluster">يجمع ثلاث صلاحيات حساسة أو أكثر للمراقبة</string>
     <string name="spyware_signal_sideloaded">مثبت من ملف محلي أو حزمة تم تنزيلها</string>
+    <string name="spyware_signal_input_method">يعلن خدمة لوحة مفاتيح (طريقة إدخال)</string>
+    <string name="spyware_signal_audio_recording">يمنح وصول الميكروفون إلى خدمة تسجيل صوتي</string>
+    <string name="spyware_signal_storage">لديه وصول كامل إلى التخزين (إدارة جميع الملفات)</string>
+    <string name="spyware_signal_query_packages">يمكنه رؤية جميع التطبيقات المثبتة</string>
+    <string name="spyware_signal_read_media">لديه وصول إلى الصور أو الفيديوهات أو الملفات الصوتية</string>
+    <string name="spyware_signal_camera_mic">يجمع وصول الكاميرا والميكروفون في الوقت نفسه</string>
+    <string name="spyware_signal_surveillance_combo">يجمع خمس إشارات مراقبة أو أكثر</string>
     <string name="scan_audit_screen_lock">قفل الشاشة الآمن غير مفعّل</string>
     <string name="scan_audit_root_signals">تم العثور على مؤشرات روت أو تعديل في النظام</string>
     <string name="scan_audit_adb">تصحيح أندرويد عبر واجهة التطوير مفعّل</string>

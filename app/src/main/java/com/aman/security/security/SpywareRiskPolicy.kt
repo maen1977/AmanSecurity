@@ -16,6 +16,13 @@ enum class SpywareCapabilitySignal {
     CONTACTS_ACCESS,
     CAMERA_ACCESS,
     PHONE_STATE_ACCESS,
+    INPUT_METHOD_SERVICE,
+    AUDIO_RECORDING_SERVICE,
+    STORAGE_PERMISSION,
+    QUERY_ALL_PACKAGES,
+    READ_MEDIA_ACCESS,
+    CAMERA_MIC_COMBO,
+    SURVEILLANCE_COMBO,
     SENSITIVE_PERMISSION_CLUSTER,
     SIDELOADED
 }
@@ -58,7 +65,10 @@ object SpywareRiskPolicy {
             SpywareCapabilitySignal.MICROPHONE_ACCESS,
             SpywareCapabilitySignal.CONTACTS_ACCESS,
             SpywareCapabilitySignal.CAMERA_ACCESS,
-            SpywareCapabilitySignal.PHONE_STATE_ACCESS
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS,
+            SpywareCapabilitySignal.INPUT_METHOD_SERVICE,
+            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE,
+            SpywareCapabilitySignal.READ_MEDIA_ACCESS
         ).count(signals::contains)
         val persistent = SpywareCapabilitySignal.BOOT_PERSISTENCE in signals
         val overlay = SpywareCapabilitySignal.OVERLAY_DECLARED in signals
@@ -71,13 +81,23 @@ object SpywareRiskPolicy {
         if (overlay) score += 5
         if (sideloaded) score += 10
         if (sideloaded && clustered) score += 12
+        if (SpywareCapabilitySignal.INPUT_METHOD_SERVICE in signals) score += 7
+        if (SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE in signals) score += 5
+        if (SpywareCapabilitySignal.CAMERA_MIC_COMBO in signals) score += 8
+        if (SpywareCapabilitySignal.SURVEILLANCE_COMBO in signals) score += 10
+        if (SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals && (surveillance >= 2 || controls >= 1)) score += 6
 
         val level = when {
             sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
             hasActiveControl && activeControls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
+            surveillance >= 5 && (hasActiveControl || persistent) -> SpywareReviewLevel.HIGH
             sideloaded && (controls >= 1 || overlay) && surveillance >= 1 -> SpywareReviewLevel.REVIEW
             clustered && (sideloaded || controls >= 1 || persistent) -> SpywareReviewLevel.REVIEW
+            SpywareCapabilitySignal.INPUT_METHOD_SERVICE in signals && surveillance >= 2 -> SpywareReviewLevel.REVIEW
+            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE in signals && (surveillance >= 2 || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
+            surveillance >= 4 && (SpywareCapabilitySignal.CAMERA_MIC_COMBO in signals || SpywareCapabilitySignal.SURVEILLANCE_COMBO in signals) -> SpywareReviewLevel.REVIEW
             controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
+            surveillance >= 4 && (persistent || overlay || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
             else -> SpywareReviewLevel.LOW
         }
 

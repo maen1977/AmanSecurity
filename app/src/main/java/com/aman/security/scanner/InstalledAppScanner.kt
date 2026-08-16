@@ -155,7 +155,7 @@ class InstalledAppScanner(
         val packageThreat = database.findApk(ApkIndicatorKind.PACKAGE, packageHash)?.takeIf { it.classification == ApkIdentityClassification.KNOWN_THREAT }
         val legacyThreatReference = fileThreat?.id ?: signerThreat?.id ?: packageThreat?.id
 
-        val basic = AppRiskEvaluator.evaluate(AppRiskInput(requestedPermissions, hasAccessibilityService, source, legacyThreatReference))
+        val basic = AppRiskEvaluator.evaluate(AppRiskInput(requestedPermissions, hasAccessibilityService, source, legacyThreatReference, packageInfo.services.orEmpty().toList()))
         val findings = mutableListOf<DetectionFinding>()
         if (legacyThreatReference != null) {
             val family = database.detectionRuleset.findMetadata(legacyThreatReference)?.family

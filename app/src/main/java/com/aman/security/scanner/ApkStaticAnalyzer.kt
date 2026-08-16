@@ -292,6 +292,16 @@ class ApkStaticAnalyzer(
         put("HIDDEN_PAYLOAD", bool(archive.hiddenDexPayloadCount + archive.hiddenElfPayloadCount > 0))
         put("ANTI_ANALYSIS", bool("ANTI_DEBUG" in markers && "EMULATOR_CHECK" in markers))
         put("ENCRYPTED_ASSET", bool(archive.highEntropyAssetCount >= 2))
+        put("INPUT_METHOD", bool(ApkRiskSignal.INPUT_METHOD_SERVICES in signals))
+        put("AUDIO_RECORDING", bool(ApkRiskSignal.AUDIO_RECORDING_SERVICE in signals))
+        put("STORAGE_PERMISSION", bool(ApkRiskSignal.STORAGE_PERMISSION in signals))
+        put("BILLING", bool(ApkRiskSignal.BILLING_API in signals))
+        put("PHONE_STATE", bool(ApkRiskSignal.READ_PHONE_STATE_API in signals || ApkRiskSignal.TELEPHONY_STATE_API in signals))
+        put("DEVICE_ID", bool(ApkRiskSignal.DEVICE_IDENTIFIER_API in signals))
+        put("ANTI_VM", bool("ANTI_DEBUG" in markers && ("EMULATOR_CHECK" in markers || "ENVIRONMENT_FINGERPRINT" in markers)))
+        put("HIDDEN_ASSET_EXTRACT", bool("HIDDEN_ASSET_EXTRACT" in markers))
+        put("QUERY_PACKAGES", bool(ApkRiskSignal.QUERY_ALL_PACKAGES in signals))
+        put("COMPONENT_SPREAD", bool(archive.dexFileCount >= MANY_DEX_THRESHOLD && archive.nativeLibraryCount > 0))
     }
 
     private fun bool(value: Boolean): Double = if (value) 1.0 else 0.0

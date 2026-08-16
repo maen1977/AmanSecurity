@@ -93,6 +93,28 @@ class SpywareAuditor(private val context: Context) {
                 Manifest.permission.CALL_PHONE
             )
         ) signals += SpywareCapabilitySignal.PHONE_STATE_ACCESS
+        if (Manifest.permission.MANAGE_EXTERNAL_STORAGE in requested) {
+            if (isGranted(info.packageName, Manifest.permission.MANAGE_EXTERNAL_STORAGE)) signals += SpywareCapabilitySignal.STORAGE_PERMISSION
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (isAnyGranted(
+                    info.packageName,
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_AUDIO
+                )
+            ) signals += SpywareCapabilitySignal.READ_MEDIA_ACCESS
+        }
+        if (Manifest.permission.QUERY_ALL_PACKAGES in requested) signals += SpywareCapabilitySignal.QUERY_ALL_PACKAGES
+        if (info.services.orEmpty().any { it.permission == Manifest.permission.BIND_INPUT_METHOD }) {
+            signals += SpywareCapabilitySignal.INPUT_METHOD_SERVICE
+        }
+        if (isGranted(info.packageName, Manifest.permission.RECORD_AUDIO) &&
+            info.services.orEmpty().any { it.name.lowercase().contains("audio") || it.name.lowercase().contains("record") || it.name.lowercase().contains("voice") }
+        ) signals += SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE
+        if (isGranted(info.packageName, Manifest.permission.CAMERA) && isGranted(info.packageName, Manifest.permission.RECORD_AUDIO)) {
+            signals += SpywareCapabilitySignal.CAMERA_MIC_COMBO
+        }
         val surveillanceSignals = setOf(
             SpywareCapabilitySignal.SMS_ACCESS,
             SpywareCapabilitySignal.CALL_LOG_ACCESS,

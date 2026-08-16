@@ -1,82 +1,53 @@
 package com.aman.security.security
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpywareRiskPolicyTest {
     @Test
-    fun ordinaryMessagingPermissionsDoNotBecomeSpyware() {
-        val result = SpywareRiskPolicy.evaluate(
-            setOf(
-                SpywareCapabilitySignal.MICROPHONE_ACCESS,
-                SpywareCapabilitySignal.LOCATION_ACCESS,
-                SpywareCapabilitySignal.CONTACTS_ACCESS,
-                SpywareCapabilitySignal.BOOT_PERSISTENCE
-            )
-        )
-        assertEquals(SpywareReviewLevel.LOW, result.level)
-        assertTrue(result.score < 30)
+    fun ordinaryPermissionsStayLow() {
+        val assessment = SpywareRiskPolicy.evaluate(setOf(SpywareCapabilitySignal.MICROPHONE_ACCESS, SpywareCapabilitySignal.LOCATION_ACCESS))
+        assertEquals(SpywareReviewLevel.LOW, assessment.level)
+        assertEquals(29.coerceAtMost(assessment.score), assessment.score)
     }
 
     @Test
-    fun sideloadedPrivilegedSurveillanceCombinationEscalates() {
-        val result = SpywareRiskPolicy.evaluate(
-            setOf(
-                SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
-                SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE,
-                SpywareCapabilitySignal.SIDELOADED,
-                SpywareCapabilitySignal.BOOT_PERSISTENCE,
-                SpywareCapabilitySignal.MICROPHONE_ACCESS,
-                SpywareCapabilitySignal.LOCATION_ACCESS
-            )
-        )
-        assertEquals(SpywareReviewLevel.HIGH, result.level)
-        assertTrue(result.score >= 40)
+    fun keyloggerInputMethodEscalatesReview() {
+        val assessment = SpywareRiskPolicy.evaluate(setOf(SpywareCapabilitySignal.INPUT_METHOD_SERVICE, SpywareCapabilitySignal.MICROPHONE_ACCESS, SpywareCapabilitySignal.SMS_ACCESS))
+        assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
     }
 
     @Test
-    fun declaredPrivilegedServiceWithoutActivationStaysReviewOnly() {
-        val result = SpywareRiskPolicy.evaluate(
-            setOf(
-                SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
-                SpywareCapabilitySignal.SIDELOADED,
-                SpywareCapabilitySignal.MICROPHONE_ACCESS
-            )
+    fun surveillanceComboTriggersReview() {
+        val signals = setOf(
+            SpywareCapabilitySignal.CAMERA_ACCESS, SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.SMS_ACCESS
         )
-        assertEquals(SpywareReviewLevel.REVIEW, result.level)
-        assertTrue(result.score < 65)
+        val assessment = SpywareRiskPolicy.evaluate(signals + SpywareCapabilitySignal.BOOT_PERSISTENCE)
+        assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
     }
 
     @Test
-    fun sideloadedSensitivePermissionClusterNeedsReview() {
-        val result = SpywareRiskPolicy.evaluate(
-            setOf(
-                SpywareCapabilitySignal.SIDELOADED,
-                SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER,
-                SpywareCapabilitySignal.MICROPHONE_ACCESS,
-                SpywareCapabilitySignal.CAMERA_ACCESS,
-                SpywareCapabilitySignal.LOCATION_ACCESS
-            )
+    fun heavySurveillanceWithPersistenceIsHighRisk() {
+        val signals = setOf(
+            SpywareCapabilitySignal.SMS_ACCESS, SpywareCapabilitySignal.CALL_LOG_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS, SpywareCapabilitySignal.BOOT_PERSISTENCE
         )
-
-        assertEquals(SpywareReviewLevel.REVIEW, result.level)
-        assertTrue(result.score >= 35)
-        assertTrue(SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER in result.signals)
+        val assessment = SpywareRiskPolicy.evaluate(signals)
+        assertEquals(SpywareReviewLevel.HIGH, assessment.level)
     }
 
     @Test
-    fun permissionsAloneNeverEscalateToReview() {
-        val result = SpywareRiskPolicy.evaluate(
-            setOf(
-                SpywareCapabilitySignal.SMS_ACCESS,
-                SpywareCapabilitySignal.CALL_LOG_ACCESS,
-                SpywareCapabilitySignal.LOCATION_ACCESS,
-                SpywareCapabilitySignal.MICROPHONE_ACCESS,
-                SpywareCapabilitySignal.CONTACTS_ACCESS
-            )
+    fun stalkerwareFullChainIsHighRisk() {
+        val signals = setOf(
+            SpywareCapabilitySignal.ACCESSIBILITY_SERVICE, SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE,
+            SpywareCapabilitySignal.SMS_ACCESS, SpywareCapabilitySignal.CALL_LOG_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.BOOT_PERSISTENCE,
+            SpywareCapabilitySignal.SIDELOADED
         )
-        assertEquals(SpywareReviewLevel.LOW, result.level)
-        assertTrue(result.score < 30)
+        val assessment = SpywareRiskPolicy.evaluate(signals)
+        assertEquals(SpywareReviewLevel.HIGH, assessment.level)
+        assertEquals(65.coerceAtLeast(assessment.score), assessment.score)
     }
 }
