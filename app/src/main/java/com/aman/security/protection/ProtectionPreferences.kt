@@ -227,6 +227,9 @@ class ProtectionPreferences(context: Context) {
     var totalForegroundChecks: Long
         get() = prefs.getLong(KEY_TOTAL_FOREGROUND_CHECKS, 0L)
         set(value) = prefs.edit().putLong(KEY_TOTAL_FOREGROUND_CHECKS, value).apply()
+    var lastCameraMicAlertAt: Long
+        get() = prefs.getLong(KEY_LAST_CAMERA_MIC_ALERT_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_CAMERA_MIC_ALERT_AT, value).apply()
     var lastClipboardProtectAt: Long
         get() = prefs.getLong(KEY_LAST_CLIPBOARD_PROTECT_AT, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_CLIPBOARD_PROTECT_AT, value).apply()
@@ -435,6 +438,7 @@ class ProtectionPreferences(context: Context) {
         private const val KEY_TOTAL_CAMERA_MIC_ALERTS = "total_camera_mic_alerts"
         private const val KEY_TOTAL_CLIPBOARD_GUARDS = "total_clipboard_guards"
         private const val KEY_TOTAL_FOREGROUND_CHECKS = "total_foreground_checks"
+        private const val KEY_LAST_CAMERA_MIC_ALERT_AT = "last_camera_mic_alert_at"
         private const val KEY_LAST_CLIPBOARD_PROTECT_AT = "last_clipboard_protect_at"
         private const val KEY_DATA_EXFIL_GUARD_ENABLED = "data_exfiltration_guard_enabled"
         private const val KEY_LAST_DATA_EXFIL_PROBE_AT = "last_data_exfil_probe_at"

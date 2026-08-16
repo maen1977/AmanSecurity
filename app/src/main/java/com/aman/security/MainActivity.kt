@@ -63,6 +63,9 @@ import com.aman.security.protection.ScanFindingsSnapshot
 import com.aman.security.protection.StoredScanFinding
 import com.aman.security.protection.StoredScanFindingKind
 import com.aman.security.protection.StoredScanFindingSeverity
+import com.aman.security.runtime.AnomalyLevel
+import com.aman.security.runtime.ExposureLevel
+import com.aman.security.runtime.RuntimeShieldCoordinator
 import com.aman.security.scanner.AppInstallSource
 import com.aman.security.scanner.ApkAnalysisState
 import com.aman.security.scanner.ApkIdentityClassification
@@ -1869,6 +1872,7 @@ class MainActivity : AppCompatActivity() {
             formatter.format(protectionPreferences.totalClipboardGuards),
             formatter.format(protectionPreferences.totalForegroundChecks)
         )
+        refreshProtectionScore()
         val lastActivity = protectionPreferences.lastActivityLabel
         val lastActivityLine = if (protectionPreferences.lastActivityAt > 0L && !lastActivity.isNullOrBlank()) {
             getString(R.string.last_protection_activity_line, formatDate(protectionPreferences.lastActivityAt), lastActivity)
@@ -1938,6 +1942,22 @@ class MainActivity : AppCompatActivity() {
         renderProtectionPosture()
     }
 
+    private fun refreshProtectionScore() {
+        runCatching {
+            val report = RuntimeShieldCoordinator(this).protectionScore()
+            val valueText = when {
+                report.score >= RuntimeShieldCoordinator.STRONG_THRESHOLD -> getString(R.string.protection_score_value_high, report.score)
+                report.score >= RuntimeShieldCoordinator.REVIEW_THRESHOLD -> getString(R.string.protection_score_value_review, report.score)
+                else -> getString(R.string.protection_score_value_low, report.score)
+            }
+            binding.txtProtectionScoreValue.text = valueText
+            binding.txtProtectionScoreDetail.text = when {
+                report.exposureLevel == ExposureLevel.HIGH -> getString(R.string.protection_score_detail_exposure)
+                report.anomalyLevel != AnomalyLevel.NONE -> getString(R.string.protection_score_detail_anomaly)
+                else -> getString(R.string.protection_score_detail_normal)
+            }
+        }
+    }
     private fun formatProtectionActivity(entry: ProtectionActivityEntry): String {
         val marker = when (entry.state) {
             ProtectionActivityState.SAFE -> "✓"

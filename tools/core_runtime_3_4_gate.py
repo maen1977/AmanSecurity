@@ -15,7 +15,7 @@ colors=(ROOT/'app/src/main/res/values/colors.xml').read_text()
 def need(ok,label):
     if not ok: raise SystemExit('CORE_RUNTIME_3_4_GATE_FAILED '+label)
 
-need('versionName = "7.0.0"' in gradle and 'versionCode = 56' in gradle,'version')
+need('versionName = "8.0.0"' in gradle and 'versionCode = 57' in gradle,'version')
 need('ACTION_SCAN' in service and 'PersistentScanMode.QUICK' in service and 'PersistentScanMode.FULL' in service,'service_scans')
 need('START_STICKY' in service and 'onTaskRemoved' in service,'service_persistence')
 need('ScanSessionStore' in scan_store and 'PersistentScanState.RUNNING' in scan_store and 'PersistentScanState.COMPLETED' in scan_store,'durable_scan_state')

@@ -23,6 +23,8 @@ import com.aman.security.runtime.ForegroundAppScanner
 import com.aman.security.runtime.ForegroundKind
 import com.aman.security.runtime.HardeningReport
 import com.aman.security.runtime.OverlayWatchdog
+import com.aman.security.runtime.IntegrityLevel
+import com.aman.security.runtime.PackageIntegrityGuard
 import com.aman.security.runtime.SystemHardeningAuditor
 import com.aman.security.security.DataExfiltrationGuard
 import com.aman.security.security.DeviceSecurityAuditor
@@ -467,7 +469,12 @@ class ProtectionService : Service() {
         val findings = runCatching { scanner.tick() }.getOrDefault(emptyList())
         for (finding in findings) {
             when (finding.kind) {
-                ForegroundKind.ENTERED_SESSION -> Unit
+                ForegroundKind.ENTERED_SESSION -> {
+                    val integrity = runCatching { PackageIntegrityGuard(this).verify(finding.detail) }.getOrNull()
+                    if (integrity != null && integrity.level == IntegrityLevel.MODIFIED) {
+                        ProtectionNotifier.notifyPackageModified(this, finding.detail)
+                    }
+                }
                 ForegroundKind.OVERLAY_ATTACK -> {
                     val label = packageLabel(finding.detail)
                     ProtectionNotifier.notifyOverlayAttack(this, label, finding.detail)

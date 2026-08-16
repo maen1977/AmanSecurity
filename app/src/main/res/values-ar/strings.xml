@@ -1001,4 +1001,13 @@
     <string name="runtime_clipboard_guard_count">أسرار الحافظة المحمية: %1$d</string>
     <string name="runtime_foreground_check_count">فحوصات التطبيقات الحية: %1$d</string>
     <string name="runtime_shield_stats_line">درع الحماية الحية: %1$s هجمات تغطية محجوبة، %2$s تنبيهات كاميرا وميكروفون، %3$s أسرار حافظة محمية، %4$s فحصًا حيًّا</string>
+    <string name="protection_score_section_title">جاهزية الحماية الحية</string>
+    <string name="protection_score_value_high">جاهزية الحماية: %1$d من 100 — قوية</string>
+    <string name="protection_score_value_review">جاهزية الحماية: %1$d من 100 — يُنصح بالمراجعة</string>
+    <string name="protection_score_value_low">جاهزية الحماية: %1$d من 100 — تحتاج اهتمامًا</string>
+    <string name="protection_score_detail_normal">كل حراس التشغيل الحية سليمة وحصانة النظام مكتملة.</string>
+    <string name="protection_score_detail_anomaly">رُصدت مجموعة أحداث حية عالية الخطورة. أبقِ قضبان الحراسة مفعّلة.</string>
+    <string name="protection_score_detail_exposure">تعرض الخصوصية مرتفع. راجع الصلاحيات الحساسة وخدمات الإتاحة النشطة.</string>
+    <string name="runtime_integrity_notification_title">تطبيق معدّل مكتشف</string>
+    <string name="runtime_integrity_notification_body">تطبيق «%1$s» وُقّع بشهادة مختلفة عن السابقة. قد يكون نسخة معدّلة من التطبيق الأصلي.</string>
 </resources>

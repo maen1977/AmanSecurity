@@ -39,6 +39,7 @@ object ProtectionNotifier {
     private const val RUNTIME_MEDIA_ALERT_ID = 27810
     private const val RUNTIME_CLIPBOARD_ALERT_ID = 27820
     private const val RUNTIME_HARDENING_ALERT_ID = 27830
+    private const val RUNTIME_INTEGRITY_ALERT_ID = 27840
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -287,6 +288,37 @@ object ProtectionNotifier {
             NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_shield)
                 .setContentTitle(context.getString(R.string.runtime_clipboard_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyPackageModified(context: Context, packageName: String) {
+        ensureChannels(context)
+        val label = runCatching {
+            val info = context.packageManager.getPackageInfo(packageName, 0)
+            info.applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty()
+        }.getOrDefault(packageName)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, RUNTIME_INTEGRITY_ALERT_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(R.string.runtime_integrity_notification_body, label)
+        postNotificationSafely(
+            context, RUNTIME_INTEGRITY_ALERT_ID,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.runtime_integrity_notification_title))
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_MAX)

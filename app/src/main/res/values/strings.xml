@@ -1001,4 +1001,13 @@
     <string name="runtime_clipboard_guard_count">Clipboard secrets protected: %1$d</string>
     <string name="runtime_foreground_check_count">Live app checks: %1$d</string>
     <string name="runtime_shield_stats_line">Runtime Shield: %1$s overlay blocks, %2$s camera/mic alerts, %3$s clipboard secrets, %4$s live checks</string>
+    <string name="protection_score_section_title">Live protection readiness</string>
+    <string name="protection_score_value_high">Protection readiness: %1$d / 100 — strong</string>
+    <string name="protection_score_value_review">Protection readiness: %1$d / 100 — review advised</string>
+    <string name="protection_score_value_low">Protection readiness: %1$d / 100 — attention needed</string>
+    <string name="protection_score_detail_normal">All runtime guards are healthy and system hardening is intact.</string>
+    <string name="protection_score_detail_anomaly">A cluster of high-risk live events was detected. Keep the guard rails turned on.</string>
+    <string name="protection_score_detail_exposure">Privacy exposure is elevated. Review sensitive permissions and active accessibility services.</string>
+    <string name="runtime_integrity_notification_title">Modified app detected</string>
+    <string name="runtime_integrity_notification_body">%1$s was signed with a different certificate than before. It may be a modified copy of the original app.</string>
 </resources>
