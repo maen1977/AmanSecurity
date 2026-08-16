@@ -49,6 +49,23 @@ class SpywareRiskPolicyTest {
     }
 
     @Test
+    fun sideloadedSensitivePermissionClusterNeedsReview() {
+        val result = SpywareRiskPolicy.evaluate(
+            setOf(
+                SpywareCapabilitySignal.SIDELOADED,
+                SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER,
+                SpywareCapabilitySignal.MICROPHONE_ACCESS,
+                SpywareCapabilitySignal.CAMERA_ACCESS,
+                SpywareCapabilitySignal.LOCATION_ACCESS
+            )
+        )
+
+        assertEquals(SpywareReviewLevel.REVIEW, result.level)
+        assertTrue(result.score >= 35)
+        assertTrue(SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER in result.signals)
+    }
+
+    @Test
     fun permissionsAloneNeverEscalateToReview() {
         val result = SpywareRiskPolicy.evaluate(
             setOf(

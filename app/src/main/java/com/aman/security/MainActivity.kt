@@ -725,6 +725,8 @@ class MainActivity : AppCompatActivity() {
         MessageRiskSignal.PAYMENT_REQUEST -> R.string.message_signal_payment
         MessageRiskSignal.PRIZE_OR_GIFT -> R.string.message_signal_prize
         MessageRiskSignal.IMPERSONATION -> R.string.message_signal_impersonation
+        MessageRiskSignal.REMOTE_ACCESS_REQUEST -> R.string.message_signal_remote_access
+        MessageRiskSignal.APP_INSTALL_REQUEST -> R.string.message_signal_app_install
         MessageRiskSignal.SHORTENED_URL -> R.string.message_signal_shortened_url
         MessageRiskSignal.MULTIPLE_URLS -> R.string.message_signal_multiple_urls
         MessageRiskSignal.SUSPICIOUS_URL -> R.string.message_signal_suspicious_url
@@ -3630,6 +3632,9 @@ class MainActivity : AppCompatActivity() {
         SpywareCapabilitySignal.LOCATION_ACCESS -> getString(R.string.spyware_signal_location)
         SpywareCapabilitySignal.MICROPHONE_ACCESS -> getString(R.string.spyware_signal_microphone)
         SpywareCapabilitySignal.CONTACTS_ACCESS -> getString(R.string.spyware_signal_contacts)
+        SpywareCapabilitySignal.CAMERA_ACCESS -> getString(R.string.spyware_signal_camera)
+        SpywareCapabilitySignal.PHONE_STATE_ACCESS -> getString(R.string.spyware_signal_phone)
+        SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER -> getString(R.string.spyware_signal_sensitive_cluster)
         SpywareCapabilitySignal.SIDELOADED -> getString(R.string.spyware_signal_sideloaded)
         null -> null
     }

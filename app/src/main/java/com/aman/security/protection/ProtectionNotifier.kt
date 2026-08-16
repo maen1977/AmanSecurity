@@ -32,6 +32,8 @@ object ProtectionNotifier {
     private const val DATA_EXFIL_ALERT_ID = 27400
     private const val BACKGROUND_ACTIVITY_ALERT_ID = 27500
     private const val SPYWARE_ALERT_ID = 27600
+    private const val SIDELOAD_SENSITIVE_ALERT_ID = 27650
+    private const val DOWNLOAD_REVIEW_ALERT_ID = 27700
 
     fun ensureChannel(context: Context) = ensureChannels(context)
 
@@ -470,6 +472,74 @@ object ProtectionNotifier {
             context = context,
             notificationId = event.id.hashCode(),
             notification = notification
+        )
+        updateProtectionStatus(context)
+    }
+
+    fun notifyDownloadedPackageReview(context: Context, fileName: String, path: String, sha256: String) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val notificationId = DOWNLOAD_REVIEW_ALERT_ID + sha256.hashCode().and(0x1ff)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(
+            R.string.download_untrusted_source_notification_body,
+            fileName
+        )
+        postNotificationSafely(
+            context,
+            notificationId,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.download_untrusted_source_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText("$body\n$path"))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        )
+    }
+
+    fun notifySideloadedSensitiveApp(context: Context, appName: String, packageName: String, signalCount: Int) {
+        ensureChannels(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_PAGE, MainActivity.OPEN_PAGE_PROTECTION)
+        }
+        val notificationId = SIDELOAD_SENSITIVE_ALERT_ID + packageName.hashCode().and(0x1ff)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = context.getString(
+            R.string.sideload_sensitive_notification_body,
+            appName,
+            signalCount
+        )
+        postNotificationSafely(
+            context,
+            notificationId,
+            NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(context.getString(R.string.sideload_sensitive_notification_title))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
         )
         updateProtectionStatus(context)
     }

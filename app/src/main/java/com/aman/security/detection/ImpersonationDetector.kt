@@ -50,20 +50,30 @@ object ImpersonationDetector {
             val labelTokenHit = normalizedLabel.isNotBlank() && profile.tokens.any { token ->
                 normalizedLabel.contains(token.lowercase())
             }
+            val packageTokenHit = profile.tokens.any { token ->
+                normalizedPackage.split('.', '-', '_').any { segment -> segment == token.lowercase() }
+            }
+            val suspiciousMarkerHit = SUSPICIOUS_MARKERS.any { marker ->
+                normalizedPackage.contains(marker) || normalizedLabel.contains(marker)
+            }
+            val sideloadedBrandLike = isSideloaded &&
+                (labelTokenHit || packageTokenHit) && suspiciousMarkerHit
 
             // A package merely containing a brand token is not impersonation. Vendors commonly
             // publish multiple legitimate sibling packages (for example a main app and a messenger).
-            // Require a typo-close package name, or a brand-like label on an explicitly sideloaded
-            // package. Signer mismatch for the exact official package is handled above.
-            if (!closePackage && !(labelTokenHit && isSideloaded)) return@mapNotNull null
+            // Require a typo-close package name, or a brand-like label/package with a suspicious
+            // marker on an explicitly sideloaded package. Signer mismatch for the exact official
+            // package is handled above.
+            if (!closePackage && !sideloadedBrandLike) return@mapNotNull null
 
             var score = when {
                 closePackage -> 18
+                packageTokenHit -> 17
                 else -> 14
             }
             if (isSideloaded) score += 8
             if (signerMismatch) score += 14
-            val confidence = if (signerMismatch || (isSideloaded && (closePackage || labelTokenHit))) {
+            val confidence = if (signerMismatch || (isSideloaded && (closePackage || labelTokenHit || packageTokenHit))) {
                 FindingConfidence.MEDIUM
             } else {
                 FindingConfidence.LOW
@@ -78,6 +88,17 @@ object ImpersonationDetector {
             )
         }
     }
+
+    private val SUSPICIOUS_MARKERS = setOf(
+        "update",
+        "security",
+        "verify",
+        "support",
+        "official",
+        "account",
+        "login",
+        "wallet"
+    )
 
     private fun editDistance(a: String, b: String): Int {
         if (a == b) return 0

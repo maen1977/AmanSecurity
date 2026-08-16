@@ -14,6 +14,8 @@ enum class MessageRiskSignal {
     PAYMENT_REQUEST,
     PRIZE_OR_GIFT,
     IMPERSONATION,
+    REMOTE_ACCESS_REQUEST,
+    APP_INSTALL_REQUEST,
     SHORTENED_URL,
     MULTIPLE_URLS,
     SUSPICIOUS_URL,
@@ -64,6 +66,14 @@ class MessageScanner(private val urlScanner: UrlScanner) {
             signals += MessageRiskSignal.IMPERSONATION
             score += 12
         }
+        if (containsAny(lower, REMOTE_ACCESS_TERMS)) {
+            signals += MessageRiskSignal.REMOTE_ACCESS_REQUEST
+            score += 25
+        }
+        if (containsAny(lower, APP_INSTALL_TERMS)) {
+            signals += MessageRiskSignal.APP_INSTALL_REQUEST
+            score += 18
+        }
 
         if (urls.size >= 2) {
             signals += MessageRiskSignal.MULTIPLE_URLS
@@ -82,6 +92,15 @@ class MessageScanner(private val urlScanner: UrlScanner) {
             signals += MessageRiskSignal.SUSPICIOUS_URL
             score += if (urls.any { it.riskLevel == UrlRiskLevel.HIGH }) 40 else 22
         }
+
+        // Remote-control and installation requests become materially riskier when
+        // combined with pressure or credential/payment language.
+        if (MessageRiskSignal.REMOTE_ACCESS_REQUEST in signals &&
+            (MessageRiskSignal.URGENT_LANGUAGE in signals ||
+                MessageRiskSignal.CREDENTIAL_REQUEST in signals ||
+                MessageRiskSignal.PAYMENT_REQUEST in signals)
+        ) score += 15
+        if (MessageRiskSignal.APP_INSTALL_REQUEST in signals && urls.isNotEmpty()) score += 8
 
         score = score.coerceAtMost(100)
         val level = when {
@@ -120,8 +139,17 @@ class MessageScanner(private val urlScanner: UrlScanner) {
             "winner", "you won", "prize", "gift", "free reward", "claim now", "مبروك", "ربحت", "جائزة", "هدية", "استلم الآن"
         )
         private val IMPERSONATION_TERMS = setOf(
-            "support team", "security team", "administrator", "police", "customs", "tax office",
-            "دعم", "فريق الأمان", "فريق الامن", "الإدارة", "الشرطة", "الجمارك", "الضريبة"
+            "support team", "security team", "administrator", "police", "customs", "tax office", "customer service",
+            "دعم", "فريق الأمان", "فريق الامن", "الإدارة", "الشرطة", "الجمارك", "الضريبة", "خدمة العملاء"
+        )
+        private val REMOTE_ACCESS_TERMS = setOf(
+            "anydesk", "teamviewer", "rustdesk", "quick support", "remote support", "screen share",
+            "share your screen", "remote access", "install support app", "الدعم عن بعد", "تحكم عن بعد",
+            "مشاركة الشاشة", "شارك شاشتك", "تطبيق الدعم"
+        )
+        private val APP_INSTALL_TERMS = setOf(
+            "install this app", "download this app", "install apk", "download apk", "open the apk",
+            ".apk", "تثبيت التطبيق", "نزّل التطبيق", "نزل التطبيق", "حمل التطبيق", "حمّل التطبيق", "ملف apk"
         )
     }
 }

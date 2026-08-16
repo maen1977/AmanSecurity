@@ -69,6 +69,20 @@ class ImpersonationDetectorTest {
 
 
     @Test
+    fun sideloadedBrandPackageWithSecurityUpdateMarkerNeedsReview() {
+        val result = ImpersonationDetector.evaluate(
+            packageName = "com.whatsapp.security.update",
+            appLabel = "WhatsApp Security Update",
+            profiles = listOf(profile),
+            isSideloaded = true
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(FindingConfidence.MEDIUM, result.first().confidence)
+        assertTrue(result.first().score >= 25)
+    }
+
+    @Test
     fun facebookSiblingPackageDoesNotTriggerBrandImpersonation() {
         val profiles = listOf(ProtectedBrandProfile("BRAND_FACEBOOK", "com.facebook.katana", setOf("facebook")))
         val findings = ImpersonationDetector.evaluate(

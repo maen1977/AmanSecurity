@@ -255,6 +255,10 @@
     <string name="protection_notification_app_body">Maen Shield detected a security alert after installing or updating: %1$s</string>
     <string name="spyware_high_notification_title">High-risk spyware capability review</string>
     <string name="spyware_high_notification_body">%1$s has active privileged or surveillance signals (%2$d). Review the app and its Android access settings.</string>
+    <string name="sideload_sensitive_notification_title">Review app installed outside a store</string>
+    <string name="sideload_sensitive_notification_body">%1$s was installed from a local or downloaded package and has %2$d sensitive access capabilities. This is not a malware verdict; review it before trusting it.</string>
+    <string name="download_untrusted_source_notification_title">Review downloaded app package before opening</string>
+    <string name="download_untrusted_source_notification_body">Maen Shield scanned %1$s locally. Because it is an installable package from storage, review its source and requested permissions before opening or installing it.</string>
     <string name="app_version">Version %1$s</string>
     <string name="database_baseline_date">Bundled detection baseline • Generated %1$s</string>
     <string name="database_date_unknown">unknown date</string>
@@ -321,6 +325,8 @@
     <string name="message_signal_payment">Banking, payment, or transfer request</string>
     <string name="message_signal_prize">Prize, gift, or reward claim</string>
     <string name="message_signal_impersonation">Possible impersonation of an organization</string>
+    <string name="message_signal_remote_access">Requests remote-control or screen-sharing software</string>
+    <string name="message_signal_app_install">Requests installing or opening an app/APK from the message</string>
     <string name="message_signal_shortened_url">Shortened link hides the final destination</string>
     <string name="message_signal_multiple_urls">Multiple links in one message</string>
     <string name="message_signal_suspicious_url">A link has elevated risk indicators</string>
@@ -536,6 +542,8 @@
     <string name="activity_app_checked">Checked app: %1$s</string>
     <string name="timeline_download_threat">Threat detected in download: %1$s</string>
     <string name="timeline_download_checked">Download checked: %1$s</string>
+    <string name="timeline_download_untrusted_source">Downloaded package needs source review: %1$s</string>
+    <string name="timeline_download_untrusted_source_detail">Installable package found in storage: %1$s. Review its source and permissions before opening or installing it.</string>
     <string name="timeline_app_threat">Threat detected in app: %1$s</string>
     <string name="timeline_app_checked">App checked: %1$s</string>
     <string name="activity_apps_rescan_complete">Background app scan completed: %1$d apps</string>
@@ -609,6 +617,8 @@
     <string name="timeline_cached_reputation_sweep_detail">New threat alerts: %1$d • unchanged files were not re-read</string>
     <string name="timeline_spyware_review">Spyware capability review: %1$s</string>
     <string name="timeline_spyware_review_detail">Privileged/surveillance signals: %1$d • capability review is not a malware verdict</string>
+    <string name="timeline_sideload_sensitive_install">External-source app needs permission review: %1$s</string>
+    <string name="timeline_sideload_sensitive_detail">Installed outside a known app store with %1$d sensitive access capabilities. Review before trusting it.</string>
     <string name="scan_stage_spyware">Spyware &amp; stalkerware review</string>
     <string name="smart_scan_spyware_summary">Spyware capability audit: %1$s apps • Review: %2$s • High-pattern review: %3$s</string>
     <string name="spyware_monitor_active">Spyware/stalkerware monitor: active for new or updated apps</string>
@@ -820,6 +830,9 @@
     <string name="spyware_signal_location">Has location access</string>
     <string name="spyware_signal_microphone">Has microphone access</string>
     <string name="spyware_signal_contacts">Has contacts access</string>
+    <string name="spyware_signal_camera">Has camera access</string>
+    <string name="spyware_signal_phone">Has phone-state or calling access</string>
+    <string name="spyware_signal_sensitive_cluster">Combines three or more sensitive surveillance permissions</string>
     <string name="spyware_signal_sideloaded">Installed from a local or downloaded package</string>
     <string name="scan_audit_screen_lock">Secure screen lock is disabled</string>
     <string name="scan_audit_root_signals">Root / system-modification indicators were found</string>

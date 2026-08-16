@@ -76,13 +76,35 @@ class SpywareAuditor(private val context: Context) {
         val requested = info.requestedPermissions?.toSet().orEmpty()
         if (Manifest.permission.RECEIVE_BOOT_COMPLETED in requested) signals += SpywareCapabilitySignal.BOOT_PERSISTENCE
         if (Manifest.permission.SYSTEM_ALERT_WINDOW in requested) signals += SpywareCapabilitySignal.OVERLAY_DECLARED
-        if (isGranted(info.packageName, Manifest.permission.READ_SMS)) signals += SpywareCapabilitySignal.SMS_ACCESS
+        if (isAnyGranted(info.packageName, Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)) {
+            signals += SpywareCapabilitySignal.SMS_ACCESS
+        }
         if (isGranted(info.packageName, Manifest.permission.READ_CALL_LOG)) signals += SpywareCapabilitySignal.CALL_LOG_ACCESS
         if (isGranted(info.packageName, Manifest.permission.ACCESS_FINE_LOCATION) || isGranted(info.packageName, Manifest.permission.ACCESS_COARSE_LOCATION)) {
             signals += SpywareCapabilitySignal.LOCATION_ACCESS
         }
         if (isGranted(info.packageName, Manifest.permission.RECORD_AUDIO)) signals += SpywareCapabilitySignal.MICROPHONE_ACCESS
         if (isGranted(info.packageName, Manifest.permission.READ_CONTACTS)) signals += SpywareCapabilitySignal.CONTACTS_ACCESS
+        if (isGranted(info.packageName, Manifest.permission.CAMERA)) signals += SpywareCapabilitySignal.CAMERA_ACCESS
+        if (isAnyGranted(
+                info.packageName,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.READ_PHONE_NUMBERS,
+                Manifest.permission.CALL_PHONE
+            )
+        ) signals += SpywareCapabilitySignal.PHONE_STATE_ACCESS
+        val surveillanceSignals = setOf(
+            SpywareCapabilitySignal.SMS_ACCESS,
+            SpywareCapabilitySignal.CALL_LOG_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS,
+            SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.CAMERA_ACCESS,
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS
+        )
+        if (signals.count(surveillanceSignals::contains) >= 3) {
+            signals += SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER
+        }
         if (isConfirmedSideload(info.packageName)) signals += SpywareCapabilitySignal.SIDELOADED
 
         val assessment = SpywareRiskPolicy.evaluate(signals)
@@ -93,6 +115,9 @@ class SpywareAuditor(private val context: Context) {
 
     private fun isGranted(packageName: String, permission: String): Boolean =
         packageManager.checkPermission(permission, packageName) == PackageManager.PERMISSION_GRANTED
+
+    private fun isAnyGranted(packageName: String, vararg permissions: String): Boolean =
+        permissions.any { isGranted(packageName, it) }
 
     private fun isEnabledAccessibilityService(packageName: String): Boolean = runCatching {
         val manager = context.getSystemService(AccessibilityManager::class.java) ?: return@runCatching false

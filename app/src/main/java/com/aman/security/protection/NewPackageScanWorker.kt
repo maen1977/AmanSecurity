@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.SignatureDatabase
 import com.aman.security.security.SpywareAuditor
+import com.aman.security.security.SpywareCapabilitySignal
 import com.aman.security.security.SpywareReviewLevel
 
 class NewPackageScanWorker(
@@ -61,6 +62,39 @@ class NewPackageScanWorker(
             }
 
             val spywareReview = SpywareAuditor(applicationContext).auditPackage(packageName)
+            if (spywareReview != null) {
+                val sensitiveSignals = setOf(
+                    SpywareCapabilitySignal.SMS_ACCESS,
+                    SpywareCapabilitySignal.CALL_LOG_ACCESS,
+                    SpywareCapabilitySignal.LOCATION_ACCESS,
+                    SpywareCapabilitySignal.MICROPHONE_ACCESS,
+                    SpywareCapabilitySignal.CONTACTS_ACCESS,
+                    SpywareCapabilitySignal.CAMERA_ACCESS,
+                    SpywareCapabilitySignal.PHONE_STATE_ACCESS
+                )
+                val sensitiveCount = spywareReview.assessment.signals.count(sensitiveSignals::contains)
+                if (SpywareCapabilitySignal.SIDELOADED in spywareReview.assessment.signals && sensitiveCount >= 2) {
+                    timeline.add(
+                        kind = ProtectionActivityKind.SECURITY_AUDIT,
+                        state = ProtectionActivityState.ATTENTION,
+                        title = applicationContext.getString(
+                            com.aman.security.R.string.timeline_sideload_sensitive_install,
+                            spywareReview.appName
+                        ),
+                        detail = applicationContext.getString(
+                            com.aman.security.R.string.timeline_sideload_sensitive_detail,
+                            sensitiveCount
+                        ),
+                        dedupeKey = "sideload-sensitive:${spywareReview.packageName}"
+                    )
+                    ProtectionNotifier.notifySideloadedSensitiveApp(
+                        applicationContext,
+                        spywareReview.appName,
+                        spywareReview.packageName,
+                        sensitiveCount
+                    )
+                }
+            }
             if (spywareReview != null && spywareReview.assessment.level != SpywareReviewLevel.LOW) {
                 val isHighRisk = spywareReview.assessment.level == SpywareReviewLevel.HIGH
                 timeline.add(

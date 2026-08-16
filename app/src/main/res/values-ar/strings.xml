@@ -255,6 +255,10 @@
     <string name="protection_notification_app_body">اكتشف Maen Shield تنبيهًا أمنيًا بعد تثبيت أو تحديث: %1$s</string>
     <string name="spyware_high_notification_title">مراجعة قدرات تجسس عالية الخطورة</string>
     <string name="spyware_high_notification_body">لدى %1$s مؤشرات تحكم أو مراقبة حساسة مفعّلة (%2$d). راجع التطبيق وصلاحياته في إعدادات أندرويد.</string>
+    <string name="sideload_sensitive_notification_title">راجع تطبيقًا مثبتًا من خارج المتجر</string>
+    <string name="sideload_sensitive_notification_body">تم تثبيت %1$s من ملف محلي أو حزمة تم تنزيلها، ولديه %2$d من قدرات الوصول الحساسة. هذا ليس حكمًا بوجود برمجية خبيثة؛ راجعه قبل الوثوق به.</string>
+    <string name="download_untrusted_source_notification_title">راجع حزمة تطبيق منزلة قبل فتحها</string>
+    <string name="download_untrusted_source_notification_body">فحص Maen Shield الملف %1$s محليًا. لأنه حزمة قابلة للتثبيت من التخزين، راجع مصدره والصلاحيات المطلوبة قبل فتحه أو تثبيته.</string>
     <string name="app_version">الإصدار %1$s</string>
     <string name="database_baseline_date">قاعدة الكشف المضمنة • أُنشئت %1$s</string>
     <string name="database_date_unknown">تاريخ غير معروف</string>
@@ -321,6 +325,8 @@
     <string name="message_signal_payment">طلب بنكي أو دفع أو تحويل</string>
     <string name="message_signal_prize">ادعاء جائزة أو هدية أو مكافأة</string>
     <string name="message_signal_impersonation">انتحال محتمل لجهة أو مؤسسة</string>
+    <string name="message_signal_remote_access">يطلب برنامج تحكم عن بعد أو مشاركة الشاشة</string>
+    <string name="message_signal_app_install">يطلب تثبيت تطبيق أو فتح APK من الرسالة</string>
     <string name="message_signal_shortened_url">رابط مختصر يخفي الوجهة النهائية</string>
     <string name="message_signal_multiple_urls">عدة روابط في رسالة واحدة</string>
     <string name="message_signal_suspicious_url">الرابط يحتوي مؤشرات خطورة مرتفعة</string>
@@ -536,6 +542,8 @@
     <string name="activity_app_checked">تم فحص التطبيق: %1$s</string>
     <string name="timeline_download_threat">تم اكتشاف تهديد في التنزيل: %1$s</string>
     <string name="timeline_download_checked">تم فحص التنزيل: %1$s</string>
+    <string name="timeline_download_untrusted_source">حزمة منزلة تحتاج مراجعة المصدر: %1$s</string>
+    <string name="timeline_download_untrusted_source_detail">تم العثور على حزمة قابلة للتثبيت في التخزين: %1$s. راجع مصدرها وصلاحياتها قبل فتحها أو تثبيتها.</string>
     <string name="timeline_app_threat">تم اكتشاف تهديد في التطبيق: %1$s</string>
     <string name="timeline_app_checked">تم فحص التطبيق: %1$s</string>
     <string name="activity_apps_rescan_complete">اكتمل فحص التطبيقات في الخلفية: %1$d تطبيق</string>
@@ -609,6 +617,8 @@
     <string name="timeline_cached_reputation_sweep_detail">تنبيهات تهديد جديدة: %1$d • لم تُقرأ الملفات غير المتغيرة من جديد</string>
     <string name="timeline_spyware_review">مراجعة قدرات التجسس: %1$s</string>
     <string name="timeline_spyware_review_detail">مؤشرات صلاحيات/مراقبة متقدمة: %1$d • هذه مراجعة قدرات وليست حكمًا بوجود فيروس</string>
+    <string name="timeline_sideload_sensitive_install">تطبيق من مصدر خارجي يحتاج مراجعة الصلاحيات: %1$s</string>
+    <string name="timeline_sideload_sensitive_detail">تم تثبيته خارج متجر تطبيقات معروف ولديه %1$d من قدرات الوصول الحساسة. راجعه قبل الوثوق به.</string>
     <string name="scan_stage_spyware">مراجعة برامج التجسس والمراقبة الخفية</string>
     <string name="smart_scan_spyware_summary">تدقيق قدرات التجسس: %1$s تطبيق • للمراجعة: %2$s • نمط مرتفع للمراجعة: %3$s</string>
     <string name="spyware_monitor_active">مراقبة برامج التجسس: تعمل مع التطبيقات الجديدة أو المحدثة</string>
@@ -820,6 +830,9 @@
     <string name="spyware_signal_location">لديه وصول إلى الموقع</string>
     <string name="spyware_signal_microphone">لديه وصول إلى الميكروفون</string>
     <string name="spyware_signal_contacts">لديه وصول إلى جهات الاتصال</string>
+    <string name="spyware_signal_camera">لديه وصول إلى الكاميرا</string>
+    <string name="spyware_signal_phone">لديه وصول إلى حالة الهاتف أو إجراء المكالمات</string>
+    <string name="spyware_signal_sensitive_cluster">يجمع ثلاث صلاحيات حساسة أو أكثر للمراقبة</string>
     <string name="spyware_signal_sideloaded">مثبت من ملف محلي أو حزمة تم تنزيلها</string>
     <string name="scan_audit_screen_lock">قفل الشاشة الآمن غير مفعّل</string>
     <string name="scan_audit_root_signals">تم العثور على مؤشرات روت أو تعديل في النظام</string>

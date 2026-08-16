@@ -155,7 +155,11 @@ class UrlScanner(
             .joinToString("") { "%02x".format(it) }
 
         private val SUSPICIOUS_KEYWORDS = setOf(
-            "login", "verify", "account", "password", "wallet", "payment", "secure", "auth", "banking", "update"
+            "login", "signin", "sign-in", "verify", "verification", "verify-account", "account-verification",
+            "confirm-identity", "unlock-account", "suspended", "account", "password", "credential", "credentials",
+            "otp", "2fa", "mfa", "one-time-code", "wallet", "seed-phrase", "payment", "invoice", "refund",
+            "transfer", "wire-transfer", "beneficiary", "crypto", "secure", "security-check", "auth", "banking", "update",
+            "تسجيل", "تحقق", "حساب", "كلمة-المرور", "رمز-التحقق", "محفظة", "دفع", "تحويل", "بنك"
         )
 
         private val SHORTENER_HOSTS = setOf(

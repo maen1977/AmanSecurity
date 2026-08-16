@@ -26,6 +26,22 @@ class MessageScannerTest {
     }
 
     @Test
+    fun remoteAccessRequestIsHighlighted() {
+        val result = scanner.scan("Security support asks you to install AnyDesk and share your screen")
+
+        assertTrue(MessageRiskSignal.REMOTE_ACCESS_REQUEST in result.signals)
+        assertTrue(result.riskLevel == MessageRiskLevel.REVIEW || result.riskLevel == MessageRiskLevel.HIGH)
+    }
+
+    @Test
+    fun apkInstallRequestWithLinkIsHighlighted() {
+        val result = scanner.scan("Download this app and install the APK: https://example.com/app.apk")
+
+        assertTrue(MessageRiskSignal.APP_INSTALL_REQUEST in result.signals)
+        assertTrue(result.riskLevel == MessageRiskLevel.REVIEW || result.riskLevel == MessageRiskLevel.HIGH)
+    }
+
+    @Test
     fun ordinaryMessageRemainsLowRisk() {
         val result = scanner.scan("Your appointment is scheduled for Tuesday at 10:00.")
 

@@ -221,19 +221,49 @@ class DownloadProtectionScanner(private val context: Context) {
         }
 
         if (!fromCachedReputation) {
-            val state = when (result.classification) {
-                ScanClassification.SUSPICIOUS, ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
+            val state = when {
+                isInstallablePackage(file) -> ProtectionActivityState.ATTENTION
+                result.classification == ScanClassification.SUSPICIOUS || result.classification == ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
                 else -> ProtectionActivityState.SAFE
             }
-            activityStore.add(
-                kind = ProtectionActivityKind.DOWNLOAD_SCAN,
-                state = state,
-                title = context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName),
-                detail = file.parent ?: Environment.DIRECTORY_DOWNLOADS,
-                dedupeKey = "${ProtectionActivityKind.DOWNLOAD_SCAN}:${context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName)}:${file.parent ?: Environment.DIRECTORY_DOWNLOADS}"
-            )
+            if (isInstallablePackage(file)) {
+                val detail = context.getString(
+                    com.aman.security.R.string.timeline_download_untrusted_source_detail,
+                    file.absolutePath
+                )
+                activityStore.add(
+                    kind = ProtectionActivityKind.DOWNLOAD_SCAN,
+                    state = ProtectionActivityState.ATTENTION,
+                    title = context.getString(
+                        com.aman.security.R.string.timeline_download_untrusted_source,
+                        result.fileName
+                    ),
+                    detail = detail,
+                    dedupeKey = "download-review:${result.sha256}"
+                )
+                ProtectionNotifier.notifyDownloadedPackageReview(
+                    context,
+                    result.fileName,
+                    file.absolutePath,
+                    result.sha256
+                )
+            } else {
+                activityStore.add(
+                    kind = ProtectionActivityKind.DOWNLOAD_SCAN,
+                    state = state,
+                    title = context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName),
+                    detail = file.parent ?: Environment.DIRECTORY_DOWNLOADS,
+                    dedupeKey = "${ProtectionActivityKind.DOWNLOAD_SCAN}:${context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName)}:${file.parent ?: Environment.DIRECTORY_DOWNLOADS}"
+                )
+            }
         }
         return ResultCounts()
+    }
+
+    private fun isInstallablePackage(file: File): Boolean {
+        val name = file.name.lowercase()
+        return name.endsWith(".apk") || name.endsWith(".apks") ||
+            name.endsWith(".xapk") || name.endsWith(".apkm") || name.endsWith(".zip")
     }
 
     private fun enumerateDownloads(): Sequence<File> = sequence {

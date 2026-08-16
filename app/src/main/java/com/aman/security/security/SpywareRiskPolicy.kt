@@ -14,6 +14,9 @@ enum class SpywareCapabilitySignal {
     LOCATION_ACCESS,
     MICROPHONE_ACCESS,
     CONTACTS_ACCESS,
+    CAMERA_ACCESS,
+    PHONE_STATE_ACCESS,
+    SENSITIVE_PERMISSION_CLUSTER,
     SIDELOADED
 }
 
@@ -53,21 +56,27 @@ object SpywareRiskPolicy {
             SpywareCapabilitySignal.CALL_LOG_ACCESS,
             SpywareCapabilitySignal.LOCATION_ACCESS,
             SpywareCapabilitySignal.MICROPHONE_ACCESS,
-            SpywareCapabilitySignal.CONTACTS_ACCESS
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.CAMERA_ACCESS,
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS
         ).count(signals::contains)
         val persistent = SpywareCapabilitySignal.BOOT_PERSISTENCE in signals
         val overlay = SpywareCapabilitySignal.OVERLAY_DECLARED in signals
         val sideloaded = SpywareCapabilitySignal.SIDELOADED in signals
+        val clustered = SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER in signals
 
         var score = controls * 13 + activeControls * 6 + surveillance * 4
+        if (clustered) score += 8
         if (persistent) score += 7
         if (overlay) score += 5
         if (sideloaded) score += 10
+        if (sideloaded && clustered) score += 12
 
         val level = when {
-            sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay) -> SpywareReviewLevel.HIGH
+            sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
             hasActiveControl && activeControls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
-            sideloaded && controls >= 1 && surveillance >= 1 -> SpywareReviewLevel.REVIEW
+            sideloaded && (controls >= 1 || overlay) && surveillance >= 1 -> SpywareReviewLevel.REVIEW
+            clustered && (sideloaded || controls >= 1 || persistent) -> SpywareReviewLevel.REVIEW
             controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
             else -> SpywareReviewLevel.LOW
         }
