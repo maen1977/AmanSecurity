@@ -139,4 +139,31 @@ class StaticBehaviorEngineTest {
         // Only overlay without install packages should not trigger overlay installer.
         assertEquals(false, findings.any { it.id == "BEHAVIOR_OVERLAY_INSTALLER" })
     }
+
+    @Test
+    fun audioRecordingServiceWithContactsProducesCovertListeningFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.AUDIO_RECORDING_SERVICE, ApkRiskSignal.CONTACTS_ACCESS),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_COVERT_LISTENING_PROFILE" })
+    }
+
+    @Test
+    fun storageControlWithCameraProducesMediaHarvestingFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API, ApkRiskSignal.CAMERA),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_MEDIA_HARVESTING" && it.family == ThreatFamily.SPYWARE })
+    }
+
+    @Test
+    fun notificationListenerWithTelephonyStateProducesTelemetryFinding() {
+        val findings = StaticBehaviorEngine.evaluate(
+            signals = setOf(ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE, ApkRiskSignal.TELEPHONY_STATE_API),
+            markers = emptySet()
+        )
+        assertTrue(findings.any { it.id == "BEHAVIOR_NOTIFICATION_TELEPHONY_TELEMETRY" })
+    }
 }

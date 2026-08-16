@@ -31,6 +31,9 @@ object ApkRiskEvaluator {
                 ApkRiskSignal.BILLING_API -> 8
                 ApkRiskSignal.READ_PHONE_STATE_API -> 6
                 ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API -> 6
+                ApkRiskSignal.STORAGE_PERMISSION -> 4
+                ApkRiskSignal.AUDIO_RECORDING_SERVICE -> 5
+                ApkRiskSignal.INPUT_METHOD_SERVICES -> 10
             }
         }
 
@@ -63,6 +66,15 @@ object ApkRiskEvaluator {
         ) score += 15
         if (ApkRiskSignal.CAMERA in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) score += 10
         if (ApkRiskSignal.MICROPHONE in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) score += 10
+
+        // Keylogger input method: a custom keyboard that can reach the network and harvest
+        // SMS or device identifiers silently captures every keystroke including OTPs.
+        if (ApkRiskSignal.INPUT_METHOD_SERVICES in signals && ApkRiskSignal.SMS_ACCESS in signals) score += 35
+        if (ApkRiskSignal.INPUT_METHOD_SERVICES in signals && ApkRiskSignal.DEVICE_IDENTIFIER_API in signals) score += 30
+        // Surveillance channel: network access plus camera, microphone and location forms
+        // the live-streaming stalkerware stack.
+        if (ApkRiskSignal.CAMERA in signals && ApkRiskSignal.MICROPHONE in signals && ApkRiskSignal.PRECISE_LOCATION in signals) score += 25
+        if (ApkRiskSignal.CALL_LOG_ACCESS in signals && ApkRiskSignal.TELEPHONY_STATE_API in signals) score += 28
 
         val bounded = score.coerceIn(0, 100)
         val level = when {

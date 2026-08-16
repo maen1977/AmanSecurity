@@ -3030,6 +3030,9 @@ class MainActivity : AppCompatActivity() {
         ApkRiskSignal.BILLING_API -> R.string.apk_signal_billing_api
         ApkRiskSignal.READ_PHONE_STATE_API -> R.string.apk_signal_read_phone_state
         ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API -> R.string.apk_signal_manage_storage
+        ApkRiskSignal.STORAGE_PERMISSION -> R.string.apk_signal_storage_access
+        ApkRiskSignal.AUDIO_RECORDING_SERVICE -> R.string.apk_signal_audio_service
+        ApkRiskSignal.INPUT_METHOD_SERVICES -> R.string.apk_signal_input_method
     }
 
     private fun threatFamilyString(family: ThreatFamily): Int = when (family) {

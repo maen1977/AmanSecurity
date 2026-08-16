@@ -109,4 +109,60 @@ class ZeroDayHeuristicEngineTest {
         )
         assertEquals(false, findings.any { it.id == "ZERO_DAY_STEALTH_NATIVE_PAYLOAD" })
     }
+
+    @Test
+    fun liveSurveillanceStackTriggersStalkerwareFinding() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.CAMERA, ApkRiskSignal.MICROPHONE, ApkRiskSignal.PRECISE_LOCATION),
+                markers = setOf("NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_LIVE_SURVEILLANCE_STACK" && it.confidence == FindingConfidence.HIGH && it.family == ThreatFamily.STALKERWARE })
+    }
+
+    @Test
+    fun keyloggerInputMethodIsHighConfidenceSpyware() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.INPUT_METHOD_SERVICES, ApkRiskSignal.SMS_ACCESS),
+                markers = setOf("NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_KEYLOGGER_INPUT_METHOD" && it.confidence == FindingConfidence.HIGH })
+    }
+
+    @Test
+    fun silentSideloadLoaderRequiresHiddenPayloadAndBootPersistence() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.REQUEST_INSTALL_PACKAGES, ApkRiskSignal.BOOT_START),
+                markers = setOf("NETWORK_CLIENT"),
+                hiddenDexPayloadCount = 1
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_SILENT_SIDELOAD_LOADER" && it.confidence == FindingConfidence.HIGH })
+    }
+
+    @Test
+    fun telephonyEspionageCombinesCallLogAndTelephonyState() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.CALL_LOG_ACCESS, ApkRiskSignal.TELEPHONY_STATE_API),
+                markers = setOf("NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_TELEPHONY_ESPIONAGE" && it.confidence == FindingConfidence.HIGH })
+    }
+
+    @Test
+    fun accountTakeoverPrepRequiresContactsAndAccountApiMarkers() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.OVERLAY_PERMISSION),
+                markers = setOf("CONTACTS_API", "ACCOUNT_ACCESS")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_ACCOUNT_TAKEOVER_PREP" && it.confidence == FindingConfidence.MEDIUM })
+    }
 }

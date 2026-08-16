@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
 import com.aman.security.detection.DetectionFinding
@@ -331,6 +332,15 @@ class ApkStaticAnalyzer(
         if (Manifest.permission.QUERY_ALL_PACKAGES in permissions) signals += ApkRiskSignal.QUERY_ALL_PACKAGES
         if (packageInfo.services?.any { it.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE } == true) signals += ApkRiskSignal.ACCESSIBILITY_SERVICE
         if (packageInfo.services?.any { it.permission == Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE } == true) signals += ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE
+        if (packageInfo.services?.any { "android.permission.BIND_INPUT_METHOD" == it.permission } == true) signals += ApkRiskSignal.INPUT_METHOD_SERVICES
+        if (Manifest.permission.WRITE_EXTERNAL_STORAGE in permissions || Manifest.permission.READ_EXTERNAL_STORAGE in permissions) signals += ApkRiskSignal.STORAGE_PERMISSION
+        val micServiceMarker = "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+        if (packageInfo.services?.any { svc ->
+                svc.permission == micServiceMarker ||
+                (Build.VERSION.SDK_INT >= 29 && (
+                    (svc.foregroundServiceType and ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE != 0) ||
+                    (svc.foregroundServiceType and ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION != 0)))
+            } == true) signals += ApkRiskSignal.AUDIO_RECORDING_SERVICE
         if (packageInfo.services?.any { it.permission == Manifest.permission.BIND_VPN_SERVICE } == true) signals += ApkRiskSignal.VPN_SERVICE
         if (packageInfo.receivers?.any { it.permission == Manifest.permission.BIND_DEVICE_ADMIN } == true) signals += ApkRiskSignal.DEVICE_ADMIN_RECEIVER
         val flags = packageInfo.applicationInfo?.flags ?: 0

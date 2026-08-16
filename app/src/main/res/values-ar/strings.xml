@@ -214,6 +214,9 @@
     <string name="apk_signal_billing_api">تشير الشفرة إلى واجهات برمجية للمدفوعات داخل التطبيق</string>
     <string name="apk_signal_read_phone_state">يطلب قراءة هوية الهاتف مثل رقم الخط أو الرقم التسلسلي للشريحة</string>
     <string name="apk_signal_manage_storage">يطلب وصولًا كاملًا إلى جميع الملفات في التخزين المشترك</string>
+    <string name="apk_signal_storage_access">يطلب وصولًا كاملًا تقليديًا إلى التخزين في نسخ أندرويد الأقدم</string>
+    <string name="apk_signal_audio_service">يعلن عن خدمة تعمل في الخلفية لتسجيل الميكروفون</string>
+    <string name="apk_signal_input_method">يوفر خدمة لوحة مفاتيح مخصصة يمكنها مراقبة كل ما تكتبه</string>
     <string name="reason_apk_static_high_risk">اجتمعت عدة مؤشرات مستقلة في ملف APK ووصلت إلى درجة مرتفعة للمراجعة، وهذا لا يثبت وحده وجود برمجية ضارة.</string>
     <string name="reason_apk_invalid">يستخدم الملف امتداد APK، لكن تعذر تحليل بيانات حزمة أندرويد. تعامل مع الحزمة على أنها غير موثوقة حتى تتحقق من مصدرها.</string>
     <string name="reason_apk_identity_match">تطابق اسم الحزمة أو بصمة شهادة التوقيع مع مؤشر تهديد محلي، حتى لو اختلفت بصمة SHA-256 للملف.</string>

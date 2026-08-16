@@ -136,7 +136,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.8.0-Cloud-Threat-Package
+          name: MaenShield-3.9.0-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -238,15 +238,15 @@ jobs:
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-3.8.0-TestRelease-unsigned.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-3.9.0-TestRelease-unsigned.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
             --ks "$HOME/.android/debug.keystore" \
             --ks-key-alias AndroidDebugKey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MaenShield-3.8.0-TestRelease.apk \
-            MaenShield-3.8.0-TestRelease-unsigned.apk
-          test -s MaenShield-3.8.0-TestRelease.apk
+            --out MaenShield-3.9.0-TestRelease.apk \
+            MaenShield-3.9.0-TestRelease-unsigned.apk
+          test -s MaenShield-3.9.0-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -254,21 +254,21 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-3.8.0-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-3.9.0-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.8.0-TestRelease-APK
-          path: MaenShield-3.8.0-TestRelease.apk
+          name: MaenShield-3.9.0-TestRelease-APK
+          path: MaenShield-3.9.0-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.8.0-Unsigned-Release-AAB
+          name: MaenShield-3.9.0-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -277,7 +277,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-3.8.0-Verification-Reports
+          name: MaenShield-3.9.0-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/

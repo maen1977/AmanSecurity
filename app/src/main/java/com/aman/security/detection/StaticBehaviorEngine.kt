@@ -114,6 +114,27 @@ object StaticBehaviorEngine {
         if (ApkRiskSignal.READ_PHONE_STATE_API in signals && ApkRiskSignal.CONTACTS_ACCESS in signals) {
             finding("BEHAVIOR_IDENTITY_EXFIL", 22, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
         }
+        // Spyware service profile: a background audio-recording service with contacts access
+        // is a typical covert listening setup harvesting voice data and people's lists.
+        if (ApkRiskSignal.AUDIO_RECORDING_SERVICE in signals && ApkRiskSignal.CONTACTS_ACCESS in signals) {
+            finding("BEHAVIOR_COVERT_LISTENING_PROFILE", 22, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
+        }
+        // Mass file harvesting: full storage control with camera/media access and no visible
+        // user-facing feature steals photos and documents in the background.
+        if (
+            ApkRiskSignal.MANAGE_EXTERNAL_STORAGE_API in signals &&
+            ApkRiskSignal.CAMERA in signals
+        ) {
+            finding("BEHAVIOR_MEDIA_HARVESTING", 24, FindingConfidence.HIGH, ThreatFamily.SPYWARE)
+        }
+        // Notification telemetry: notification listener with telephony state access reads
+        // every alert on the device while harvesting subscriber identity data.
+        if (
+            ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE in signals &&
+            ApkRiskSignal.TELEPHONY_STATE_API in signals
+        ) {
+            finding("BEHAVIOR_NOTIFICATION_TELEPHONY_TELEMETRY", 22, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
+        }
         return out
     }
 }

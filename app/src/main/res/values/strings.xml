@@ -214,6 +214,9 @@
     <string name="apk_signal_billing_api">Code references in-app payment interfaces</string>
     <string name="apk_signal_read_phone_state">Requires reading phone identity such as the line number or SIM serial</string>
     <string name="apk_signal_manage_storage">Requests full access to all files on shared storage</string>
+    <string name="apk_signal_storage_access">Requests legacy full storage access on older device versions</string>
+    <string name="apk_signal_audio_service">Declares a background service for microphone recording</string>
+    <string name="apk_signal_input_method">Provides a custom keyboard service that can observe all typing</string>
     <string name="reason_apk_static_high_risk">Several independent APK indicators combined to a high review score. This does not prove malware by itself.</string>
     <string name="reason_apk_invalid">The file uses an APK extension, but Android package metadata could not be parsed. Treat the archive as untrusted until its source is verified.</string>
     <string name="reason_apk_identity_match">The package name or signing-certificate fingerprint matches a local threat indicator even though the file SHA-256 may differ.</string>
