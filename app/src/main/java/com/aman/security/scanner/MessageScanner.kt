@@ -19,7 +19,11 @@ enum class MessageRiskSignal {
     SHORTENED_URL,
     MULTIPLE_URLS,
     SUSPICIOUS_URL,
-    KNOWN_THREAT_URL
+    KNOWN_THREAT_URL,
+    HIDDEN_UNICODE,
+    PHONE_NUMBER_PRESSURE,
+    BANK_TRANSFER_URGENCY,
+    SMISHING_COMBO
 }
 
 data class MessageScanResult(
@@ -102,6 +106,37 @@ class MessageScanner(private val urlScanner: UrlScanner) {
         ) score += 15
         if (MessageRiskSignal.APP_INSTALL_REQUEST in signals && urls.isNotEmpty()) score += 8
 
+        // Invisible Unicode tricks (zero-width, bidirectional overrides) hide text from casual reading.
+        if (HIDDEN_UNICODE_MARKERS.any(text::contains)) {
+            signals += MessageRiskSignal.HIDDEN_UNICODE
+            score += 18
+        }
+
+        // Messages pressuring the reader to call a number while mentioning money, cards or urgency.
+        val mentionsPhone = PHONE_NUMBER_PATTERNS.any { it.containsMatchIn(text) }
+        val moneyPressure = MessageRiskSignal.PAYMENT_REQUEST in signals || MessageRiskSignal.CREDENTIAL_REQUEST in signals
+        if (mentionsPhone && (moneyPressure || MessageRiskSignal.URGENT_LANGUAGE in signals)) {
+            signals += MessageRiskSignal.PHONE_NUMBER_PRESSURE
+            score += 15
+        }
+
+        // A bank-transfer demand combined with urgency and impersonation or credential language.
+        if (MessageRiskSignal.PAYMENT_REQUEST in signals &&
+            MessageRiskSignal.URGENT_LANGUAGE in signals &&
+            (urls.isNotEmpty() || mentionsPhone) &&
+            (MessageRiskSignal.IMPERSONATION in signals || MessageRiskSignal.CREDENTIAL_REQUEST in signals)
+        ) {
+            signals += MessageRiskSignal.BANK_TRANSFER_URGENCY
+            score += 20
+        }
+
+        // Three or more stacked review signals indicate a coordinated attack message.
+        val stacked = signals.count { it in COMBO_REVIEW_SIGNALS }
+        if (stacked >= 3) {
+            signals += MessageRiskSignal.SMISHING_COMBO
+            score += 15
+        }
+
         score = score.coerceAtMost(100)
         val level = when {
             score >= 65 -> MessageRiskLevel.HIGH
@@ -119,6 +154,23 @@ class MessageScanner(private val urlScanner: UrlScanner) {
     private fun containsAny(value: String, terms: Set<String>): Boolean = terms.any(value::contains)
 
     companion object {
+        private val COMBO_REVIEW_SIGNALS = setOf(
+            MessageRiskSignal.URGENT_LANGUAGE,
+            MessageRiskSignal.CREDENTIAL_REQUEST,
+            MessageRiskSignal.PAYMENT_REQUEST,
+            MessageRiskSignal.IMPERSONATION,
+            MessageRiskSignal.REMOTE_ACCESS_REQUEST,
+            MessageRiskSignal.APP_INSTALL_REQUEST,
+            MessageRiskSignal.HIDDEN_UNICODE,
+            MessageRiskSignal.PHONE_NUMBER_PRESSURE
+        )
+        private val HIDDEN_UNICODE_MARKERS = listOf(
+            "\u200B", "\u200C", "\u200D", "\u200E", "\u200F", "\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\uFEFF"
+        )
+        private val PHONE_NUMBER_PATTERNS = listOf(
+            Regex("(?:\\+|00)?\\d[\\d\\s\\-().]{7,20}\\d"),
+            Regex("(?:\\+|00)?[0-9\\s\\-()]{9,16}")
+        )
         private const val MAX_TEXT_LENGTH = 4096
         private val SHORTENER_HOSTS = setOf(
             "bit.ly", "tinyurl.com", "t.co", "goo.gl", "is.gd", "ow.ly", "buff.ly", "cutt.ly", "rb.gy"

@@ -50,6 +50,43 @@ class MessageScannerTest {
     }
 
     @Test
+    fun hiddenUnicodeAndPhonePressureAreFlagged() {
+        val result = scanner.scan("\u200BYour bank account \u202Aneeds urgent\u202C transfer of money, call +962 7 9999 1234")
+
+        assertTrue(MessageRiskSignal.HIDDEN_UNICODE in result.signals)
+        assertTrue(MessageRiskSignal.PHONE_NUMBER_PRESSURE in result.signals)
+        assertTrue(MessageRiskSignal.URGENT_LANGUAGE in result.signals)
+        assertTrue(result.riskLevel == MessageRiskLevel.REVIEW || result.riskLevel == MessageRiskLevel.HIGH)
+    }
+
+    @Test
+    fun bankTransferUrgencyComboIsFlagged() {
+        val result = scanner.scan("Urgent: your account transfer is suspended. Verify your password at https://example.com/x to restore access.")
+
+        assertTrue(MessageRiskSignal.BANK_TRANSFER_URGENCY in result.signals)
+        assertTrue(MessageRiskSignal.URGENT_LANGUAGE in result.signals)
+        assertTrue(MessageRiskSignal.PAYMENT_REQUEST in result.signals)
+        assertTrue(MessageRiskSignal.CREDENTIAL_REQUEST in result.signals)
+        assertTrue(result.riskLevel == MessageRiskLevel.HIGH)
+    }
+
+    @Test
+    fun threeStackedSignalsTriggersSmishingCombo() {
+        val result = scanner.scan("\u200BUrgent message: your account is blocked. Call +962 7 9999 1234 to verify your identity and restore the wallet transfer. https://example.com/restore")
+
+        assertTrue(MessageRiskSignal.SMISHING_COMBO in result.signals)
+        assertTrue(result.riskLevel == MessageRiskLevel.HIGH)
+    }
+
+    @Test
+    fun ordinaryPhoneMentionWithoutPressureStaysLow() {
+        val result = scanner.scan("Call me at +962 7 1234 5678 when you are free, thanks.")
+
+        assertEquals(MessageRiskLevel.LOW, result.riskLevel)
+        assertTrue(MessageRiskSignal.PHONE_NUMBER_PRESSURE !in result.signals)
+    }
+
+    @Test
     fun sharedExtractorReturnsDistinctBoundedLinks() {
         val links = SharedUrlExtractor.allCandidates(
             "See https://example.com/a, then https://example.com/a and https://example.org/b."

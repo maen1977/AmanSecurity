@@ -68,4 +68,48 @@ class ArchiveScanAnalyzerTest {
         }
         return output.toByteArray()
     }
+
+    private fun zipOfBinary(vararg entries: Pair<String, ByteArray>): ByteArray {
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            entries.forEach { (name, content) ->
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(content)
+                zip.closeEntry()
+            }
+        }
+        return output.toByteArray()
+    }
+
+    @Test
+    fun flagsExecutablePayloadNestedInsideArchive() {
+        val archive = zipOf("holiday.jpg" to "photo data", "setup.apk" to "fake installer")
+        val finding = ArchiveScanAnalyzer { null }.scan(ByteArrayInputStream(archive))
+        assertTrue("expected misleading nested apk", finding?.misleadingExtension == true)
+    }
+
+    @Test
+    fun hashesEntriesInsideNestedZipArchive() {
+        val innerPayload = "nested known threat"
+        val sha256 = MessageDigest.getInstance("SHA-256")
+            .digest(innerPayload.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val inner = zipOf("threat.bin" to innerPayload)
+        val outer = zipOfBinary("container.zip" to inner)
+        val finding = ArchiveScanAnalyzer { hash ->
+            if (hash == sha256) ThreatSignature(hash, "TEST-NESTED", ScanClassification.KNOWN_THREAT) else null
+        }.scan(ByteArrayInputStream(outer))
+        assertTrue("expected known threat inside nested archive", finding?.knownThreat == true)
+        assertEquals("TEST-NESTED", finding?.signatureId)
+        assertTrue("expected nested entry name prefix", finding?.entryName?.startsWith("nested:") == true)
+    }
+
+    @Test
+    fun reportsLimitedWhenNestedEntryCountExceedsBound() {
+        val entries = Array(33) { index -> "nested-$index.bin" to "payload-$index" }
+        val inner = zipOf(*entries)
+        val outer = zipOfBinary("container.zip" to inner)
+        val finding = ArchiveScanAnalyzer { null }.scan(ByteArrayInputStream(outer))
+        assertTrue("expected limited nested scan", finding?.scanLimited == true)
+    }
 }

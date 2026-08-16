@@ -338,6 +338,10 @@
     <string name="message_signal_multiple_urls">Multiple links in one message</string>
     <string name="message_signal_suspicious_url">A link has elevated risk indicators</string>
     <string name="message_signal_known_url">A link matches a known local threat indicator</string>
+    <string name="message_signal_hidden_unicode">Hidden or invisible characters are embedded in the text to evade detection</string>
+    <string name="message_signal_phone_pressure">A phone number is demanded with pressure to call or share information</string>
+    <string name="message_signal_bank_transfer">Urgency is used around money transfers or wallet payments</string>
+    <string name="message_signal_smishing_combo">Multiple text-fraud indicators appear together in one message</string>
 
     <string name="autonomous_intel_note">Autonomous updates from public threat-intelligence sources. No API keys, secrets, or file uploads.</string>
     <string name="autonomous_intel_stats">Autonomous intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s malware URL hosts • %4$s command-and-control hosts • %5$s CVEs in the latest bulletin.</string>

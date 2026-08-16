@@ -338,6 +338,10 @@
     <string name="message_signal_multiple_urls">عدة روابط في رسالة واحدة</string>
     <string name="message_signal_suspicious_url">الرابط يحتوي مؤشرات خطورة مرتفعة</string>
     <string name="message_signal_known_url">الرابط يطابق مؤشر تهديد محلي معروف</string>
+    <string name="message_signal_hidden_unicode">مخفية في النص حروف غير مرئية قد تُستخدم لتجاوز أنظمة الكشف</string>
+        <string name="message_signal_phone_pressure">يطلب الرسالة رقم هاتف مع ضغط للاتصال أو مشاركة معلومات</string>
+        <string name="message_signal_bank_transfer">استعجال حول تحويلات مالية أو مدفوعات المحفظة</string>
+        <string name="message_signal_smishing_combo">تجتمع عدة مؤشرات احتيال نصي في رسالة واحدة</string>
 
     <string name="autonomous_intel_note">تحديث ذاتي من مصادر معلومات تهديد عامة. لا مفاتيح واجهات ولا أسرار ولا رفع للملفات.</string>
     <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف تحكم ضار • %5$s ثغرة في أحدث نشرة.</string>

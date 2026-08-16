@@ -733,6 +733,10 @@ class MainActivity : AppCompatActivity() {
         MessageRiskSignal.MULTIPLE_URLS -> R.string.message_signal_multiple_urls
         MessageRiskSignal.SUSPICIOUS_URL -> R.string.message_signal_suspicious_url
         MessageRiskSignal.KNOWN_THREAT_URL -> R.string.message_signal_known_url
+        MessageRiskSignal.HIDDEN_UNICODE -> R.string.message_signal_hidden_unicode
+        MessageRiskSignal.PHONE_NUMBER_PRESSURE -> R.string.message_signal_phone_pressure
+        MessageRiskSignal.BANK_TRANSFER_URGENCY -> R.string.message_signal_bank_transfer
+        MessageRiskSignal.SMISHING_COMBO -> R.string.message_signal_smishing_combo
     }
 
     private fun renderUrlResult(result: UrlScanResult) {

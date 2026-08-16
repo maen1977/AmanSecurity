@@ -1,0 +1,117 @@
+{
+  "bundleBytes": 399279,
+  "bundlePath": "aman-threat-db.zip",
+  "bundleSha256": "003cd9e808b0692abb649bc3513cd9c77dbed0a1ab3321859baf361eb3c36be8",
+  "files": {
+    "android_cves.txt": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "c2_hosts.sha256": {
+      "bytes": 65,
+      "entries": 1,
+      "sha256": "822b9c3c1b2caa844ee151115a6481bbe7d4d74f8580dbd71e42584bfa33080e"
+    },
+    "malware_files.sha256": {
+      "bytes": 585,
+      "entries": 9,
+      "sha256": "252d5994e69f26bced28e5765f35f6ab1c72019c7b585337802654bea8923b32"
+    },
+    "malware_url_hosts.sha256": {
+      "bytes": 675285,
+      "entries": 10389,
+      "sha256": "e2f844c912cbae5555bd821cb8e3bd5a08147f14f6c55bc12b5cb9efd3fa4c06"
+    },
+    "phishing_community.sha256": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "phishing_openphish.sha256": {
+      "bytes": 24570,
+      "entries": 378,
+      "sha256": "e8fb2791c56ccabe9bf57d2b234ed22759dc506a19362fbe37c0f016b04b1ec2"
+    },
+    "phishing_primary.sha256": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "generatedAt": "2026-08-16T18:43:47Z",
+  "latestAndroidSecurityPatch": "2026-08-05",
+  "minAppVersionCode": 30,
+  "privacy": "hashes_only_no_raw_malicious_urls",
+  "schema": 1,
+  "serial": 1786905827,
+  "sources": [
+    {
+      "count": 9,
+      "detail": "MalwareBazaar Android browse metadata + bundled baseline",
+      "name": "malware_bazaar_android",
+      "ok": true
+    },
+    {
+      "count": 378,
+      "detail": "",
+      "name": "openphish",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "primary_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "community_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: PHISHTANK_APP_KEY not configured",
+      "name": "phishtank",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "source deadline exceeded after 20s",
+      "name": "urlhaus",
+      "ok": false
+    },
+    {
+      "count": 10389,
+      "detail": "",
+      "name": "urlhaus_csv",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "source deadline exceeded after 20s",
+      "name": "urlhaus_json_recent",
+      "ok": false
+    },
+    {
+      "count": 1,
+      "detail": "",
+      "name": "feodo",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: ABUSECH_AUTH_KEY not configured",
+      "name": "threatfox",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "2026-08-05",
+      "name": "android_security_bulletin",
+      "ok": true
+    }
+  ],
+  "version": "2026.08.16.1843"
+}

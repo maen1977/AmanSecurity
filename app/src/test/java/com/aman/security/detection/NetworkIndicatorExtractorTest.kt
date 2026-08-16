@@ -19,4 +19,15 @@ class NetworkIndicatorExtractorTest {
         assertTrue(result.domains.size <= 8)
         assertTrue(result.ips.size <= 8)
     }
+
+    @Test
+    fun extractsPhoneNumberCandidatesFromText() {
+        val result = NetworkIndicatorExtractor.extract(
+            "call us now at +962 7 9999 1234 or email support@example.org",
+            maxIndicators = 8
+        )
+        assertTrue("expected a phone candidate", result.phoneNumbers.isNotEmpty())
+        assertTrue(result.phoneNumbers.any { "+962" in it || "962" in it })
+        assertTrue("example.org" in result.domains)
+    }
 }

@@ -77,7 +77,8 @@ data class DetectionRule(
     val confidence: FindingConfidence,
     val weight: Int,
     val allMarkers: Set<String>,
-    val anyMarkers: Set<String>
+    val anyMarkers: Set<String>,
+    val notMarkers: Set<String> = emptySet()
 )
 
 data class ProtectedBrandProfile(
