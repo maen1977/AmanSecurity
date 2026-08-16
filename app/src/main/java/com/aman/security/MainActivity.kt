@@ -559,6 +559,7 @@ class MainActivity : AppCompatActivity() {
                 R.string.cloud_package_entries,
                 NumberFormat.getIntegerInstance().format(cloudInfo.malwareFileHashes),
                 NumberFormat.getIntegerInstance().format(cloudInfo.phishingHosts),
+                NumberFormat.getIntegerInstance().format(cloudInfo.malwareUrlHosts),
                 NumberFormat.getIntegerInstance().format(cloudInfo.c2Hosts),
                 NumberFormat.getIntegerInstance().format(cloudInfo.androidCveCount)
             )
@@ -610,6 +611,7 @@ class MainActivity : AppCompatActivity() {
             R.string.autonomous_intel_stats,
             NumberFormat.getIntegerInstance().format(info.malwareFileHashes),
             NumberFormat.getIntegerInstance().format(info.phishingHosts),
+            NumberFormat.getIntegerInstance().format(info.malwareUrlHosts),
             NumberFormat.getIntegerInstance().format(info.c2Hosts),
             NumberFormat.getIntegerInstance().format(info.androidCveCount)
         )

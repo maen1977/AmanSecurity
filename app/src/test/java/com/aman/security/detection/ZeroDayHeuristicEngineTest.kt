@@ -52,4 +52,60 @@ class ZeroDayHeuristicEngineTest {
         )
         assertTrue(findings.any { it.id == "ZERO_DAY_STEALTH_ANTI_ANALYSIS" && it.confidence == FindingConfidence.HIGH })
     }
-}
+
+    @Test
+    fun stealthNativePayloadChainIsHighConfidence() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = emptySet(),
+                markers = setOf("HIDE_COMPONENT", "PACKER_PRESENT"),
+                hiddenElfPayloadCount = 1
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_STEALTH_NATIVE_PAYLOAD" && it.confidence == FindingConfidence.HIGH })
+    }
+
+    @Test
+    fun overlayBankerChainRequiresAccessibilityAndOverlayPermission() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.OVERLAY_PERMISSION, ApkRiskSignal.SMS_API),
+                markers = setOf("ACCESSIBILITY_NODE", "NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_OVERLAY_BANKER_CHAIN" && it.family == ThreatFamily.BANKER })
+    }
+
+    @Test
+    fun screenCaptureExfilChainIsHighConfidence() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = emptySet(),
+                markers = setOf("SCREEN_CAPTURE", "COMMAND_EXEC", "NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_SCREEN_EXFIL_CHAIN" && it.confidence == FindingConfidence.HIGH })
+    }
+
+    @Test
+    fun notificationListenerWithDeviceIdIsMediumExfilFinding() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = setOf(ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE),
+                markers = setOf("DEVICE_ID", "NETWORK_CLIENT")
+            )
+        )
+        assertTrue(findings.any { it.id == "ZERO_DAY_NOTIFICATION_EXFIL" && it.confidence == FindingConfidence.MEDIUM })
+    }
+
+    @Test
+    fun partialZeroDayChainDoesNotTriggerFalseFinding() {
+        val findings = ZeroDayHeuristicEngine.evaluate(
+            ZeroDayProfile(
+                signals = emptySet(),
+                markers = setOf("ACCESSIBILITY_NODE", "NETWORK_CLIENT"),
+                hiddenElfPayloadCount = 1
+            )
+        )
+        assertEquals(false, findings.any { it.id == "ZERO_DAY_STEALTH_NATIVE_PAYLOAD" })
+    }

@@ -43,6 +43,23 @@ object ZeroDayHeuristicEngine {
             ApkRiskSignal.BOOT_START in s) {
             add("ZERO_DAY_REMOTE_IMPLANT_CHAIN", 30, FindingConfidence.HIGH, ThreatFamily.RAT)
         }
+        // Hidden payload plus stealth markers: encrypted dropper without dynamic markers.
+        if (profile.hiddenElfPayloadCount > 0 && "HIDE_COMPONENT" in m && "PACKER_PRESENT" in m) {
+            add("ZERO_DAY_STEALTH_NATIVE_PAYLOAD", 28, FindingConfidence.HIGH, ThreatFamily.TROJAN)
+        }
+        // Accessibility-driven banking fraud combined with overlay display capability.
+        if ("ACCESSIBILITY_NODE" in m && ApkRiskSignal.OVERLAY_PERMISSION in s &&
+            ApkRiskSignal.SMS_API in s && "NETWORK_CLIENT" in m) {
+            add("ZERO_DAY_OVERLAY_BANKER_CHAIN", 28, FindingConfidence.HIGH, ThreatFamily.BANKER)
+        }
+        // Screen capture abuse: capture capability plus command execution channel.
+        if ("SCREEN_CAPTURE" in m && "COMMAND_EXEC" in m && "NETWORK_CLIENT" in m) {
+            add("ZERO_DAY_SCREEN_EXFIL_CHAIN", 26, FindingConfidence.HIGH, ThreatFamily.RAT)
+        }
+        // Notification harvesting plus identifier collection without user-facing reason.
+        if (ApkRiskSignal.NOTIFICATION_LISTENER_SERVICE in s && "DEVICE_ID" in m && "NETWORK_CLIENT" in m) {
+            add("ZERO_DAY_NOTIFICATION_EXFIL", 20, FindingConfidence.MEDIUM, ThreatFamily.SPYWARE)
+        }
         return out
     }
 }

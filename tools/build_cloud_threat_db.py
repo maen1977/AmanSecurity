@@ -44,6 +44,10 @@ OPENPHISH = "https://openphish.com/feed.txt"
 PRIMARY_PHISH = None
 COMMUNITY_PHISH = None
 URLHAUS = "https://urlhaus.abuse.ch/downloads/text/"
+URLHAUS_CSV = "https://urlhaus.abuse.ch/downloads/csv/"
+# URLhaus full CSV is a gzip archive; extracting file hashes (apk/xlsx/jse) carried by
+# malicious download URLs strengthens the Android file-level match at zero cost and
+# with no extra provider dependency beyond the same abuse.ch domain.
 FEODO = "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"
 ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overview?hl=en"
 MALWARE_BAZAAR_BROWSE = "https://bazaar.abuse.ch/browse/tag/Android/"
@@ -107,7 +111,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/3.6.9 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/3.7.0 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -203,6 +207,46 @@ def normalize_url(value: str) -> tuple[str, str] | None:
     netloc = host + (f":{port}" if include_port else "")
     query = f"?{p.query}" if p.query else ""
     return f"{scheme}://{netloc}{path}{query}", host
+
+
+def urlhaus_categorized_hashes(values, caps: dict[str, int]) -> dict[str, set[str]]:
+    """Categorize URLhaus CSV rows by tag and emit host hashes for high-value tags.
+
+    The actual abuse.ch CSV dump uses these columns (no payload hash columns exist):
+    id,date_added,url,url_status,threat,filename,url_hash,http_status,payload_tag
+    Host hashes from rows tagged as real malware payloads (apk, elf, exe, dll) go
+    into the stronger 'malware_url_hosts' pool because they are confirmed download
+    distribution points, not just phishing surfaces. This stays free, local-friendly
+    and requires no new provider beyond abuse.ch.
+    """
+    import csv as _csv
+    import io as _io
+    # caps maps output FILE names (e.g. "malware_url_hosts.sha256") to entry caps;
+    # group keys mirror the file names without extension.
+    result: dict[str, set[str]] = {name: set() for name in caps}
+    # URLhaus payload tags describing real malicious binaries; rows tagged with
+    # a family whose name contains these tokens are confirmed malware distribution
+    # points, which deserve the stronger host-pool match on the device.
+    HIGH_VALUE_TAGS = {"apk", "elf", "exe", "dll", "dropper", "rat", "ransomware"}
+    TARGET_KEY = "malware_url_hosts.sha256"
+    reader = _csv.reader(_io.StringIO("\n".join(values)))
+    for row in reader:
+        if len(row) < 3:
+            continue
+        url_part = row[2].strip()
+        if not url_part:
+            continue
+        n = normalize_url(url_part)
+        if not n:
+            continue
+        _, host = n
+        targets = result.get(TARGET_KEY)
+        if targets is None or len(targets) >= caps[TARGET_KEY]:
+            continue
+        payload_field = "".join(row[3:]).lower()
+        if any(token in payload_field for token in HIGH_VALUE_TAGS):
+            targets.add(sha256_text(host))
+    return result
 
 
 def url_indicators(values, cap: int) -> set[str]:
@@ -442,6 +486,31 @@ def main() -> int:
             sources.append(FetchResult("urlhaus", True, len(malware_urls)))
         except Exception as e:
             sources.append(FetchResult("urlhaus", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
+        try:
+            csv_payload = fetch(URLHAUS_CSV, max_bytes=40 * 1024 * 1024)
+            if csv_payload[:2] == b"PK":
+                # The URLhaus CSV dump is a zip archive containing csv.txt.
+                import zipfile as _zf
+                import io as _io
+                with _zf.ZipFile(_io.BytesIO(csv_payload)) as arc:
+                    for name in arc.namelist():
+                        if name.lower().endswith("csv.txt"):
+                            csv_payload = arc.read(name)
+                            break
+                    else:
+                        raise ValueError("csv.txt not found in URLhaus archive")
+            csv_lines = [
+                x.strip()
+                for x in csv_payload.decode("utf-8", "ignore").splitlines()
+                if x.strip() and not x.lstrip().startswith("#")
+            ]
+            grouped = urlhaus_categorized_hashes(csv_lines, FILES)
+            added = len(grouped["malware_url_hosts.sha256"] - malware_urls)
+            malware_urls |= grouped["malware_url_hosts.sha256"]
+            sources.append(FetchResult("urlhaus_csv", True, added))
+        except Exception as e:
+            # URLhaus CSV is optional enrichment; failure must not break the package.
+            sources.append(FetchResult("urlhaus_csv", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
             raw = fetch(FEODO, max_bytes=4 * 1024 * 1024)

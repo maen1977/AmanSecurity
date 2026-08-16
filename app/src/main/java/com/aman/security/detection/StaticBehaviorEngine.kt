@@ -51,6 +51,42 @@ object StaticBehaviorEngine {
         if ("FILE_ENCRYPTION" in markers && "MASS_FILE_ACCESS" in markers) {
             finding("BEHAVIOR_FILE_ENCRYPTION_CHAIN", 18, FindingConfidence.MEDIUM, ThreatFamily.RANSOMWARE)
         }
+        // Media surveillance: camera + microphone + precise location (classic stalkerware triplet).
+        if (
+            ApkRiskSignal.CAMERA in signals &&
+            ApkRiskSignal.MICROPHONE in signals &&
+            ApkRiskSignal.PRECISE_LOCATION in signals
+        ) {
+            finding("BEHAVIOR_MEDIA_SURVEILLANCE", 26, FindingConfidence.HIGH, ThreatFamily.STALKERWARE)
+        }
+        // OTP theft: SMS reading combined with device identifier harvesting.
+        if (ApkRiskSignal.SMS_ACCESS in signals && ApkRiskSignal.DEVICE_IDENTIFIER_API in signals) {
+            finding("BEHAVIOR_OTP_THEFT", 26, FindingConfidence.HIGH, ThreatFamily.BANKER)
+        }
+        // Banking proxy abuse: VPN service combined with accessibility reading.
+        if (ApkRiskSignal.VPN_SERVICE in signals && ApkRiskSignal.ACCESSIBILITY_SERVICE in signals) {
+            finding("BEHAVIOR_VPN_ACCESSIBILITY", 26, FindingConfidence.MEDIUM, ThreatFamily.BANKER)
+        }
+        // Persistence dropper: admin receiver with install capability and network markers.
+        if (
+            ApkRiskSignal.DEVICE_ADMIN_RECEIVER in signals &&
+            ApkRiskSignal.REQUEST_INSTALL_PACKAGES in signals &&
+            "NETWORK_CLIENT" in markers
+        ) {
+            finding("BEHAVIOR_ADMIN_INSTALL_PERSISTENCE", 30, FindingConfidence.HIGH, ThreatFamily.DROPPER)
+        }
+        // SMS exfiltration: SMS sending API with call log reading and boot persistence.
+        if (
+            ApkRiskSignal.SMS_API in signals &&
+            ApkRiskSignal.CALL_LOG_ACCESS in signals &&
+            ApkRiskSignal.BOOT_START in signals
+        ) {
+            finding("BEHAVIOR_SMS_EXFIL_PERSISTENCE", 26, FindingConfidence.HIGH, ThreatFamily.SPYWARE)
+        }
+        // Overlay + install packages: classic phishing banker overlay chain.
+        if (ApkRiskSignal.OVERLAY_PERMISSION in signals && ApkRiskSignal.REQUEST_INSTALL_PACKAGES in signals) {
+            finding("BEHAVIOR_OVERLAY_INSTALLER", 24, FindingConfidence.MEDIUM, ThreatFamily.BANKER)
+        }
         return out
     }
 }

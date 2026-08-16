@@ -38,7 +38,7 @@
     <string name="database_version">إصدار قاعدة التهديدات: %1$s</string>
     <string name="cloud_package_version">حزمة الحماية السحابية: %1$s • الرقم التسلسلي %2$d</string>
     <string name="cloud_package_not_installed">حزمة الحماية السحابية: لم تُثبّت بعد</string>
-    <string name="cloud_package_entries">المؤشرات السحابية: %1$s بصمة برمجية ضارة • %2$s مؤشر تصيد • %3$s مضيف تحكم وسيطرة • %4$s ثغرة أندرويد</string>
+    <string name="cloud_package_entries">المؤشرات السحابية: %1$s بصمة برمجية ضارة • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف تحكم وسيطرة • %5$s ثغرة أندرويد</string>
     <string name="cloud_package_status_current">حالة الحزمة السحابية: محدثة</string>
     <string name="cloud_package_status_stale">حالة الحزمة السحابية: قديمة — حان موعد التحديث التلقائي</string>
     <string name="cloud_package_status_waiting">حالة الحزمة السحابية: بانتظار أول تنزيل تلقائي</string>
@@ -49,7 +49,7 @@
     <string name="update_idle">تتحدث معلومات الحماية تلقائيًا كل 24 ساعة تقريبًا عند توفر الإنترنت، ضمن نافذة موزعة لتقليل الضغط على المرآة العامة، ودون مفاتيح أو تسجيل دخول.</string>
     <string name="update_checking">جارٍ جلب أحدث معلومات التهديد من المصادر العامة…</string>
     <string name="update_up_to_date">تم فحص المصادر ولم تظهر مؤشرات أحدث.</string>
-    <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مؤشر تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة أندرويد في أحدث نشرة.</string>
+    <string name="update_success">تم التحديث: %1$s بصمة ملف ضار • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف تحكم ضار • %5$s ثغرة أندرويد في أحدث نشرة.</string>
     <string name="update_network_error">تعذر الوصول إلى أي مصدر الآن. احتفظ Maen Shield بآخر بيانات سليمة وسيحاول مجددًا تلقائيًا.</string>
     <string name="safe_wording_note">النتيجة النظيفة تعني فقط عدم العثور على توقيع معروف، ولا تضمن أن الملف آمن.</string>
     <string name="installed_apps_title">التطبيقات المثبتة</string>
@@ -333,7 +333,7 @@
     <string name="message_signal_known_url">الرابط يطابق مؤشر تهديد محلي معروف</string>
 
     <string name="autonomous_intel_note">تحديث ذاتي من مصادر معلومات تهديد عامة. لا مفاتيح واجهات ولا أسرار ولا رفع للملفات.</string>
-    <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مؤشر تصيد • %3$s مضيف تحكم ضار • %4$s ثغرة في أحدث نشرة.</string>
+    <string name="autonomous_intel_stats">مؤشرات ذاتية: %1$s بصمة ملفات ضارة • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف تحكم ضار • %5$s ثغرة في أحدث نشرة.</string>
     <string name="autonomous_last_update_never">لم يكتمل بعد أول تحديث ذاتي عبر الإنترنت.</string>
     <string name="autonomous_last_update">آخر تحديث ذاتي: %1$s • المصادر التي تم الوصول إليها: %2$d من %3$d • المصادر الحديثة حاليًا: %4$d من %3$d.</string>
     <string name="url_signal_community_feed">ظهر هذا المضيف في مصدر تهديد مجتمعي، لذلك يحتاج إلى مراجعة قبل فتحه.</string>
@@ -862,7 +862,7 @@
     <string name="threat_update_next_check">موعد فحص واي فاي التلقائي اليومي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
     <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
     <string name="threat_update_never_success">لم يتم تثبيت حزمة معلومات Maen Shield سحابية موقعة بعد.</string>
-    <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مؤشر تصيد • %3$s مضيف C2 • %4$s ثغرة أندرويد</string>
+    <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف C2 • %5$s ثغرة أندرويد</string>
     <string name="threat_update_source_ok">✓ %1$s — تم التحديث</string>
     <string name="threat_update_source_failed">⚠ %1$s — فشل؛ تم الاحتفاظ بآخر بيانات صالحة</string>
     <string name="threat_update_source_waiting">• %1$s — بانتظار أول حزمة موقعة</string>

@@ -124,7 +124,7 @@ data class CloudThreatManifest(
             "phishing_primary.sha256" -> 120_000
             "phishing_openphish.sha256" -> 80_000
             "phishing_community.sha256" -> 60_000
-            "malware_url_hosts.sha256" -> 120_000
+            "malware_url_hosts.sha256" -> 200_000
             "c2_hosts.sha256" -> 50_000
             "android_cves.txt" -> 20_000
             else -> 0
