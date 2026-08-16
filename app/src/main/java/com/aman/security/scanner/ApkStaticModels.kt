@@ -44,7 +44,8 @@ enum class ApkRiskSignal {
     MANAGE_EXTERNAL_STORAGE_API,
     STORAGE_PERMISSION,
     AUDIO_RECORDING_SERVICE,
-    INPUT_METHOD_SERVICES
+    INPUT_METHOD_SERVICES,
+    SCREEN_CAPTURE
 }
 
 enum class ApkIndicatorKind {
@@ -88,5 +89,6 @@ data class ApkStaticAnalysis(
     val markerCount: Int = 0,
     val localModelProbability: Double = 0.0,
     val hiddenPayloadCount: Int = 0,
-    val antiAnalysisMarkerCount: Int = 0
+    val antiAnalysisMarkerCount: Int = 0,
+    val reasoningProbability: Double = 0.0
 )

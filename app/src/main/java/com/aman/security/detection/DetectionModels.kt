@@ -155,6 +155,7 @@ data class DetectionRuleset(
     val rules: List<DetectionRule> = emptyList(),
     val brands: List<ProtectedBrandProfile> = emptyList(),
     val modelWeights: Map<String, Double> = emptyMap(),
+    val reasoningWeights: Map<String, Double> = emptyMap(),
     val reputation: Map<String, ReputationIndicator> = emptyMap(),
     val metadata: Map<String, ThreatIntelMetadata> = emptyMap(),
     val graphLinks: List<ThreatGraphLink> = emptyList()

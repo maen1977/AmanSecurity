@@ -12,6 +12,7 @@ import com.aman.security.detection.DetectionSource
 import com.aman.security.detection.DetectionVerdictLevel
 import com.aman.security.detection.FindingConfidence
 import com.aman.security.detection.ImpersonationDetector
+import com.aman.security.detection.LocalReasoningClassifier
 import com.aman.security.detection.ReputationDisposition
 import com.aman.security.detection.ReputationKind
 import com.aman.security.detection.ThreatFamily
@@ -181,6 +182,10 @@ class InstalledAppScanner(
             isSideloaded = source == AppInstallSource.LOCAL_FILE || source == AppInstallSource.DOWNLOADED_FILE
         )
         findings += impersonationFindings
+        val installedReasoning = LocalReasoningClassifier(database.detectionRuleset.reasoningWeights).reason(
+            buildInstalledReasoningVector(basic.signals)
+        )
+        installedReasoning.finding?.let(findings::add)
         if (impersonationFindings.isNotEmpty() && AppRiskSignal.NON_STORE_INSTALL in basic.signals) {
             findings += DetectionFinding(
                 "IMPERSONATION_SIDELOAD",
@@ -235,7 +240,8 @@ class InstalledAppScanner(
             signingCertificateSha256 = signerHash,
             threatReference = threatReference,
             advancedVerdict = verdict,
-            deepAnalysisPerformed = deepAnalyses.isNotEmpty()
+            deepAnalysisPerformed = deepAnalyses.isNotEmpty(),
+            reasoningProbability = installedReasoning.probability
         )
     }
 
@@ -278,6 +284,34 @@ class InstalledAppScanner(
     private fun hashComponents(apkFiles: List<File>): List<Pair<File, String>> = apkFiles.mapNotNull { file ->
         runCatching { hashFile(file) }.getOrNull()?.let { hash -> file to hash }
     }
+
+    /** Reasoning vector for installed apps is derived from the collected risk signals. */
+    private fun buildInstalledReasoningVector(signals: Set<AppRiskSignal>): Map<String, Double> = mapOf(
+        "surveillance" to bool(
+            AppRiskSignal.ACCESSIBILITY_SERVICE in signals ||
+                AppRiskSignal.OVERLAY in signals ||
+                AppRiskSignal.INPUT_METHOD_SERVICE in signals ||
+                AppRiskSignal.AUDIO_RECORDING_SERVICE in signals
+        ),
+        "stealth" to bool(false),
+        "exfiltration" to bool(
+            AppRiskSignal.SMS_ACCESS in signals ||
+                AppRiskSignal.CONTACTS_ACCESS in signals ||
+                AppRiskSignal.CALL_LOG_ACCESS in signals ||
+                AppRiskSignal.PRECISE_LOCATION in signals ||
+                AppRiskSignal.READ_MEDIA_ACCESS in signals ||
+                AppRiskSignal.STORAGE_PERMISSION in signals
+        ),
+        "persistence" to bool(AppRiskSignal.BOOT_START in signals),
+        "monetization" to bool(AppRiskSignal.SMS_ACCESS in signals),
+        "privilege" to bool(
+            AppRiskSignal.INSTALL_PACKAGES in signals || AppRiskSignal.QUERY_ALL_PACKAGES in signals
+        ),
+        "anti_analysis" to bool(false),
+        "impersonation" to bool(false)
+    )
+
+    private fun bool(value: Boolean): Double = if (value) 1.0 else 0.0
 
     private fun appMetadataFingerprint(packageInfo: PackageInfo, apkFiles: List<File>): String {
         val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) packageInfo.longVersionCode else {

@@ -128,6 +128,7 @@ object ThreatDbValidator {
         val rules = mutableListOf<DetectionRule>()
         val brands = mutableListOf<ProtectedBrandProfile>()
         val model = linkedMapOf<String, Double>()
+        val reasoning = linkedMapOf<String, Double>()
         val reputation = linkedMapOf<String, ReputationIndicator>()
         val metadata = linkedMapOf<String, ThreatIntelMetadata>()
         val brandSigners = linkedMapOf<String, MutableSet<String>>()
@@ -182,6 +183,14 @@ object ThreatDbValidator {
                     require(weight in -20.0..20.0)
                     require(model.put(feature, weight) == null) { "Duplicate model feature" }
                 }
+                "REASONING" -> {
+                    require(p.size == 3)
+                    val dim = p[1].trim()
+                    require(dim.matches(Regex("^[a-z0-9_]{2,64}$")))
+                    val weight = p[2].toDouble()
+                    require(weight in -20.0..20.0)
+                    require(reasoning.put(dim, weight) == null) { "Duplicate reasoning dimension" }
+                }
                 "REPUTATION" -> {
                     require(p.size == 7)
                     val kind = ReputationKind.valueOf(p[1])
@@ -224,7 +233,7 @@ object ThreatDbValidator {
         val enrichedBrands = brands.map { brand ->
             brand.copy(trustedSignerSha256 = brandSigners[brand.id]?.toSet().orEmpty())
         }
-        return DetectionRuleset(rules, enrichedBrands, model, reputation, metadata, graphLinks)
+        return DetectionRuleset(rules, enrichedBrands, model, reasoning, reputation, metadata, graphLinks)
     }
 
     private fun strictId(value: String): String = value.trim().also {

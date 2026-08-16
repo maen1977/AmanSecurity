@@ -1,0 +1,11 @@
+# reasoning_model_weights v1 — on-device LocalReasoningClassifier
+dimension,weight
+surveillance,8.759431
+stealth,9.482711
+exfiltration,11.352311
+persistence,12.98776
+monetization,12.40152
+privilege,7.873656
+anti_analysis,10.781444
+impersonation,13.043453
+bias,-12.18811

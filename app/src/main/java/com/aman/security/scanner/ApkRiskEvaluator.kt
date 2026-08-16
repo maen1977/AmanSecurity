@@ -34,6 +34,7 @@ object ApkRiskEvaluator {
                 ApkRiskSignal.STORAGE_PERMISSION -> 4
                 ApkRiskSignal.AUDIO_RECORDING_SERVICE -> 5
                 ApkRiskSignal.INPUT_METHOD_SERVICES -> 10
+                ApkRiskSignal.SCREEN_CAPTURE -> 12
             }
         }
 

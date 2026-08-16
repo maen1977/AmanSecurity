@@ -16,3 +16,6 @@ release-signing.properties
 *.pfx
 
 tools/__pycache__/
+MaenShield-*.apk
+MaenShield-*.apk.idsig
+build-artifact-sha256.txt

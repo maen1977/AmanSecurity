@@ -15,6 +15,7 @@ import com.aman.security.detection.DetectionVerdictLevel
 import com.aman.security.detection.FindingConfidence
 import com.aman.security.detection.ImpersonationDetector
 import com.aman.security.detection.LocalMalwareModel
+import com.aman.security.detection.LocalReasoningClassifier
 import com.aman.security.detection.NetworkIndicatorExtractor
 import com.aman.security.detection.ReputationDisposition
 import com.aman.security.detection.ReputationKind
@@ -219,6 +220,9 @@ class ApkStaticAnalyzer(
         val modelFeatures = buildModelFeatures(signals, markers, archive, knownNetworkMatches)
         val modelResult = LocalMalwareModel(ruleset.modelWeights).infer(modelFeatures)
         modelResult.finding?.let(findings::add)
+        val reasoningVector = buildReasoningVector(signals, markers, archive, knownNetworkMatches)
+        val reasoningResult = LocalReasoningClassifier(ruleset.reasoningWeights).reason(reasoningVector)
+        reasoningResult.finding?.let(findings::add)
         findings += ThreatGraphEngine.correlate(findings, ruleset.graphLinks)
 
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
@@ -256,7 +260,8 @@ class ApkStaticAnalyzer(
             markerCount = markers.size,
             localModelProbability = modelResult.probability,
             hiddenPayloadCount = archive.hiddenDexPayloadCount + archive.hiddenElfPayloadCount + archive.nestedArchivePayloadCount,
-            antiAnalysisMarkerCount = listOf("ANTI_DEBUG", "EMULATOR_CHECK", "ENVIRONMENT_FINGERPRINT").count(markers::contains)
+            antiAnalysisMarkerCount = listOf("ANTI_DEBUG", "EMULATOR_CHECK", "ENVIRONMENT_FINGERPRINT").count(markers::contains),
+            reasoningProbability = reasoningResult.probability
         )
     }
 
@@ -303,6 +308,46 @@ class ApkStaticAnalyzer(
         put("QUERY_PACKAGES", bool(ApkRiskSignal.QUERY_ALL_PACKAGES in signals))
         put("COMPONENT_SPREAD", bool(archive.dexFileCount >= MANY_DEX_THRESHOLD && archive.nativeLibraryCount > 0))
     }
+
+    /** Build the compact reasoning vector consumed by the on-device LocalReasoningClassifier. */
+    private fun buildReasoningVector(
+        signals: Set<ApkRiskSignal>,
+        markers: Set<String>,
+        archive: ArchiveSignals,
+        knownNetworkMatches: Int
+    ): Map<String, Double> = mapOf(
+        "surveillance" to bool(
+            ApkRiskSignal.ACCESSIBILITY_SERVICE in signals ||
+                ApkRiskSignal.OVERLAY_PERMISSION in signals ||
+                ApkRiskSignal.INPUT_METHOD_SERVICES in signals ||
+                ApkRiskSignal.SCREEN_CAPTURE in signals ||
+                ApkRiskSignal.AUDIO_RECORDING_SERVICE in signals
+        ),
+        "stealth" to bool(
+            "EMULATOR_CHECK" in markers || "ANTI_DEBUG" in markers ||
+                "ENVIRONMENT_FINGERPRINT" in markers || "HIDDEN_ASSET_EXTRACT" in markers ||
+                archive.hiddenDexPayloadCount + archive.hiddenElfPayloadCount + archive.nestedArchivePayloadCount > 0
+        ),
+        "exfiltration" to bool(
+            "NETWORK_CLIENT" in markers || ApkRiskSignal.STORAGE_PERMISSION in signals ||
+                ApkRiskSignal.DEVICE_IDENTIFIER_API in signals ||
+                ApkRiskSignal.READ_PHONE_STATE_API in signals ||
+                ApkRiskSignal.TELEPHONY_STATE_API in signals ||
+                ApkRiskSignal.SMS_ACCESS in signals || knownNetworkMatches > 0
+        ),
+        "persistence" to bool(ApkRiskSignal.BOOT_START in signals || archive.codeScanTruncated),
+        "monetization" to bool(ApkRiskSignal.BILLING_API in signals || ApkRiskSignal.SMS_ACCESS in signals),
+        "privilege" to bool(
+            ApkRiskSignal.REQUEST_INSTALL_PACKAGES in signals ||
+                ApkRiskSignal.QUERY_ALL_PACKAGES in signals ||
+                "COMMAND_EXEC" in markers
+        ),
+        "anti_analysis" to bool(
+            "DYNAMIC_CODE" in markers || "HEAVY_REFLECTION" in markers ||
+                archive.dexFileCount >= MANY_DEX_THRESHOLD || archive.nativeLibraryCount > 0
+        ),
+        "impersonation" to bool("PACKER_PRESENT" in markers)
+    )
 
     private fun bool(value: Boolean): Double = if (value) 1.0 else 0.0
 

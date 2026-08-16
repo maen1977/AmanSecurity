@@ -2988,6 +2988,11 @@ class MainActivity : AppCompatActivity() {
                         NumberFormat.getIntegerInstance().format(analysis.networkIndicatorCount),
                         NumberFormat.getIntegerInstance().format(analysis.markerCount),
                         NumberFormat.getPercentInstance().format(analysis.localModelProbability)))
+                    if (analysis.reasoningProbability > 0) {
+                        append('\n')
+                        append(getString(R.string.ai_reasoning_probability,
+                            NumberFormat.getPercentInstance().format(analysis.reasoningProbability)))
+                    }
                 }
                 append('\n')
                 append(formatApkSignals(analysis.signals))
@@ -3043,6 +3048,7 @@ class MainActivity : AppCompatActivity() {
         ApkRiskSignal.STORAGE_PERMISSION -> R.string.apk_signal_storage_access
         ApkRiskSignal.AUDIO_RECORDING_SERVICE -> R.string.apk_signal_audio_service
         ApkRiskSignal.INPUT_METHOD_SERVICES -> R.string.apk_signal_input_method
+        ApkRiskSignal.SCREEN_CAPTURE -> R.string.apk_signal_screen_capture
     }
 
     private fun threatFamilyString(family: ThreatFamily): Int = when (family) {

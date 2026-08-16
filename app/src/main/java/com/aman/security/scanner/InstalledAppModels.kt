@@ -63,7 +63,8 @@ data class InstalledAppScanResult(
     val signingCertificateSha256: String?,
     val threatReference: String? = null,
     val advancedVerdict: MultiEngineVerdict? = null,
-    val deepAnalysisPerformed: Boolean = false
+    val deepAnalysisPerformed: Boolean = false,
+    val reasoningProbability: Double = 0.0
 )
 
 data class InstalledAppsScanSummary(
