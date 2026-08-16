@@ -2520,6 +2520,7 @@ class MainActivity : AppCompatActivity() {
         R.string.threat_update_counts,
         NumberFormat.getIntegerInstance().format(info.malwareFileHashes),
         NumberFormat.getIntegerInstance().format(info.phishingHosts),
+        NumberFormat.getIntegerInstance().format(info.malwareUrlHosts),
         NumberFormat.getIntegerInstance().format(info.c2Hosts),
         NumberFormat.getIntegerInstance().format(info.androidCveCount)
     )
