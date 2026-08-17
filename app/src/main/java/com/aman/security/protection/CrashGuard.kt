@@ -61,7 +61,7 @@ public object CrashGuard {
         val files = (dir.listFiles() ?: emptyArray()).filter { it.isFile }.sortedBy { it.lastModified() }.toMutableList()
         while (files.size >= MAX_LOGS && files.isNotEmpty()) {
             files.first().delete()
-            files.removeFirst()
+            files.removeAt(0)
         }
     }
 
