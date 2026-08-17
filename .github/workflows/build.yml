@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: aman-security-${{ github.ref }}-${{ github.event_name }}
@@ -143,7 +143,9 @@ jobs:
 
   build:
     name: Build Android app
-    if: github.event_name != 'schedule'
+    # Build the Android release whenever this is a push/manual run, even if the
+    # optional intelligence publisher fails. This preserves the app build path.
+    if: ${{ always() && github.event_name != 'schedule' }}
     needs: threat-intelligence
     runs-on: ubuntu-latest
     env:
@@ -256,6 +258,42 @@ jobs:
         run: |
           sha256sum MaenShield-9.0.5-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
+
+      - name: Publish latest Android build to GitHub Release
+        if: github.event_name != 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v9.0.5"
+          release_report="MaenShield-9.0.5-Verification-Reports.txt"
+          {
+            echo "Maen Shield v9.0.5"
+            echo
+            echo "Built by Aman Security Pipeline from commit ${GITHUB_SHA}."
+            echo
+            cat build-artifact-sha256.txt
+          } > "$release_report"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" \
+              MaenShield-9.0.5-TestRelease.apk \
+              app/build/outputs/bundle/release/*.aab \
+              build-artifact-sha256.txt \
+              "$release_report" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$tag" \
+              MaenShield-9.0.5-TestRelease.apk \
+              app/build/outputs/bundle/release/*.aab \
+              build-artifact-sha256.txt \
+              "$release_report" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Maen Shield v9.0.5" \
+              --notes "تم بناء الإصدار بواسطة Aman Security Pipeline من نفس commit التطبيق."
+          fi
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
