@@ -79,10 +79,12 @@ object ReasoningDecisionEngine {
     }
 
     private fun confidenceWeight(c: FindingConfidence): Double = when (c) {
-        FindingConfidence.CONFIRMED -> 1.6
-        FindingConfidence.HIGH -> 1.3
-        FindingConfidence.MEDIUM -> 1.0
+        FindingConfidence.UNKNOWN -> 0.0
         FindingConfidence.LOW -> 0.7
+        FindingConfidence.MEDIUM -> 1.0
+        FindingConfidence.HIGH -> 1.3
+        FindingConfidence.CONFIRMED -> 1.6
+        FindingConfidence.CRITICAL -> 1.8
     }
 
     private fun reasonKeyFor(e: Evidence): String =

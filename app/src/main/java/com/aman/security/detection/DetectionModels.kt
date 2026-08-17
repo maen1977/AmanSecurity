@@ -48,10 +48,12 @@ enum class DetectionSource {
 }
 
 enum class FindingConfidence(val rank: Int) {
+    UNKNOWN(0),
     LOW(1),
     MEDIUM(2),
     HIGH(3),
-    CONFIRMED(4)
+    CONFIRMED(4),
+    CRITICAL(5)
 }
 
 enum class DetectionVerdictLevel {

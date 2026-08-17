@@ -124,7 +124,7 @@ object ThreatDbValidator {
         return ApkIdentityIndicator(kind, hash, id, classification)
     }
 
-    private fun parseDetectionRules(bytes: ByteArray, expectedCount: Int): DetectionRuleset {
+    internal fun parseDetectionRules(bytes: ByteArray, expectedCount: Int): DetectionRuleset {
         val rules = mutableListOf<DetectionRule>()
         val brands = mutableListOf<ProtectedBrandProfile>()
         val model = linkedMapOf<String, Double>()
@@ -142,7 +142,7 @@ object ThreatDbValidator {
                     require(p.size == 7)
                     val id = strictId(p[1])
                     val family = threatFamily(p[2])
-                    val confidence = FindingConfidence.valueOf(p[3])
+                    val confidence = findingConfidence(p[3])
                     val weight = p[4].toInt().also { require(it in 1..100) }
                     val all = markerSet(p[5])
                     val any = markerSet(p[6])
@@ -171,7 +171,7 @@ object ThreatDbValidator {
                     val toId = strictId(p[2])
                     require(fromId != toId)
                     val relation = ThreatGraphRelation.valueOf(p[3])
-                    val confidence = FindingConfidence.valueOf(p[4])
+                    val confidence = findingConfidence(p[4])
                     val weight = p[5].toInt().also { require(it in 1..24) }
                     graphLinks += ThreatGraphLink(fromId, toId, relation, confidence, weight)
                 }
@@ -201,7 +201,7 @@ object ThreatDbValidator {
                     require(hash.matches(Regex("^[a-f0-9]{64}$")))
                     val id = strictId(p[3])
                     val family = threatFamily(p[4])
-                    val confidence = FindingConfidence.valueOf(p[5])
+                    val confidence = findingConfidence(p[5])
                     val disposition = ReputationDisposition.valueOf(p[6])
                     val entry = ReputationIndicator(kind, hash, id, family, confidence, disposition)
                     require(reputation.put("$kind:$hash", entry) == null) { "Duplicate reputation indicator" }
@@ -212,7 +212,7 @@ object ThreatDbValidator {
                     val source = p[2].trim().uppercase()
                     require(source.matches(Regex("^[A-Z0-9_.-]{2,64}$")))
                     val family = threatFamily(p[3])
-                    val confidence = FindingConfidence.valueOf(p[4])
+                    val confidence = findingConfidence(p[4])
                     val firstSeen = optionalDate(p[5])
                     val lastSeen = optionalDate(p[6])
                     val entry = ThreatIntelMetadata(id, source, family, confidence, firstSeen, lastSeen)
@@ -238,6 +238,10 @@ object ThreatDbValidator {
         }
         return DetectionRuleset(rules, enrichedBrands, model, reasoning, reputation, metadata, graphLinks)
     }
+
+    private fun findingConfidence(value: String): FindingConfidence = runCatching {
+        FindingConfidence.valueOf(value.trim())
+    }.getOrDefault(FindingConfidence.UNKNOWN)
 
     private fun threatFamily(value: String): ThreatFamily = runCatching {
         ThreatFamily.valueOf(value.trim())

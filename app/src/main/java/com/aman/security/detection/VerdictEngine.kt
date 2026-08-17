@@ -70,10 +70,12 @@ object VerdictEngine {
         val domains = effective.map { evidenceDomain(it.source) }.distinct().size
         var score = effective.sumOf { finding ->
             val confidenceFactor = when (finding.confidence) {
+                FindingConfidence.UNKNOWN -> 0.0
                 FindingConfidence.LOW -> 0.45
                 FindingConfidence.MEDIUM -> 0.75
                 FindingConfidence.HIGH -> 1.0
                 FindingConfidence.CONFIRMED -> 1.0
+                FindingConfidence.CRITICAL -> 1.15
             }
             (finding.score * confidenceFactor).toInt()
         }
