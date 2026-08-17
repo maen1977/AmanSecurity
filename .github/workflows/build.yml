@@ -18,7 +18,7 @@ concurrency:
 jobs:
   threat-intelligence:
     name: Build Aman intelligence package
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
     name: Build Android app
     if: github.event_name != 'schedule'
     needs: threat-intelligence
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
 
