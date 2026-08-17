@@ -7,6 +7,7 @@ import com.aman.security.detection.FindingConfidence
 import com.aman.security.detection.MultiEngineVerdict
 import com.aman.security.detection.ThreatFamily
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -24,21 +25,21 @@ class ApkComponentAnalysisPolicyTest {
     }
 
     @Test
-    fun keepsAllDistinctFindingsAndRemovesDuplicateComponentFindings() {
+    fun keepsDistinctHardConfirmationsAndRemovesDuplicates() {
         val duplicate = DetectionFinding(
-            id = "DUPLICATE_RULE",
-            source = DetectionSource.SIGNATURE_RULE,
-            score = 20,
-            confidence = FindingConfidence.MEDIUM,
-            family = ThreatFamily.RISKWARE,
+            id = "DUPLICATE_HASH",
+            source = DetectionSource.FILE_HASH,
+            score = 95,
+            confidence = FindingConfidence.CONFIRMED,
+            family = ThreatFamily.MALWARE,
             reference = "same-reference"
         )
-        val unique = duplicate.copy(id = "UNIQUE_RULE", reference = "unique-reference")
+        val unique = duplicate.copy(id = "UNIQUE_SIGNER", source = DetectionSource.SIGNER_IDENTITY, reference = "unique-reference")
         val verdict = MultiEngineVerdict(
-            score = 20,
-            level = DetectionVerdictLevel.REVIEW,
-            family = ThreatFamily.RISKWARE,
-            confidence = FindingConfidence.MEDIUM,
+            score = 95,
+            level = DetectionVerdictLevel.KNOWN_THREAT,
+            family = ThreatFamily.MALWARE,
+            confidence = FindingConfidence.CONFIRMED,
             findings = listOf(duplicate, unique),
             engineCount = 1
         )
@@ -50,7 +51,46 @@ class ApkComponentAnalysisPolicyTest {
         val merged = ApkComponentAnalysisPolicy.mergeFindings(analyses)
 
         assertEquals(2, merged.size)
-        assertTrue(merged.any { it.id == "DUPLICATE_RULE" })
-        assertTrue(merged.any { it.id == "UNIQUE_RULE" })
+        assertTrue(merged.any { it.id == "DUPLICATE_HASH" })
+        assertTrue(merged.any { it.id == "UNIQUE_SIGNER" })
+    }
+
+    @Test
+    fun dropsGenericDeepHeuristicsFromInstalledAppVerdict() {
+        val genericDex = DetectionFinding(
+            id = "GENERIC_DEX_BEHAVIOR",
+            source = DetectionSource.DEX,
+            score = 99,
+            confidence = FindingConfidence.HIGH,
+            family = ThreatFamily.RISKWARE,
+            reference = "generic-dex"
+        )
+        val genericZeroDay = genericDex.copy(
+            id = "GENERIC_ZERO_DAY",
+            source = DetectionSource.ZERO_DAY_HEURISTIC,
+            reference = "generic-zero-day"
+        )
+        val genericGraph = genericDex.copy(
+            id = "GENERIC_GRAPH",
+            source = DetectionSource.THREAT_GRAPH,
+            reference = "generic-graph"
+        )
+        val verdict = MultiEngineVerdict(
+            score = 99,
+            level = DetectionVerdictLevel.HIGH,
+            family = ThreatFamily.RISKWARE,
+            confidence = FindingConfidence.HIGH,
+            findings = listOf(genericDex, genericZeroDay, genericGraph),
+            engineCount = 3
+        )
+
+        val merged = ApkComponentAnalysisPolicy.mergeFindings(
+            listOf(ApkStaticAnalysis(ApkAnalysisState.VALID, advancedVerdict = verdict))
+        )
+
+        assertFalse(merged.any { it.id == "GENERIC_DEX_BEHAVIOR" })
+        assertFalse(merged.any { it.id == "GENERIC_ZERO_DAY" })
+        assertFalse(merged.any { it.id == "GENERIC_GRAPH" })
+        assertTrue(merged.isEmpty())
     }
 }

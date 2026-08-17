@@ -41,8 +41,10 @@ data class SpywareRiskAssessment(
 
 /**
  * Stalkerware/spyware capability review policy. Permissions alone never equal malware.
- * Escalation requires combinations of privileged control, surveillance access,
- * persistence and/or confirmed sideloading.
+ * Common camera, microphone, contacts, location, call-log, media, boot, and overlay
+ * capabilities are normal for many messaging, calling, navigation, accessibility,
+ * and device-management apps. Escalation therefore requires either an active
+ * privileged control or confirmed sideloading together with corroborating signals.
  */
 object SpywareRiskPolicy {
     fun evaluate(signals: Set<SpywareCapabilitySignal>): SpywareRiskAssessment {
@@ -74,6 +76,7 @@ object SpywareRiskPolicy {
         val overlay = SpywareCapabilitySignal.OVERLAY_DECLARED in signals
         val sideloaded = SpywareCapabilitySignal.SIDELOADED in signals
         val clustered = SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER in signals
+        val corroboratedControl = hasActiveControl || sideloaded
 
         var score = controls * 13 + activeControls * 6 + surveillance * 4
         if (clustered) score += 8
@@ -90,25 +93,32 @@ object SpywareRiskPolicy {
         val level = when {
             sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
             hasActiveControl && activeControls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
-            // Broad privacy access is common in legitimate social, camera, navigation,
-            // and messaging apps. It is only HIGH when paired with an active privileged
-            // control and an additional persistence/overlay/cluster signal. Permissions
-            // alone remain LOW or REVIEW, never a malware-like HIGH verdict.
             surveillance >= 5 && hasActiveControl && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
+
+            // A sideloaded package with a declared privileged control or overlay and
+            // corroborating surveillance is worth a review, even before the control is active.
             sideloaded && (controls >= 1 || overlay) && surveillance >= 1 -> SpywareReviewLevel.REVIEW
-            clustered && (sideloaded || controls >= 1 || persistent) -> SpywareReviewLevel.REVIEW
+            // Permission clusters alone are common in legitimate communication apps.
+            clustered && corroboratedControl -> SpywareReviewLevel.REVIEW
+            // Input methods are a special control surface; keep review when combined
+            // with surveillance, but do not treat ordinary audio/camera apps alike.
             SpywareCapabilitySignal.INPUT_METHOD_SERVICE in signals && surveillance >= 2 -> SpywareReviewLevel.REVIEW
-            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE in signals && (surveillance >= 2 || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
-            surveillance >= 4 && (SpywareCapabilitySignal.CAMERA_MIC_COMBO in signals || SpywareCapabilitySignal.SURVEILLANCE_COMBO in signals) -> SpywareReviewLevel.REVIEW
-            controls >= 2 && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
-            surveillance >= 4 && (persistent || overlay || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
+            // An audio recording service is not suspicious without active control or
+            // confirmed sideloading; messaging and recorder apps commonly declare it.
+            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE in signals &&
+                corroboratedControl && (surveillance >= 2 || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
+            // Camera/microphone and broad surveillance combinations are privacy context
+            // only unless paired with active control or confirmed sideloading.
+            surveillance >= 4 && corroboratedControl &&
+                (SpywareCapabilitySignal.CAMERA_MIC_COMBO in signals || SpywareCapabilitySignal.SURVEILLANCE_COMBO in signals) -> SpywareReviewLevel.REVIEW
+            controls >= 2 && corroboratedControl && (surveillance >= 2 || persistent) -> SpywareReviewLevel.REVIEW
+            surveillance >= 4 && corroboratedControl &&
+                (persistent || overlay || SpywareCapabilitySignal.QUERY_ALL_PACKAGES in signals) -> SpywareReviewLevel.REVIEW
             else -> SpywareReviewLevel.LOW
         }
 
-        // Keep the numeric score aligned with the corroborated policy level. The
-        // floor is applied only after the multi-signal level has been established,
-        // so ordinary messaging/privacy permissions can never become spyware merely
-        // by accumulating permission points.
+        // Keep the numeric score aligned with the corroborated policy level. Ordinary
+        // permissions remain invisible to the spyware-review list because they are LOW.
         score = when (level) {
             SpywareReviewLevel.HIGH -> maxOf(score, 65)
             SpywareReviewLevel.REVIEW -> maxOf(score, 35)

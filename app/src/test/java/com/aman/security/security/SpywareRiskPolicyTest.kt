@@ -12,30 +12,78 @@ class SpywareRiskPolicyTest {
     }
 
     @Test
+    fun messagingAppPermissionBundleStaysLowWithoutActiveControl() {
+        val signals = setOf(
+            SpywareCapabilitySignal.BOOT_PERSISTENCE,
+            SpywareCapabilitySignal.CAMERA_ACCESS,
+            SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS,
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS,
+            SpywareCapabilitySignal.READ_MEDIA_ACCESS,
+            SpywareCapabilitySignal.CAMERA_MIC_COMBO,
+            SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER,
+            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE
+        )
+        assertEquals(SpywareReviewLevel.LOW, SpywareRiskPolicy.evaluate(signals).level)
+    }
+
+    @Test
+    fun callerIdAppPermissionBundleStaysLowWithoutActiveNotificationListener() {
+        val signals = setOf(
+            SpywareCapabilitySignal.BOOT_PERSISTENCE,
+            SpywareCapabilitySignal.NOTIFICATION_LISTENER,
+            SpywareCapabilitySignal.CALL_LOG_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS,
+            SpywareCapabilitySignal.SMS_ACCESS,
+            SpywareCapabilitySignal.OVERLAY_DECLARED,
+            SpywareCapabilitySignal.SENSITIVE_PERMISSION_CLUSTER
+        )
+        assertEquals(SpywareReviewLevel.LOW, SpywareRiskPolicy.evaluate(signals).level)
+    }
+
+    @Test
+    fun telegramLikePermissionBundleStaysLowWithoutActiveControl() {
+        val signals = setOf(
+            SpywareCapabilitySignal.BOOT_PERSISTENCE,
+            SpywareCapabilitySignal.CAMERA_ACCESS,
+            SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS,
+            SpywareCapabilitySignal.PHONE_STATE_ACCESS,
+            SpywareCapabilitySignal.READ_MEDIA_ACCESS,
+            SpywareCapabilitySignal.CAMERA_MIC_COMBO,
+            SpywareCapabilitySignal.SURVEILLANCE_COMBO,
+            SpywareCapabilitySignal.AUDIO_RECORDING_SERVICE
+        )
+        assertEquals(SpywareReviewLevel.LOW, SpywareRiskPolicy.evaluate(signals).level)
+    }
+
+    @Test
     fun keyloggerInputMethodEscalatesReview() {
         val assessment = SpywareRiskPolicy.evaluate(setOf(SpywareCapabilitySignal.INPUT_METHOD_SERVICE, SpywareCapabilitySignal.MICROPHONE_ACCESS, SpywareCapabilitySignal.SMS_ACCESS))
         assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
     }
 
     @Test
-    fun surveillanceComboTriggersReview() {
+    fun surveillanceComboWithoutControlStaysLow() {
         val signals = setOf(
             SpywareCapabilitySignal.CAMERA_ACCESS, SpywareCapabilitySignal.MICROPHONE_ACCESS,
-            SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.SMS_ACCESS
+            SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.SMS_ACCESS,
+            SpywareCapabilitySignal.BOOT_PERSISTENCE
         )
-        val assessment = SpywareRiskPolicy.evaluate(signals + SpywareCapabilitySignal.BOOT_PERSISTENCE)
-        assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
+        assertEquals(SpywareReviewLevel.LOW, SpywareRiskPolicy.evaluate(signals).level)
     }
 
     @Test
-    fun heavySurveillanceWithPersistenceWithoutActiveControlNeedsReviewOnly() {
+    fun heavySurveillanceWithPersistenceWithoutActiveControlStaysLow() {
         val signals = setOf(
             SpywareCapabilitySignal.SMS_ACCESS, SpywareCapabilitySignal.CALL_LOG_ACCESS,
             SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.MICROPHONE_ACCESS,
             SpywareCapabilitySignal.CONTACTS_ACCESS, SpywareCapabilitySignal.BOOT_PERSISTENCE
         )
-        val assessment = SpywareRiskPolicy.evaluate(signals)
-        assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
+        assertEquals(SpywareReviewLevel.LOW, SpywareRiskPolicy.evaluate(signals).level)
     }
 
     @Test

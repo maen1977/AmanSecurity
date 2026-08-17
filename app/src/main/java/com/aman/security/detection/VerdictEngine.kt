@@ -158,7 +158,7 @@ object VerdictEngine {
         )
     }
 
-    private fun isHardConfirmation(finding: DetectionFinding): Boolean =
+    fun isHardConfirmation(finding: DetectionFinding): Boolean =
         finding.confidence == FindingConfidence.CONFIRMED &&
             finding.family != ThreatFamily.TEST &&
             finding.source in setOf(
