@@ -185,7 +185,19 @@ class InstalledAppScanner(
         val installedReasoning = LocalReasoningClassifier(database.detectionRuleset.reasoningWeights).reason(
             buildInstalledReasoningVector(basic.signals)
         )
-        installedReasoning.finding?.let(findings::add)
+        // Permission/capability reasoning for an installed app is a review signal, not proof of
+        // malware. Official apps and Android components legitimately use camera, microphone,
+        // storage, contacts, overlay, boot, or package-query capabilities. Exact file/signer/
+        // package reputation matches are handled independently above and remain confirmed.
+        installedReasoning.finding?.let { finding ->
+            findings += finding.copy(
+                id = "INSTALLED_APP_REASONING_REVIEW",
+                score = minOf(finding.score, 10),
+                confidence = FindingConfidence.MEDIUM,
+                family = ThreatFamily.RISKWARE,
+                reference = "INSTALLED_APP_REASONING_REVIEW"
+            )
+        }
         if (impersonationFindings.isNotEmpty() && AppRiskSignal.NON_STORE_INSTALL in basic.signals) {
             findings += DetectionFinding(
                 "IMPERSONATION_SIDELOAD",
