@@ -5,7 +5,7 @@ val expectedReleaseCert = expectedReleaseCertRaw.takeIf { Regex("^[a-f0-9]{64}$"
 
 val cloudThreatDbBaseUrlRaw = providers.environmentVariable("AMAN_THREAT_DB_BASE_URL").orNull
     ?: providers.gradleProperty("AMAN_THREAT_DB_BASE_URL").orNull
-    ?: ""
+    ?: "https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest"
 val cloudThreatDbBaseUrl = cloudThreatDbBaseUrlRaw.trim().replace("\\", "\\\\").replace("\"", "\\\"")
 
 plugins {
@@ -21,8 +21,8 @@ android {
         applicationId = "com.aman.security"
         minSdk = 26
         targetSdk = 36
-        versionCode = 62
-        versionName = "9.0.4"
+        versionCode = 63
+        versionName = "9.0.5"
 
         buildConfigField("String", "EXPECTED_RELEASE_CERT_SHA256", "\"$expectedReleaseCert\"")
         buildConfigField("String", "AMAN_THREAT_DB_BASE_URL", "\"$cloudThreatDbBaseUrl\"")
