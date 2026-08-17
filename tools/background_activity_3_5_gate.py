@@ -33,7 +33,7 @@ def main() -> None:
     need("BackgroundActivityService" not in manifest and "UsageStatsManager" not in auditor, "no_new_background_service")
     for key in ("background_activity_title", "background_activity_check_now", "background_activity_status_clean", "background_activity_notification_body"):
         need(f'name="{key}"' in english and f'name="{key}"' in arabic, f"localization_{key}")
-    print("BACKGROUND_ACTIVITY_GATE_OK version=8.0.0 manual_only=1 local_only=1 non_destructive=1 sensitive_permissions=0 notification=1")
+    print("BACKGROUND_ACTIVITY_GATE_OK version=9.0.1 manual_only=1 local_only=1 non_destructive=1 sensitive_permissions=0 notification=1")
 
 
 if __name__ == "__main__":

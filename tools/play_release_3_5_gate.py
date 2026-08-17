@@ -28,7 +28,7 @@ def main() -> None:
     need('QUERY_ALL_PACKAGES' in checklist and 'MANAGE_EXTERNAL_STORAGE' in checklist, "permission_declarations_present")
     need('upload key' in checklist and 'public HTTPS URL' in checklist, "owner_actions_present")
     need('References' in checklist and 'https://developer.android.com/google/play/requirements/target-sdk' in checklist, "official_references_present")
-    print('PLAY_RELEASE_GATE_OK version=8.0.0 target_api=36 sms_permissions=0 accessibility=0 docs=1 signed_aab_owner_action=1 public_privacy_url_owner_action=1')
+    print('PLAY_RELEASE_GATE_OK version=9.0.1 target_api=36 sms_permissions=0 accessibility=0 docs=1 signed_aab_owner_action=1 public_privacy_url_owner_action=1')
 
 
 if __name__ == '__main__':

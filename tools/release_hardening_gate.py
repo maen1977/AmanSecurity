@@ -15,8 +15,8 @@ checks={
  'auto_build':'push:' in workflow and 'branches: [ "main" ]' in workflow and 'workflow_dispatch:' in workflow,
  'scheduled_intel_only':'schedule:' in workflow and "if: github.event_name != 'schedule'" in workflow,
  'checksums':'sha256sum' in workflow,
- 'reports':'MaenShield-8.0.0-Verification-Reports' in workflow,
+ 'reports':'MaenShield-9.0.1-Verification-Reports' in workflow,
 }
 failed=[k for k,v in checks.items() if not v]
 if failed: raise SystemExit(f'RELEASE_HARDENING_GATE_FAILED {failed}')
-print('RELEASE_HARDENING_GATE_OK version=8.0.0 r8=1 shrink=1 backup=0 cleartext=0 cert_pin_configurable=1 auto_build=1 scheduled_build=0 artifact_checksums=1')
+print('RELEASE_HARDENING_GATE_OK version=9.0.1 r8=1 shrink=1 backup=0 cleartext=0 cert_pin_configurable=1 auto_build=1 scheduled_build=0 artifact_checksums=1')

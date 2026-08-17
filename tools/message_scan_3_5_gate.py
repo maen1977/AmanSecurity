@@ -30,7 +30,7 @@ def main() -> None:
     need("READ_SMS" not in manifest and "RECEIVE_SMS" not in manifest and "READ_CALL_LOG" not in manifest, "sensitive_sms_permissions")
     for key in ("message_input_hint", "scan_message_action", "message_result_high", "message_scan_subtitle"):
         need(f'name="{key}"' in english and f'name="{key}"' in arabic, f"localization_{key}")
-    print("MESSAGE_SCAN_GATE_OK version=8.0.0 local_only=1 bounded_text=1 bounded_urls=1 sms_permissions=0 tests=1")
+    print("MESSAGE_SCAN_GATE_OK version=9.0.1 local_only=1 bounded_text=1 bounded_urls=1 sms_permissions=0 tests=1")
 
 
 if __name__ == "__main__":
