@@ -136,7 +136,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-9.0.10-Cloud-Threat-Package
+          name: MaenShield-9.0.11-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -240,15 +240,15 @@ jobs:
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-9.0.10-TestRelease-unsigned.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-9.0.11-TestRelease-unsigned.apk
           "$ANDROID_HOME/build-tools/37.0.0/apksigner" sign \
             --ks "$HOME/.android/debug.keystore" \
             --ks-key-alias AndroidDebugKey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MaenShield-9.0.10-TestRelease.apk \
-            MaenShield-9.0.10-TestRelease-unsigned.apk
-          test -s MaenShield-9.0.10-TestRelease.apk
+            --out MaenShield-9.0.11-TestRelease.apk \
+            MaenShield-9.0.11-TestRelease-unsigned.apk
+          test -s MaenShield-9.0.11-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -256,7 +256,7 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-9.0.10-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-9.0.11-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Publish latest Android build to GitHub Release
@@ -266,10 +266,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="v9.0.10"
-          release_report="MaenShield-9.0.10-Verification-Reports.txt"
+          tag="v9.0.11"
+          release_report="MaenShield-9.0.11-Verification-Reports.txt"
           {
-            echo "Maen Shield v9.0.10"
+            echo "Maen Shield v9.0.11"
             echo
             echo "Built by Aman Security Pipeline from commit ${GITHUB_SHA}."
             echo
@@ -277,7 +277,7 @@ jobs:
           } > "$release_report"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" \
-              MaenShield-9.0.10-TestRelease.apk \
+              MaenShield-9.0.11-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
@@ -285,28 +285,28 @@ jobs:
               --clobber
           else
             gh release create "$tag" \
-              MaenShield-9.0.10-TestRelease.apk \
+              MaenShield-9.0.11-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "Maen Shield v9.0.10" \
+              --title "Maen Shield v9.0.11" \
               --notes "تم بناء الإصدار بواسطة Aman Security Pipeline من نفس commit التطبيق."
           fi
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-9.0.10-TestRelease-APK
-          path: MaenShield-9.0.10-TestRelease.apk
+          name: MaenShield-9.0.11-TestRelease-APK
+          path: MaenShield-9.0.11-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-9.0.10-Unsigned-Release-AAB
+          name: MaenShield-9.0.11-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -315,7 +315,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-9.0.10-Verification-Reports
+          name: MaenShield-9.0.11-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/
