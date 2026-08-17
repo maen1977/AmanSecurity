@@ -189,7 +189,10 @@ object ThreatDbValidator {
                     require(dim.matches(Regex("^[a-z0-9_]{2,64}$")))
                     val weight = p[2].toDouble()
                     require(weight in -20.0..20.0)
-                    require(reasoning.put(dim, weight) == null) { "Duplicate reasoning dimension" }
+                    val previousWeight = reasoning.put(dim, weight)
+                    require(previousWeight == null || previousWeight == weight) {
+                        "Conflicting reasoning dimension"
+                    }
                 }
                 "REPUTATION" -> {
                     require(p.size == 7)
