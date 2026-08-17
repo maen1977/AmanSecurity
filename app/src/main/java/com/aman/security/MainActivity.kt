@@ -298,8 +298,10 @@ class MainActivity : AppCompatActivity() {
         protectionActivityStore = ProtectionActivityStore(this)
         restoreManualStorageFolderSelection()
         scanFindingsStore = ScanFindingsStore(this)
-        ProtectionNotifier.ensureChannels(this)
-        AutonomousThreatScheduler.schedule(this)
+        runCatching { ProtectionNotifier.ensureChannels(this) }
+            .onFailure { Log.e(TAG, "Unable to initialize notification channels", it) }
+        runCatching { AutonomousThreatScheduler.schedule(this) }
+            .onFailure { Log.e(TAG, "Unable to schedule threat intelligence", it) }
         renderDatabaseInfo()
         renderSecurityManagement()
         renderProtectionStatus()
