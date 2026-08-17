@@ -7,7 +7,7 @@ network=(ROOT/'app/src/main/res/xml/network_security_config.xml').read_text()
 workflow=(ROOT/'.github/workflows/build.yml').read_text()
 integrity=(ROOT/'app/src/main/java/com/aman/security/security/AppIntegrityInspector.kt').read_text()
 checks={
- 'version_4_0':'versionName = "9.0.13"' in gradle and 'versionCode = 71' in gradle,
+ 'version_4_0':'versionName = "9.0.14"' in gradle and 'versionCode = 72' in gradle,
  'release_minify':'isMinifyEnabled = true' in gradle and 'isShrinkResources = true' in gradle and 'isDebuggable = false' in gradle,
  'release_cert_pin':'AMAN_RELEASE_CERT_SHA256' in gradle and 'EXPECTED_RELEASE_CERT_SHA256' in gradle and 'SIGNATURE_MISMATCH' in integrity,
  'backup_off':'android:allowBackup="false"' in manifest and 'android:fullBackupContent="false"' in manifest,
@@ -15,8 +15,8 @@ checks={
  'auto_build':'push:' in workflow and 'branches: [ "main" ]' in workflow and 'workflow_dispatch:' in workflow,
  'scheduled_intel_only':'schedule:' in workflow and "if: github.event_name != 'schedule'" in workflow,
  'checksums':'sha256sum' in workflow,
- 'reports':'MaenShield-9.0.13-Verification-Reports' in workflow,
+ 'reports':'MaenShield-9.0.14-Verification-Reports' in workflow,
 }
 failed=[k for k,v in checks.items() if not v]
 if failed: raise SystemExit(f'RELEASE_HARDENING_GATE_FAILED {failed}')
-print('RELEASE_HARDENING_GATE_OK version=9.0.13 r8=1 shrink=1 backup=0 cleartext=0 cert_pin_configurable=1 auto_build=1 scheduled_build=0 artifact_checksums=1')
+print('RELEASE_HARDENING_GATE_OK version=9.0.14 r8=1 shrink=1 backup=0 cleartext=0 cert_pin_configurable=1 auto_build=1 scheduled_build=0 artifact_checksums=1')

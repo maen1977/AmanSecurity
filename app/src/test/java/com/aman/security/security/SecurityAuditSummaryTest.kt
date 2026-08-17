@@ -1,6 +1,7 @@
 package com.aman.security.security
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -66,6 +67,61 @@ class SecurityAuditSummaryTest {
         assertEquals("com.example.messenger", audit.reviewApps.single().packageName)
         assertEquals(6, audit.reviewApps.single().grantedSensitivePermissions)
         assertTrue(audit.reviewApps.single().grantedPermissions.contains("android.permission.CAMERA"))
+    }
+
+    @Test
+    fun `official store apps with common sensitive permissions are not privacy reviews`() {
+        val officialPackages = listOf(
+            "com.whatsapp",
+            "com.facebook.orca",
+            "org.telegram.messenger",
+            "com.truecaller",
+            "com.google.android.apps.docs",
+            "com.google.android.apps.adm",
+            "com.miui.screenrecorder"
+        )
+
+        officialPackages.forEach { packageName ->
+            val app = PrivacyAppExposure(
+                appName = packageName,
+                packageName = packageName,
+                grantedSensitivePermissions = 6,
+                isTrustedInstall = true
+            )
+            assertFalse("$packageName should not be a capability-only review", PrivacyPermissionReviewPolicy.shouldReview(app))
+        }
+    }
+
+    @Test
+    fun `sideloaded high-permission app remains a privacy review`() {
+        val sideloadedWhatsApp = PrivacyAppExposure(
+            appName = "WhatsApp",
+            packageName = "com.whatsapp",
+            grantedSensitivePermissions = 6,
+            isTrustedInstall = false
+        )
+
+        assertTrue(PrivacyPermissionReviewPolicy.shouldReview(sideloadedWhatsApp))
+    }
+
+    @Test
+    fun `only recognized app stores are trusted installers`() {
+        listOf(
+            "com.android.vending",
+            "com.samsung.android.app.galaxyapps",
+            "com.amazon.venezia",
+            "com.huawei.appmarket",
+            "com.oppo.market",
+            "com.vivo.appstore",
+            "com.xiaomi.mipicks",
+            "com.heytap.market",
+            "com.transsion.market"
+        ).forEach { installer ->
+            assertTrue(installer, PrivacyPermissionReviewPolicy.isTrustedInstaller(installer))
+        }
+        assertFalse(PrivacyPermissionReviewPolicy.isTrustedInstaller(null))
+        assertFalse(PrivacyPermissionReviewPolicy.isTrustedInstaller("com.android.shell"))
+        assertFalse(PrivacyPermissionReviewPolicy.isTrustedInstaller(""))
     }
 
     @Test

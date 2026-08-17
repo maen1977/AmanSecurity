@@ -46,7 +46,8 @@ data class PrivacyAppExposure(
     val appName: String,
     val packageName: String,
     val grantedSensitivePermissions: Int,
-    val grantedPermissions: List<String> = emptyList()
+    val grantedPermissions: List<String> = emptyList(),
+    val isTrustedInstall: Boolean = false
 )
 
 data class PrivacyPermissionAudit(

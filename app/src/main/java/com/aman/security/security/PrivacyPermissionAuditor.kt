@@ -13,11 +13,12 @@ class PrivacyPermissionAuditor(private val context: Context) {
     fun audit(): PrivacyPermissionAudit {
         val allUserApps = userAppExposure(includeZero = true)
         val exposed = allUserApps.filter { it.grantedSensitivePermissions > 0 }
-        val elevated = exposed.count { it.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD }
+        val reviewApps = allUserApps.filter(PrivacyPermissionReviewPolicy::shouldReview)
+        val elevated = reviewApps.size
         val totalGranted = exposed.sumOf { it.grantedSensitivePermissions }
 
         val findings = buildList {
-            if (elevated > 0) add(SecurityAuditFinding("privacy_permission_review", SecurityAuditSeverity.WARNING))
+            if (reviewApps.isNotEmpty()) add(SecurityAuditFinding("privacy_permission_review", SecurityAuditSeverity.WARNING))
             else if (exposed.isNotEmpty()) add(SecurityAuditFinding("privacy_permission_inventory", SecurityAuditSeverity.INFO))
         }
         return PrivacyPermissionAudit(
@@ -26,8 +27,7 @@ class PrivacyPermissionAuditor(private val context: Context) {
             elevatedPermissionApps = elevated,
             totalGrantedSensitivePermissions = totalGranted,
             findings = findings,
-            reviewApps = allUserApps
-                .filter { it.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD }
+            reviewApps = reviewApps
                 .sortedWith(compareByDescending<PrivacyAppExposure> { it.grantedSensitivePermissions }.thenBy { it.appName.lowercase() })
         )
     }
@@ -49,7 +49,8 @@ class PrivacyPermissionAuditor(private val context: Context) {
             appName = appName,
             packageName = info.packageName,
             grantedSensitivePermissions = granted,
-            grantedPermissions = grantedPermissions
+            grantedPermissions = grantedPermissions,
+            isTrustedInstall = isTrustedStoreInstall(info.packageName)
         )
     }
 
@@ -66,8 +67,18 @@ class PrivacyPermissionAuditor(private val context: Context) {
         return flags and ApplicationInfo.FLAG_SYSTEM != 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
     }
 
+    private fun isTrustedStoreInstall(packageName: String): Boolean = runCatching {
+        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            packageManager.getInstallSourceInfo(packageName).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getInstallerPackageName(packageName)
+        }
+        PrivacyPermissionReviewPolicy.isTrustedInstaller(installer)
+    }.getOrDefault(false)
+
     companion object {
-        private const val ELEVATED_PERMISSION_THRESHOLD = 5
+        private const val ELEVATED_PERMISSION_THRESHOLD = PrivacyPermissionReviewPolicy.ELEVATED_PERMISSION_THRESHOLD
         private val SENSITIVE_PERMISSIONS = listOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
@@ -80,4 +91,32 @@ class PrivacyPermissionAuditor(private val context: Context) {
             Manifest.permission.READ_SMS
         )
     }
+}
+
+/**
+ * A privacy permission is a review signal only when it is attached to an app
+ * whose install provenance is not a recognized app store. Store provenance
+ * suppresses this capability-only review; confirmed malware and independent
+ * package/signature findings continue through their own detection paths.
+ */
+internal object PrivacyPermissionReviewPolicy {
+    const val ELEVATED_PERMISSION_THRESHOLD = 5
+
+    private val TRUSTED_INSTALLERS = setOf(
+        "com.android.vending", // Google Play Store
+        "com.samsung.android.app.galaxyapps", // Samsung Galaxy Store
+        "com.amazon.venezia", // Amazon Appstore
+        "com.huawei.appmarket", // Huawei AppGallery
+        "com.oppo.market", // OPPO App Market
+        "com.vivo.appstore", // vivo App Store
+        "com.xiaomi.mipicks", // Xiaomi GetApps
+        "com.heytap.market", // HeyTap App Market
+        "com.transsion.market" // Transsion App Store
+    )
+
+    fun shouldReview(app: PrivacyAppExposure): Boolean =
+        app.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD && !app.isTrustedInstall
+
+    fun isTrustedInstaller(installerPackageName: String?): Boolean =
+        installerPackageName?.trim()?.lowercase() in TRUSTED_INSTALLERS
 }
