@@ -325,11 +325,11 @@ class ProtectionService : Service() {
             updateScanProgress(sessionId, 99, "finishing", "", "")
 
             preferences.totalAppsChecked += apps.scannedApps.toLong()
-            preferences.totalThreatsDetected += (apps.knownThreats + apps.highRiskApps).toLong()
+            preferences.totalThreatsDetected += (apps.knownThreats + files.knownThreats + audit.highFindings).toLong()
             preferences.markActivity(getString(R.string.activity_apps_rescan_complete, apps.scannedApps))
             activityStore.add(
                 kind = ProtectionActivityKind.APP_SCAN,
-                state = if (apps.knownThreats > 0 || apps.highRiskApps > 0 || files.alerts > 0 || audit.highFindings > 0) {
+                state = if (apps.knownThreats > 0 || files.knownThreats > 0 || audit.highFindings > 0) {
                     ProtectionActivityState.THREAT
                 } else if (apps.reviewApps > 0 || audit.warningFindings > 0 || spyware.reviewApps > 0 || spyware.highRiskApps > 0) {
                     ProtectionActivityState.ATTENTION
@@ -337,7 +337,7 @@ class ProtectionService : Service() {
                     ProtectionActivityState.SAFE
                 },
                 title = getString(R.string.timeline_apps_rescan_complete, apps.scannedApps),
-                detail = getString(R.string.timeline_apps_rescan_detail, apps.knownThreats + apps.highRiskApps + files.alerts)
+                detail = getString(R.string.timeline_apps_rescan_detail, apps.knownThreats + files.knownThreats)
             )
 
             ScanFindingsStore(applicationContext).save(
@@ -355,7 +355,7 @@ class ProtectionService : Service() {
                 highRiskApps = apps.highRiskApps,
                 knownThreats = apps.knownThreats,
                 scannedFiles = files.scannedFiles,
-                fileAlerts = files.alerts,
+                fileAlerts = files.knownThreats,
                 securityWarnings = audit.warningFindings,
                 securityHighs = audit.highFindings,
                 spywareReview = spyware.reviewApps,

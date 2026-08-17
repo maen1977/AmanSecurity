@@ -62,7 +62,7 @@ class ScanFindingsStore(context: Context) {
             .forEach { app ->
                 val severity = when (app.riskLevel) {
                     AppRiskLevel.KNOWN_THREAT -> StoredScanFindingSeverity.CONFIRMED
-                    AppRiskLevel.HIGH -> StoredScanFindingSeverity.HIGH
+                    AppRiskLevel.HIGH -> StoredScanFindingSeverity.REVIEW
                     AppRiskLevel.MEDIUM -> StoredScanFindingSeverity.REVIEW
                     AppRiskLevel.LOW -> return@forEach
                 }
@@ -121,7 +121,8 @@ class ScanFindingsStore(context: Context) {
                 severity = if (finding.severity == ProtectionSeverity.KNOWN_THREAT) {
                     StoredScanFindingSeverity.CONFIRMED
                 } else {
-                    StoredScanFindingSeverity.HIGH
+                    // HIGH_RISK is a review signal; it is not a confirmed malware identity.
+                    StoredScanFindingSeverity.REVIEW
                 },
                 title = finding.displayName,
                 location = finding.location,
@@ -152,7 +153,7 @@ class ScanFindingsStore(context: Context) {
             val array = JSONArray(raw)
             buildList {
                 for (i in 0 until array.length()) {
-                    fromJson(array.optJSONObject(i) ?: continue)?.let(::add)
+                    fromJson(array.optJSONObject(i) ?: continue)?.let { add(normalizeLegacySeverity(it)) }
                 }
             }
         }.getOrDefault(emptyList())
@@ -164,6 +165,16 @@ class ScanFindingsStore(context: Context) {
         if (sessionId.isBlank()) return
         if (prefs.getString(KEY_SESSION, "") == sessionId) return
         prefs.edit().clear().commit()
+    }
+
+    private fun normalizeLegacySeverity(item: StoredScanFinding): StoredScanFinding {
+        val shouldReview = when {
+            item.kind == StoredScanFindingKind.SPYWARE && item.severity == StoredScanFindingSeverity.HIGH -> true
+            item.kind == StoredScanFindingKind.FILE && item.severity == StoredScanFindingSeverity.HIGH -> true
+            item.kind == StoredScanFindingKind.APP && item.severity == StoredScanFindingSeverity.HIGH && item.threatReference.isBlank() -> true
+            else -> false
+        }
+        return if (shouldReview) item.copy(severity = StoredScanFindingSeverity.REVIEW) else item
     }
 
     private fun toJson(item: StoredScanFinding): JSONObject = JSONObject().apply {

@@ -31,9 +31,9 @@ data class ScanSessionSnapshot(
     val error: String
 ) {
     val isActive: Boolean get() = state == PersistentScanState.QUEUED || state == PersistentScanState.RUNNING
-    /** Virus/file/device threats only; spyware is a privacy-capability review, not a malware verdict. */
-    val totalAlerts: Int get() = knownThreats + highRiskApps + fileAlerts + securityHighs
-    val totalAttention: Int get() = reviewApps + securityWarnings + spywareReview + spywareHigh
+    /** Confirmed virus/file/device threats only. Heuristic app risk is a review, not proof of malware. */
+    val totalAlerts: Int get() = knownThreats + fileAlerts + securityHighs
+    val totalAttention: Int get() = reviewApps + highRiskApps + securityWarnings + spywareReview + spywareHigh
 }
 
 /**

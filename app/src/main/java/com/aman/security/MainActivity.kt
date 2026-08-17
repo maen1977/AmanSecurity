@@ -2107,7 +2107,7 @@ class MainActivity : AppCompatActivity() {
                 updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = bundle.installedApps
                 protectionPreferences.totalAppsChecked += bundle.installedApps.scannedApps.toLong()
-                protectionPreferences.totalThreatsDetected += (bundle.installedApps.knownThreats + bundle.installedApps.highRiskApps).toLong()
+                protectionPreferences.totalThreatsDetected += bundle.installedApps.knownThreats.toLong()
                 bundle.protectedFolder?.let { folderSummary ->
                     protectionPreferences.totalFilesChecked += folderSummary.scannedFiles.toLong()
                     protectionPreferences.totalThreatsDetected += folderSummary.alerts.toLong()
@@ -2115,9 +2115,9 @@ class MainActivity : AppCompatActivity() {
                 protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, bundle.installedApps.scannedApps))
                 protectionActivityStore.add(
                     kind = ProtectionActivityKind.APP_SCAN,
-                    state = if (bundle.installedApps.knownThreats > 0 || bundle.installedApps.highRiskApps > 0) ProtectionActivityState.THREAT else if (bundle.installedApps.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    state = if (bundle.installedApps.knownThreats > 0) ProtectionActivityState.THREAT else if (bundle.installedApps.highRiskApps > 0 || bundle.installedApps.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
                     title = getString(R.string.timeline_apps_rescan_complete, bundle.installedApps.scannedApps),
-                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.installedApps.knownThreats + bundle.installedApps.highRiskApps)
+                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.installedApps.knownThreats)
                 )
                 lastSecurityAudit = bundle.securityAudit
                 lastSecurityAuditAt = System.currentTimeMillis()
@@ -2146,13 +2146,13 @@ class MainActivity : AppCompatActivity() {
         val warnings = audit.warningFindings + bundle.spywareAudit.reviewApps + bundle.spywareAudit.highRiskApps
         val highs = audit.highFindings
         val titleRes = when {
-            knownThreats > 0 || highRisk > 0 || highs > 0 -> R.string.smart_scan_complete_danger
-            apps.reviewApps > 0 || warnings > 0 -> R.string.smart_scan_complete_attention
+            knownThreats > 0 || highs > 0 -> R.string.smart_scan_complete_danger
+            apps.reviewApps > 0 || highRisk > 0 || warnings > 0 -> R.string.smart_scan_complete_attention
             else -> R.string.smart_scan_complete_safe
         }
         val colorRes = when {
-            knownThreats > 0 || highRisk > 0 || highs > 0 -> R.color.status_danger
-            apps.reviewApps > 0 || warnings > 0 -> R.color.status_warn
+            knownThreats > 0 || highs > 0 -> R.color.status_danger
+            apps.reviewApps > 0 || highRisk > 0 || warnings > 0 -> R.color.status_warn
             else -> R.color.status_ok
         }
         val formatter = NumberFormat.getIntegerInstance()
@@ -2190,7 +2190,7 @@ class MainActivity : AppCompatActivity() {
                 append(getString(R.string.smart_scan_folder_not_configured))
             }
         }
-        val summaryRes = if (knownThreats > 0 || highRisk > 0 || highs > 0 || apps.reviewApps > 0 || warnings > 0) {
+        val summaryRes = if (knownThreats > 0 || highs > 0 || apps.reviewApps > 0 || warnings > 0 || highRisk > 0) {
             R.string.smart_scan_result_review_detail
         } else {
             R.string.smart_scan_result_safe_detail
@@ -2282,25 +2282,25 @@ class MainActivity : AppCompatActivity() {
                 updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = bundle.apps
                 protectionPreferences.totalAppsChecked += bundle.apps.scannedApps.toLong()
-                protectionPreferences.totalThreatsDetected += (bundle.apps.knownThreats + bundle.apps.highRiskApps).toLong()
+                protectionPreferences.totalThreatsDetected += (bundle.apps.knownThreats + bundle.files.knownThreats).toLong()
                 protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, bundle.apps.scannedApps))
                 protectionActivityStore.add(
                     kind = ProtectionActivityKind.APP_SCAN,
-                    state = if (bundle.apps.knownThreats > 0 || bundle.apps.highRiskApps > 0) ProtectionActivityState.THREAT else if (bundle.apps.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    state = if (bundle.apps.knownThreats > 0 || bundle.files.knownThreats > 0) ProtectionActivityState.THREAT else if (bundle.apps.highRiskApps > 0 || bundle.apps.reviewApps > 0 || bundle.files.highRisk > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
                     title = getString(R.string.timeline_apps_rescan_complete, bundle.apps.scannedApps),
-                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.apps.knownThreats + bundle.apps.highRiskApps)
+                    detail = getString(R.string.timeline_apps_rescan_detail, bundle.apps.knownThreats + bundle.files.knownThreats)
                 )
                 renderInstalledApps(bundle.apps)
                 renderProtectionStatus()
-                val totalAlerts = bundle.apps.knownThreats + bundle.apps.highRiskApps + bundle.files.alerts
+                val totalAlerts = bundle.apps.knownThreats + bundle.files.knownThreats
                 val titleRes = when {
                     totalAlerts > 0 -> R.string.smart_scan_complete_danger
-                    bundle.apps.reviewApps > 0 -> R.string.smart_scan_complete_attention
+                    bundle.apps.reviewApps > 0 || bundle.apps.highRiskApps > 0 || bundle.files.highRisk > 0 -> R.string.smart_scan_complete_attention
                     else -> R.string.smart_scan_complete_safe
                 }
                 val colorRes = when {
                     totalAlerts > 0 -> R.color.status_danger
-                    bundle.apps.reviewApps > 0 -> R.color.status_warn
+                    bundle.apps.reviewApps > 0 || bundle.apps.highRiskApps > 0 || bundle.files.highRisk > 0 -> R.color.status_warn
                     else -> R.color.status_ok
                 }
                 val detail = buildString {
@@ -2317,7 +2317,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 showSmartResult(
                     titleRes,
-                    if (totalAlerts > 0 || bundle.apps.reviewApps > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail,
+                    if (totalAlerts > 0 || bundle.apps.reviewApps > 0 || bundle.apps.highRiskApps > 0 || bundle.files.highRisk > 0) R.string.smart_scan_result_review_detail else R.string.smart_scan_result_safe_detail,
                     detail,
                     colorRes
                 )
@@ -2711,13 +2711,13 @@ class MainActivity : AppCompatActivity() {
                 updateScanProgress(100, R.string.scan_stage_finishing, getString(R.string.scan_complete_percent), getString(R.string.scan_stage_finishing))
                 lastInstalledSummary = summary
                 protectionPreferences.totalAppsChecked += summary.scannedApps.toLong()
-                protectionPreferences.totalThreatsDetected += (summary.knownThreats + summary.highRiskApps).toLong()
+                protectionPreferences.totalThreatsDetected += summary.knownThreats.toLong()
                 protectionPreferences.markActivity(getString(R.string.activity_apps_rescan_complete, summary.scannedApps))
                 protectionActivityStore.add(
                     kind = ProtectionActivityKind.APP_SCAN,
-                    state = if (summary.knownThreats > 0 || summary.highRiskApps > 0) ProtectionActivityState.THREAT else if (summary.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
+                    state = if (summary.knownThreats > 0) ProtectionActivityState.THREAT else if (summary.highRiskApps > 0 || summary.reviewApps > 0) ProtectionActivityState.ATTENTION else ProtectionActivityState.SAFE,
                     title = getString(R.string.timeline_apps_rescan_complete, summary.scannedApps),
-                    detail = getString(R.string.timeline_apps_rescan_detail, summary.knownThreats + summary.highRiskApps)
+                    detail = getString(R.string.timeline_apps_rescan_detail, summary.knownThreats)
                 )
                 renderInstalledApps(summary)
                 renderSmartInstalledResult(summary)
@@ -3771,13 +3771,13 @@ class MainActivity : AppCompatActivity() {
     private fun renderSmartInstalledResult(summary: InstalledAppsScanSummary) {
         val formatter = NumberFormat.getIntegerInstance()
         val titleRes = when {
-            summary.knownThreats > 0 || summary.highRiskApps > 0 -> R.string.smart_scan_complete_danger
-            summary.reviewApps > 0 -> R.string.smart_scan_complete_attention
+            summary.knownThreats > 0 -> R.string.smart_scan_complete_danger
+            summary.reviewApps > 0 || summary.highRiskApps > 0 -> R.string.smart_scan_complete_attention
             else -> R.string.smart_scan_complete_safe
         }
         val colorRes = when {
-            summary.knownThreats > 0 || summary.highRiskApps > 0 -> R.color.status_danger
-            summary.reviewApps > 0 -> R.color.status_warn
+            summary.knownThreats > 0 -> R.color.status_danger
+            summary.reviewApps > 0 || summary.highRiskApps > 0 -> R.color.status_warn
             else -> R.color.status_ok
         }
         val details = getString(

@@ -232,12 +232,7 @@ class InstalledAppScanner(
         // increase the antivirus verdict shown on the Scan page. The installed-app malware score
         // is therefore the multi-engine verdict only.
         val finalScore = verdict.score.coerceIn(0, 100)
-        val finalLevel = when {
-            verdict.level == DetectionVerdictLevel.KNOWN_THREAT -> AppRiskLevel.KNOWN_THREAT
-            verdict.level == DetectionVerdictLevel.VERY_HIGH || verdict.level == DetectionVerdictLevel.HIGH -> AppRiskLevel.HIGH
-            verdict.level == DetectionVerdictLevel.REVIEW -> AppRiskLevel.MEDIUM
-            else -> AppRiskLevel.LOW
-        }
+        val finalLevel = InstalledAppVerdictPolicy.riskLevel(verdict.level)
         val threatReference = verdict.confirmedReference ?: legacyThreatReference
 
         return InstalledAppScanResult(

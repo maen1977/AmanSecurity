@@ -16,7 +16,7 @@ prefs=read('app/src/main/java/com/aman/security/protection/ProtectionPreferences
 manifest=read('app/src/main/AndroidManifest.xml')
 layout=read('app/src/main/res/layout/activity_main.xml')
 gradle=read('app/build.gradle.kts')
-need('versionName = "9.0.9"' in gradle and 'versionCode = 67' in gradle,'version')
+need('versionName = "9.0.10"' in gradle and 'versionCode = 68' in gradle,'version')
 need('WebShieldSelfTestPolicy.isSelfTestHost' in service,'local test decision missing')
 need('WebProtectionDecision.TEST' in service and 'recordTestHost' in service,'test signatures must be blocked as tests')
 need('lastWebShieldSelfTestInterceptAt' in service,'self test proof missing')

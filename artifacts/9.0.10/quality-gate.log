@@ -1,0 +1,49 @@
+LOCALIZATION_GATE_OK keys=982 languages=en,ar hardcoded_ui=0
+THREAT_DB_GATE_OK serial=17 version=2026.08.17.1 file_entries=11 url_entries=2 apk_identity_entries=2 detection_entries=164 bundled_hash_integrity=1
+AUTONOMOUS_CONTINUITY_GATE_OK known_threat_hashes=9 detection_records=164 behavior_rules=74 required_families=6 signed_reputation_dependency=0
+CLOUD_INTELLIGENCE_FACTORY_3_6_4_OK cloud_factory=1 signed_manifest=1 rollback_guard=1 phone_raw_feeds=0 mmap_indexes=1 periodic_connected_daily_24h=1 manual_connected=1 last_known_good=1 phishtank_optional=1 raw_urls_in_bundle=0
+........
+----------------------------------------------------------------------
+Ran 8 tests in 1.003s
+
+OK
+WEB_PROTECTION_2_4_GATE_OK local_link_guard=1 known_block=1 self_loop_guard=1 local_dns_vpn=1 full_tunnel=0
+ZERO_DAY_2_5_GATE_OK retained_in_3_1=1 hidden_payloads=1 anti_analysis=1 evidence_domains=1 rules>=36
+ANDROID_KOTLIN_SANITY_GATE_OK view_imports=1 url_signal_exhaustive=1 persistent_update_format=1
+ANDROID_API_COMPAT_GATE_OK min_sdk=26 signing_api28_gated=1 legacy_signatures_26_27=1
+ANDROID_STRING_FORMAT_GATE_OK strings=982 formatted=209 locale_type_parity=1
+SMART_UI_GATE_OK dashboard=1 scan_state=1 results=1 protection_center=1 quick_actions=6 navigation_safe=1 smart_scan_layers=5 security_audit=1 auto_build=1 scheduled_intel_only=1
+BENCHMARK total=30 malicious=15 benign=15 tp=15 tn=15 fp=0 fn=0
+detection_rate=1.0000 false_positive_rate=0.0000 precision=1.0000 accuracy=1.0000
+family_accuracy=1.0000 family_samples=15
+scan_time_avg_ms=16.83 scan_time_p95_ms=25.00
+peak_memory_avg_mb=23.37 peak_memory_p95_mb=28.00
+BENCHMARK_GATE_OK thresholds_enforced=1 reviewed_required=0
+BENCHMARK total=16 malicious=0 benign=16 tp=0 tn=16 fp=0 fn=0
+detection_rate=0.0000 false_positive_rate=0.0000 precision=0.0000 accuracy=1.0000
+scan_time_avg_ms=17.56 scan_time_p95_ms=22.00
+peak_memory_avg_mb=26.25 peak_memory_p95_mb=30.00
+BENCHMARK_GATE_OK thresholds_enforced=1 reviewed_required=0
+PRODUCTION_VALIDATION_INFRA_GATE_OK internal_regression=30 false_positive_stress=16 reviewed_corpus_template=1 malware_binaries=0 real_world_claim=0
+RELEASE_HARDENING_GATE_OK version=9.0.10 r8=1 shrink=1 backup=0 cleartext=0 cert_pin_configurable=1 auto_build=1 scheduled_build=0 artifact_checksums=1
+REALTIME_ANTIVIRUS_GATE_OK fgs=1 persistent_status=1 notification_permission_guard=1 boot_restore=1 package_monitor=1 downloads_realtime=1 downloads_catchup=1 full_scan=1 confirmed_only_quarantine=1 all_files_antivirus_disclosure=1
+DETECTION_STRENGTH_3_5_GATE_OK all_packages=1 split_apk_hashes=1 signer_history=1 corroborated_high_verdicts=1 cloud_urlhaus=1 signed_ingestion=1
+LIGHTWEIGHT_LOCAL_ENGINE_3_2_OK local_cache=1 event_driven=1 cloud_threat_refresh_daily_24h=1 cached_reputation_sweep=1 downloads_catchup_2h=1 folder_scan_6h=1 heartbeat_10m=1 spyware_audit=1 compact_cloud_consumer=1
+LOCAL_ATTACK_PREVENTION_3_1_OK dns_local_shield=1 full_tunnel=0 https_decrypt=0 intrusion_privilege_delta=1 integrity_delta=1 banking_guard_manual=1 accessibility_declared=0 cloud_backend=0
+ATTACK_DETECTION_CENTER_3_2_OK local_correlation=1 extra_worker=0 extra_polling=0 web_block_is_watch=1 critical_local_signals=1 persistent_status=1 deferred_enable_scans=1
+ANDROID_API_COMPAT_3_2_OK min_sdk_26=1 private_dns_api28_guarded=1 web_shield_special_use=1 system_exempted=0
+DATA_EXFILTRATION_GUARD_3_3_OK local_only=1 quick_probe=10m detailed_on_burst_or_6h=1 high_risk_dns_event_alert=1 payload_inspection=0 dns_memory_cache=1 usage_access=explicit no_new_worker=1
+PLAY_PROTECT_SIDELOAD_OK sms=0 notification_listener=0 accessibility=0 verifier_bypass=0
+DIRECT_INSTALL_3_3_OK single_apk=1 sensitive_accessibility_declared=0 ci_debug_key_cached=1 verifier_bypass=0
+CORE_RUNTIME_3_4_OK persistent_fgs=1 durable_scan=1 quick=1 smart=1 full=1 update_workmanager=1 update_progress=1 task_close_safe=1 heartbeat_10m=1 vivid_ui=1
+SCAN_FINDINGS_3_4_OK durable_details=1 exact_app=1 exact_file_path=1 audit_evidence=1 spyware_evidence=1 high_vs_review=1 app_info_action=1 local_only=1
+THREAT_UPDATE_TRANSPARENCY_3_5_OK periodic_daily_24h=1 manual_now=1 manual_expedited=1 manual_not_replaced=1 single_package_progress=1 transfer_bytes=1 phases=1 last_success=1 already_current_ui=1 next_check=1 stale_retry=1 package_card_refresh=1
+MANUAL_STORAGE_SCAN_3_5_OK saf_tree=1 limits=1 cancellation=1 persistence=1 ui_binding=1 saf_persistence=1 strings=1
+MESSAGE_SCAN_GATE_OK version=9.0.10 local_only=1 bounded_text=1 bounded_urls=1 sms_permissions=0 tests=1
+BACKGROUND_ACTIVITY_GATE_OK version=9.0.10 manual_only=1 local_only=1 non_destructive=1 sensitive_permissions=0 notification=1
+PLAY_RELEASE_GATE_OK version=9.0.10 target_api=36 sms_permissions=0 accessibility=0 docs=1 signed_aab_owner_action=1 public_privacy_url_owner_action=1
+STORAGE_IMPROVEMENTS_GATE_OK quick_mode=1 bounded_cache=1 archive_scan=1 misleading_extension=1 localized_detail=1 saf_tree_scan=1 no_legacy_write_storage=1 no_sms_permission=1
+WEB_SHIELD_VERIFICATION_3_4_OK local_dns_self_test=1 amtso_role_interception_test=1 amtso_exact_link_test=1 permanent_amtso_domain_block=0 combined_layers_required=1 accessibility=0 test_not_counted_as_threat=1 dns_only=1
+WEB_REPUTATION_3_5_OK openphish_cloud=1 full_url_hashes=1 queryless_match=1 c2_dedicated_pool=1 browser_handoff_no_prequery=1 google_test_hardcode=0 accessibility=0
+PROTECTION_READINESS_GATE_OK truthful_signals=1 web_verification=1 database_canary=1 intrusion_evidence=1 exfiltration_evidence=1 eicar_standard_hash=1 localized=1 tests=3
+QUALITY_GATE_OK version=9.0.10 cloud_intelligence_factory=1 signed_cloud_updates=1 phone_raw_feeds=0 threat_update_actions=0 auto_build_push_main=1 manual_build=1 source_health=1 production_validation_infra=1 self_integrity=1 realtime_antivirus=1 downloads_protection=1 persistent_status=1 full_scan=1 manual_storage_scan=1 message_scan=1 background_activity_review=1 play_release=1 storage_scan_improvements=1 protection_readiness=1
