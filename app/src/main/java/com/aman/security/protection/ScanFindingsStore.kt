@@ -113,7 +113,21 @@ class ScanFindingsStore(context: Context) {
         }
         audit.device.findings.forEach { addAudit(StoredScanFindingKind.DEVICE, it.id, it.severity) }
         audit.network.findings.forEach { addAudit(StoredScanFindingKind.NETWORK, it.id, it.severity) }
-        audit.privacy.findings.forEach { addAudit(StoredScanFindingKind.PRIVACY, it.id, it.severity) }
+        audit.privacy.reviewApps.forEach { app ->
+            records += StoredScanFinding(
+                kind = StoredScanFindingKind.PRIVACY,
+                severity = StoredScanFindingSeverity.REVIEW,
+                title = app.appName,
+                packageName = app.packageName,
+                reasonCodes = app.grantedPermissions.sorted()
+            )
+        }
+        audit.privacy.findings.forEach { finding ->
+            // The per-app records above are actionable; do not also show the old
+            // anonymous aggregate privacy card when the app identities are known.
+            if (finding.id == "privacy_permission_review" && audit.privacy.reviewApps.isNotEmpty()) return@forEach
+            addAudit(StoredScanFindingKind.PRIVACY, finding.id, finding.severity)
+        }
 
         files.findings.forEach { finding ->
             records += StoredScanFinding(

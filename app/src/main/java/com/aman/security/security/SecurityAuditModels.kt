@@ -45,7 +45,8 @@ data class NetworkSecurityAudit(
 data class PrivacyAppExposure(
     val appName: String,
     val packageName: String,
-    val grantedSensitivePermissions: Int
+    val grantedSensitivePermissions: Int,
+    val grantedPermissions: List<String> = emptyList()
 )
 
 data class PrivacyPermissionAudit(
@@ -53,7 +54,8 @@ data class PrivacyPermissionAudit(
     val appsWithSensitivePermissions: Int,
     val elevatedPermissionApps: Int,
     val totalGrantedSensitivePermissions: Int,
-    val findings: List<SecurityAuditFinding>
+    val findings: List<SecurityAuditFinding>,
+    val reviewApps: List<PrivacyAppExposure> = emptyList()
 )
 
 data class SecurityAuditSummary(

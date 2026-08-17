@@ -839,6 +839,15 @@
     <string name="spyware_signal_boot">Can persist after device boot</string>
     <string name="spyware_signal_overlay">Can draw over other apps</string>
     <string name="spyware_signal_sms">Has SMS access</string>
+    <string name="privacy_permission_calendar">Has calendar access</string>
+    <string name="privacy_permission_sensors">Has body-sensor access</string>
+    <string name="privacy_permission_camera">Has camera access</string>
+    <string name="privacy_permission_microphone">Has microphone access</string>
+    <string name="privacy_permission_location">Has location access</string>
+    <string name="privacy_permission_contacts">Has contacts access</string>
+    <string name="privacy_permission_call_log">Has call-log access</string>
+    <string name="privacy_permission_sms">Has SMS access</string>
+    <string name="privacy_permission_unknown">Has a sensitive permission (%1$s)</string>
     <string name="spyware_signal_call_log">Has call-log access</string>
     <string name="spyware_signal_location">Has location access</string>
     <string name="spyware_signal_microphone">Has microphone access</string>

@@ -839,6 +839,15 @@
     <string name="spyware_signal_boot">يمكنه الاستمرار بعد تشغيل الجهاز</string>
     <string name="spyware_signal_overlay">يمكنه الظهور فوق التطبيقات الأخرى</string>
     <string name="spyware_signal_sms">لديه وصول إلى الرسائل النصية</string>
+    <string name="privacy_permission_calendar">لديه وصول إلى التقويم</string>
+    <string name="privacy_permission_sensors">لديه وصول إلى مستشعرات الجسم</string>
+    <string name="privacy_permission_camera">لديه وصول إلى الكاميرا</string>
+    <string name="privacy_permission_microphone">لديه وصول إلى الميكروفون</string>
+    <string name="privacy_permission_location">لديه وصول إلى الموقع</string>
+    <string name="privacy_permission_contacts">لديه وصول إلى جهات الاتصال</string>
+    <string name="privacy_permission_call_log">لديه وصول إلى سجل المكالمات</string>
+    <string name="privacy_permission_sms">لديه وصول إلى الرسائل النصية</string>
+    <string name="privacy_permission_unknown">لديه صلاحية حساسة (%1$s)</string>
     <string name="spyware_signal_call_log">لديه وصول إلى سجل المكالمات</string>
     <string name="spyware_signal_location">لديه وصول إلى الموقع</string>
     <string name="spyware_signal_microphone">لديه وصول إلى الميكروفون</string>

@@ -3618,12 +3618,31 @@ class MainActivity : AppCompatActivity() {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(dp(14), dp(13), dp(14), dp(13))
         }
-        body.addView(android.widget.TextView(this).apply {
+        val titleRow = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        if (finding.packageName.isNotBlank()) {
+            titleRow.addView(android.widget.ImageView(this).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(dp(36), dp(36)).apply {
+                    marginEnd = dp(10)
+                }
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                contentDescription = finding.packageName
+                setImageDrawable(runCatching {
+                    packageManager.getApplicationIcon(finding.packageName)
+                }.getOrElse {
+                    androidx.core.content.ContextCompat.getDrawable(context, android.R.drawable.sym_def_app_icon)
+                })
+            })
+        }
+        titleRow.addView(android.widget.TextView(this).apply {
             text = displayFindingTitle(finding)
             setTextColor(getColor(R.color.text_primary))
             textSize = 16f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
+        body.addView(titleRow)
         body.addView(android.widget.TextView(this).apply {
             text = findingSeverityLabel(finding.severity)
             setTextColor(getColor(if (finding.severity == StoredScanFindingSeverity.REVIEW) R.color.status_warn else R.color.status_danger))
@@ -3652,9 +3671,10 @@ class MainActivity : AppCompatActivity() {
         container.addView(card)
     }
 
-    private fun displayFindingTitle(finding: StoredScanFinding): String = when (finding.kind) {
-        StoredScanFindingKind.APP, StoredScanFindingKind.SPYWARE, StoredScanFindingKind.FILE -> finding.title
-        StoredScanFindingKind.DEVICE, StoredScanFindingKind.NETWORK, StoredScanFindingKind.PRIVACY -> auditFindingLabel(finding.title)
+    private fun displayFindingTitle(finding: StoredScanFinding): String = when {
+        finding.packageName.isNotBlank() -> finding.title.ifBlank { finding.packageName }
+        finding.kind == StoredScanFindingKind.DEVICE || finding.kind == StoredScanFindingKind.NETWORK || finding.kind == StoredScanFindingKind.PRIVACY -> auditFindingLabel(finding.title)
+        else -> finding.title
     }
 
     private fun findingSeverityLabel(severity: StoredScanFindingSeverity): String = getString(
@@ -3711,8 +3731,23 @@ class MainActivity : AppCompatActivity() {
     private fun findingReasonLabel(kind: StoredScanFindingKind, code: String): String? = when (kind) {
         StoredScanFindingKind.APP -> runCatching { AppRiskSignal.valueOf(code) }.getOrNull()?.let { getString(riskSignalString(it)) }
         StoredScanFindingKind.SPYWARE -> spywareSignalLabel(code)
-        StoredScanFindingKind.DEVICE, StoredScanFindingKind.NETWORK, StoredScanFindingKind.PRIVACY -> auditFindingLabel(code)
+        StoredScanFindingKind.DEVICE, StoredScanFindingKind.NETWORK -> auditFindingLabel(code)
+        StoredScanFindingKind.PRIVACY -> privacyPermissionLabel(code) ?: auditFindingLabel(code)
         StoredScanFindingKind.FILE -> null
+    }
+
+    private fun privacyPermissionLabel(permission: String): String? = when (permission) {
+        android.Manifest.permission.READ_CALENDAR, android.Manifest.permission.WRITE_CALENDAR -> getString(R.string.privacy_permission_calendar)
+        android.Manifest.permission.BODY_SENSORS -> getString(R.string.privacy_permission_sensors)
+        android.Manifest.permission.CAMERA -> getString(R.string.privacy_permission_camera)
+        android.Manifest.permission.RECORD_AUDIO -> getString(R.string.privacy_permission_microphone)
+        android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION -> getString(R.string.privacy_permission_location)
+        android.Manifest.permission.READ_CONTACTS, android.Manifest.permission.WRITE_CONTACTS -> getString(R.string.privacy_permission_contacts)
+        android.Manifest.permission.READ_CALL_LOG, android.Manifest.permission.WRITE_CALL_LOG -> getString(R.string.privacy_permission_call_log)
+        android.Manifest.permission.READ_SMS, android.Manifest.permission.RECEIVE_SMS, android.Manifest.permission.SEND_SMS -> getString(R.string.privacy_permission_sms)
+        else -> permission.takeIf { it.isNotBlank() }?.let {
+            getString(R.string.privacy_permission_unknown, it.substringAfterLast('.'))
+        }
     }
 
     private fun spywareSignalLabel(code: String): String? = when (runCatching { SpywareCapabilitySignal.valueOf(code) }.getOrNull()) {

@@ -25,7 +25,10 @@ class PrivacyPermissionAuditor(private val context: Context) {
             appsWithSensitivePermissions = exposed.size,
             elevatedPermissionApps = elevated,
             totalGrantedSensitivePermissions = totalGranted,
-            findings = findings
+            findings = findings,
+            reviewApps = allUserApps
+                .filter { it.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD }
+                .sortedWith(compareByDescending<PrivacyAppExposure> { it.grantedSensitivePermissions }.thenBy { it.appName.lowercase() })
         )
     }
 
@@ -34,14 +37,20 @@ class PrivacyPermissionAuditor(private val context: Context) {
 
     private fun userAppExposure(includeZero: Boolean): List<PrivacyAppExposure> = installedPackages().mapNotNull { info ->
         if (info.packageName == context.packageName || isSystemPackage(info)) return@mapNotNull null
-        val granted = SENSITIVE_PERMISSIONS.count { permission ->
+        val grantedPermissions = SENSITIVE_PERMISSIONS.filter { permission ->
             packageManager.checkPermission(permission, info.packageName) == PackageManager.PERMISSION_GRANTED
         }
+        val granted = grantedPermissions.size
         if (!includeZero && granted == 0) return@mapNotNull null
         val appName = runCatching {
             info.applicationInfo?.loadLabel(packageManager)?.toString().orEmpty()
         }.getOrDefault("").ifBlank { info.packageName }
-        PrivacyAppExposure(appName, info.packageName, granted)
+        PrivacyAppExposure(
+            appName = appName,
+            packageName = info.packageName,
+            grantedSensitivePermissions = granted,
+            grantedPermissions = grantedPermissions
+        )
     }
 
     private fun installedPackages(): List<PackageInfo> = runCatching {
@@ -59,7 +68,7 @@ class PrivacyPermissionAuditor(private val context: Context) {
 
     companion object {
         private const val ELEVATED_PERMISSION_THRESHOLD = 5
-        private val SENSITIVE_PERMISSIONS = setOf(
+        private val SENSITIVE_PERMISSIONS = listOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.ACCESS_FINE_LOCATION,
