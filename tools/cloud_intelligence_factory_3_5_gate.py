@@ -18,7 +18,7 @@ scheduler=read('app/src/main/java/com/aman/security/autonomous/AutonomousThreatS
 builder=read('tools/build_cloud_threat_db.py')
 cleanup=read('tools/repository_cleanup_2_6.py')
 
-need('versionName = "9.0.6"' in gradle and 'versionCode = 64' in gradle,'version')
+need('versionName = "9.0.7"' in gradle and 'versionCode = 65' in gradle,'version')
 need('AMAN_THREAT_DB_BASE_URL' in gradle,'build_endpoint')
 need('schedule:' in workflow and '17 3 * * *' in workflow,'factory_schedule_daily')
 need('threat-intelligence:' in workflow and 'build_cloud_threat_db.py' in workflow and 'sign_cloud_threat_db.py' in workflow and 'verify_cloud_threat_db.py' in workflow,'factory_job')

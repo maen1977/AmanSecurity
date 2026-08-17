@@ -28,11 +28,27 @@ class SpywareRiskPolicyTest {
     }
 
     @Test
-    fun heavySurveillanceWithPersistenceIsHighRisk() {
+    fun heavySurveillanceWithPersistenceWithoutActiveControlNeedsReviewOnly() {
         val signals = setOf(
             SpywareCapabilitySignal.SMS_ACCESS, SpywareCapabilitySignal.CALL_LOG_ACCESS,
             SpywareCapabilitySignal.LOCATION_ACCESS, SpywareCapabilitySignal.MICROPHONE_ACCESS,
             SpywareCapabilitySignal.CONTACTS_ACCESS, SpywareCapabilitySignal.BOOT_PERSISTENCE
+        )
+        val assessment = SpywareRiskPolicy.evaluate(signals)
+        assertEquals(SpywareReviewLevel.REVIEW, assessment.level)
+    }
+
+    @Test
+    fun heavySurveillanceWithActiveAccessibilityAndPersistenceIsHighRisk() {
+        val signals = setOf(
+            SpywareCapabilitySignal.ACCESSIBILITY_SERVICE,
+            SpywareCapabilitySignal.ACCESSIBILITY_ACTIVE,
+            SpywareCapabilitySignal.SMS_ACCESS,
+            SpywareCapabilitySignal.CALL_LOG_ACCESS,
+            SpywareCapabilitySignal.LOCATION_ACCESS,
+            SpywareCapabilitySignal.MICROPHONE_ACCESS,
+            SpywareCapabilitySignal.CONTACTS_ACCESS,
+            SpywareCapabilitySignal.BOOT_PERSISTENCE
         )
         val assessment = SpywareRiskPolicy.evaluate(signals)
         assertEquals(SpywareReviewLevel.HIGH, assessment.level)

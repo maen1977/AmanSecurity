@@ -90,7 +90,11 @@ object SpywareRiskPolicy {
         val level = when {
             sideloaded && hasActiveControl && surveillance >= 2 && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
             hasActiveControl && activeControls >= 2 && surveillance >= 3 && persistent -> SpywareReviewLevel.HIGH
-            surveillance >= 5 && (hasActiveControl || persistent) -> SpywareReviewLevel.HIGH
+            // Broad privacy access is common in legitimate social, camera, navigation,
+            // and messaging apps. It is only HIGH when paired with an active privileged
+            // control and an additional persistence/overlay/cluster signal. Permissions
+            // alone remain LOW or REVIEW, never a malware-like HIGH verdict.
+            surveillance >= 5 && hasActiveControl && (persistent || overlay || clustered) -> SpywareReviewLevel.HIGH
             sideloaded && (controls >= 1 || overlay) && surveillance >= 1 -> SpywareReviewLevel.REVIEW
             clustered && (sideloaded || controls >= 1 || persistent) -> SpywareReviewLevel.REVIEW
             SpywareCapabilitySignal.INPUT_METHOD_SERVICE in signals && surveillance >= 2 -> SpywareReviewLevel.REVIEW
