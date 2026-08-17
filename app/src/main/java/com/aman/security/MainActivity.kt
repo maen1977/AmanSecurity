@@ -3123,6 +3123,18 @@ class MainActivity : AppCompatActivity() {
         ThreatFamily.PHISHING -> R.string.family_phishing
         ThreatFamily.RISKWARE -> R.string.family_riskware
         ThreatFamily.ADWARE -> R.string.family_adware
+        ThreatFamily.SMISHER -> R.string.family_phishing
+        ThreatFamily.OVERLAY_FRAUD -> R.string.family_banker
+        ThreatFamily.BANK_IMPERSONATOR -> R.string.family_banker
+        ThreatFamily.INSTALLER_FRAUD -> R.string.family_riskware
+        ThreatFamily.KEYLOGGER -> R.string.family_spyware
+        ThreatFamily.OTP_STEALER -> R.string.family_banker
+        ThreatFamily.SNIPPER -> R.string.family_spyware
+        ThreatFamily.DATA_THIEF -> R.string.family_spyware
+        ThreatFamily.FRAUD -> R.string.family_riskware
+        ThreatFamily.SCAREWARE -> R.string.family_riskware
+        ThreatFamily.PHISHER -> R.string.family_phishing
+        ThreatFamily.CREDENTIAL_STEALER -> R.string.family_spyware
         ThreatFamily.TEST -> R.string.family_test
     }
 

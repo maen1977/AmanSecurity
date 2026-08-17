@@ -141,7 +141,7 @@ object ThreatDbValidator {
                 "RULE" -> {
                     require(p.size == 7)
                     val id = strictId(p[1])
-                    val family = ThreatFamily.valueOf(p[2])
+                    val family = threatFamily(p[2])
                     val confidence = FindingConfidence.valueOf(p[3])
                     val weight = p[4].toInt().also { require(it in 1..100) }
                     val all = markerSet(p[5])
@@ -200,7 +200,7 @@ object ThreatDbValidator {
                     val hash = p[2].trim().lowercase()
                     require(hash.matches(Regex("^[a-f0-9]{64}$")))
                     val id = strictId(p[3])
-                    val family = ThreatFamily.valueOf(p[4])
+                    val family = threatFamily(p[4])
                     val confidence = FindingConfidence.valueOf(p[5])
                     val disposition = ReputationDisposition.valueOf(p[6])
                     val entry = ReputationIndicator(kind, hash, id, family, confidence, disposition)
@@ -211,7 +211,7 @@ object ThreatDbValidator {
                     val id = strictId(p[1])
                     val source = p[2].trim().uppercase()
                     require(source.matches(Regex("^[A-Z0-9_.-]{2,64}$")))
-                    val family = ThreatFamily.valueOf(p[3])
+                    val family = threatFamily(p[3])
                     val confidence = FindingConfidence.valueOf(p[4])
                     val firstSeen = optionalDate(p[5])
                     val lastSeen = optionalDate(p[6])
@@ -238,6 +238,10 @@ object ThreatDbValidator {
         }
         return DetectionRuleset(rules, enrichedBrands, model, reasoning, reputation, metadata, graphLinks)
     }
+
+    private fun threatFamily(value: String): ThreatFamily = runCatching {
+        ThreatFamily.valueOf(value.trim())
+    }.getOrDefault(ThreatFamily.UNKNOWN)
 
     private fun strictId(value: String): String = value.trim().also {
         require(it.matches(Regex("^[A-Z0-9_]{3,96}$")))

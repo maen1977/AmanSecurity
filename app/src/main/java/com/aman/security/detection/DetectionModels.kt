@@ -13,6 +13,18 @@ enum class ThreatFamily {
     PHISHING,
     RISKWARE,
     ADWARE,
+    SMISHER,
+    OVERLAY_FRAUD,
+    BANK_IMPERSONATOR,
+    INSTALLER_FRAUD,
+    KEYLOGGER,
+    OTP_STEALER,
+    SNIPPER,
+    DATA_THIEF,
+    FRAUD,
+    SCAREWARE,
+    PHISHER,
+    CREDENTIAL_STEALER,
     TEST
 }
 
