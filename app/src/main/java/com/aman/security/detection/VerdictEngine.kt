@@ -35,8 +35,12 @@ object VerdictEngine {
             }
         } else normalized
 
+        // Only malware-specific evidence can confirm a threat. A local model,
+        // manifest permissions, static heuristics, packer signals, or graph
+        // correlations may request review, but none can independently prove
+        // that a legitimate installed app is malware.
         val confirmed = effective
-            .filter { it.confidence == FindingConfidence.CONFIRMED && it.family != ThreatFamily.TEST }
+            .filter(::isHardConfirmation)
             .maxByOrNull { it.score }
         val test = effective.firstOrNull { it.family == ThreatFamily.TEST }
 
@@ -153,6 +157,20 @@ object VerdictEngine {
             allowlisted = allowlisted
         )
     }
+
+    private fun isHardConfirmation(finding: DetectionFinding): Boolean =
+        finding.confidence == FindingConfidence.CONFIRMED &&
+            finding.family != ThreatFamily.TEST &&
+            finding.source in setOf(
+                DetectionSource.FILE_HASH,
+                DetectionSource.SIGNER_IDENTITY,
+                DetectionSource.PACKAGE_IDENTITY,
+                DetectionSource.SIGNATURE_RULE,
+                DetectionSource.DEX,
+                DetectionSource.NETWORK,
+                DetectionSource.REPUTATION,
+                DetectionSource.CLOUD_REPUTATION
+            )
 
     private fun evidenceDomain(source: DetectionSource): EvidenceDomain = when (source) {
         DetectionSource.FILE_HASH,

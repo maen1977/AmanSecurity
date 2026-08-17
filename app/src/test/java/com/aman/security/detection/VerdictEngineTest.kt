@@ -108,4 +108,88 @@ class VerdictEngineTest {
         assertEquals(30, a.score)
         assertEquals(DetectionVerdictLevel.REVIEW, a.level)
     }
+
+    @Test
+    fun confirmedLocalModelCannotBecomeKnownThreatByItself() {
+        val verdict = VerdictEngine.evaluate(
+            listOf(
+                DetectionFinding(
+                    "LOCAL_MODEL_96",
+                    DetectionSource.LOCAL_MODEL,
+                    100,
+                    FindingConfidence.CONFIRMED,
+                    ThreatFamily.MALWARE,
+                    reference = "LOCAL_MODEL_96"
+                ),
+                DetectionFinding(
+                    "PERMISSIONS",
+                    DetectionSource.MANIFEST,
+                    35,
+                    FindingConfidence.HIGH,
+                    ThreatFamily.RISKWARE
+                )
+            )
+        )
+        assertTrue(verdict.level != DetectionVerdictLevel.KNOWN_THREAT)
+        assertTrue(verdict.score <= 19)
+    }
+
+    @Test
+    fun commonOfficialAppPermissionProfilesStayReviewAcrossPackages() {
+        val packages = listOf(
+            "org.telegram.messenger",
+            "com.truecaller",
+            "com.facebook.katana",
+            "com.google.android.apps.drive"
+        )
+        packages.forEach { packageName ->
+            val verdict = VerdictEngine.evaluate(
+                listOf(
+                    DetectionFinding(
+                        id = "LOCAL_MODEL_96",
+                        source = DetectionSource.LOCAL_MODEL,
+                        score = 100,
+                        confidence = FindingConfidence.CONFIRMED,
+                        family = ThreatFamily.MALWARE,
+                        reference = "LOCAL_MODEL_96"
+                    ),
+                    DetectionFinding(
+                        id = "INSTALLED_PERMISSION_CLUSTER",
+                        source = DetectionSource.MANIFEST,
+                        score = 26,
+                        confidence = FindingConfidence.MEDIUM,
+                        family = ThreatFamily.RISKWARE,
+                        reference = packageName
+                    )
+                )
+            )
+            assertTrue("$packageName must not be a confirmed threat", verdict.level != DetectionVerdictLevel.KNOWN_THREAT)
+            assertTrue("$packageName must remain below malware threshold", verdict.score <= 19)
+        }
+    }
+
+    @Test
+    fun exactReputationStillConfirmsWhenLocalModelAlsoFires() {
+        val verdict = VerdictEngine.evaluate(
+            listOf(
+                DetectionFinding(
+                    "LOCAL_MODEL_96",
+                    DetectionSource.LOCAL_MODEL,
+                    10,
+                    FindingConfidence.MEDIUM,
+                    ThreatFamily.RISKWARE
+                ),
+                DetectionFinding(
+                    "KNOWN_HASH",
+                    DetectionSource.FILE_HASH,
+                    100,
+                    FindingConfidence.CONFIRMED,
+                    ThreatFamily.MALWARE,
+                    reference = "HASH_BAD_1"
+                )
+            )
+        )
+        assertEquals(DetectionVerdictLevel.KNOWN_THREAT, verdict.level)
+        assertEquals("HASH_BAD_1", verdict.confirmedReference)
+    }
 }

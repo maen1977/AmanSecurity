@@ -52,12 +52,12 @@ object ReasoningDecisionEngine {
             )
         }
 
-        val evidence = findings.map { f ->
-            Evidence(f.source, f.score, f.confidence, f.family, confidenceWeight(f.confidence))
-        }
+        val evidence = findings
+            .map(::normalizeFinding)
+            .map { f -> Evidence(f.source, f.score, f.confidence, f.family, confidenceWeight(f.confidence)) }
         val fusedScore = evidence.sumOf { (it.score.toDouble() * it.weight).toInt() }
         val sources = evidence.map { it.source }.distinct()
-        val confirmed = evidence.any { it.confidence == FindingConfidence.CONFIRMED }
+        val confirmed = evidence.any(::isHardConfirmation)
         val verified = evidence.count { it.confidence == FindingConfidence.HIGH } >= 2
         val highestConfidence = evidence.maxByOrNull { it.confidence.rank }!!.confidence
         val dominantFamily = evidence.maxByOrNull { it.score * it.weight }!!.family
@@ -77,6 +77,38 @@ object ReasoningDecisionEngine {
 
         return ReasoningVerdict(maxFused, level, dominantFamily, conf, reasons, chain, explanation)
     }
+
+    private fun normalizeFinding(finding: DetectionFinding): DetectionFinding =
+        if (finding.confidence == FindingConfidence.CONFIRMED && !isHardConfirmation(finding)) {
+            finding.copy(
+                id = "${finding.id}_REVIEW",
+                score = minOf(finding.score, 10),
+                confidence = FindingConfidence.MEDIUM,
+                family = ThreatFamily.RISKWARE,
+                reference = finding.reference ?: "LOCAL_REVIEW"
+            )
+        } else finding
+
+    private fun isHardConfirmation(finding: DetectionFinding): Boolean =
+        finding.confidence == FindingConfidence.CONFIRMED &&
+            finding.family != ThreatFamily.TEST &&
+            finding.source in HARD_CONFIRMED_SOURCES
+
+    private fun isHardConfirmation(evidence: Evidence): Boolean =
+        evidence.confidence == FindingConfidence.CONFIRMED &&
+            evidence.family != ThreatFamily.TEST &&
+            evidence.source in HARD_CONFIRMED_SOURCES
+
+    private val HARD_CONFIRMED_SOURCES = setOf(
+        DetectionSource.FILE_HASH,
+        DetectionSource.SIGNER_IDENTITY,
+        DetectionSource.PACKAGE_IDENTITY,
+        DetectionSource.SIGNATURE_RULE,
+        DetectionSource.DEX,
+        DetectionSource.NETWORK,
+        DetectionSource.REPUTATION,
+        DetectionSource.CLOUD_REPUTATION
+    )
 
     private fun confidenceWeight(c: FindingConfidence): Double = when (c) {
         FindingConfidence.UNKNOWN -> 0.0

@@ -122,16 +122,16 @@ class OnDeviceReasoningTest {
     }
 
     @Test
-    fun reasoningDecisionEngine_cross_engine_corroboration_appears_with_multiple_sources() {
+    fun reasoningDecisionEngine_cross_engine_corroboration_does_not_confirm_local_model() {
         val findings = listOf(
             DetectionFinding("A", DetectionSource.SIGNATURE_RULE, 60, FindingConfidence.HIGH, ThreatFamily.SPYWARE),
             DetectionFinding("B", DetectionSource.STATIC_BEHAVIOR, 50, FindingConfidence.HIGH, ThreatFamily.SPYWARE),
             DetectionFinding("C", DetectionSource.LOCAL_MODEL, 30, FindingConfidence.CONFIRMED, ThreatFamily.SPYWARE)
         )
         val verdict = ReasoningDecisionEngine.decide(findings)
-        assertEquals(DetectionVerdictLevel.KNOWN_THREAT, verdict.level)
+        assertEquals(DetectionVerdictLevel.VERY_HIGH, verdict.level)
         assertTrue(verdict.reasoningChain.contains("step_cross_engine_corroboration"))
-        assertTrue(verdict.reasoningChain.contains("step_confirmed_evidence"))
+        assertTrue(!verdict.reasoningChain.contains("step_confirmed_evidence"))
         assertEquals(ThreatFamily.SPYWARE, verdict.family)
     }
 

@@ -219,10 +219,26 @@ class ApkStaticAnalyzer(
 
         val modelFeatures = buildModelFeatures(signals, markers, archive, knownNetworkMatches)
         val modelResult = LocalMalwareModel(ruleset.modelWeights).infer(modelFeatures)
-        modelResult.finding?.let(findings::add)
+        modelResult.finding?.let { finding ->
+            findings += finding.copy(
+                id = "APK_LOCAL_MODEL_REVIEW",
+                score = minOf(finding.score, 10),
+                confidence = FindingConfidence.MEDIUM,
+                family = ThreatFamily.RISKWARE,
+                reference = "APK_LOCAL_MODEL_REVIEW"
+            )
+        }
         val reasoningVector = buildReasoningVector(signals, markers, archive, knownNetworkMatches)
         val reasoningResult = LocalReasoningClassifier(ruleset.reasoningWeights).reason(reasoningVector)
-        reasoningResult.finding?.let(findings::add)
+        reasoningResult.finding?.let { finding ->
+            findings += finding.copy(
+                id = "APK_REASONING_REVIEW",
+                score = minOf(finding.score, 10),
+                confidence = FindingConfidence.MEDIUM,
+                family = ThreatFamily.RISKWARE,
+                reference = "APK_REASONING_REVIEW"
+            )
+        }
         findings += ThreatGraphEngine.correlate(findings, ruleset.graphLinks)
 
         val verdict = VerdictEngine.evaluate(findings, allowlisted = trustedAllowlist)
