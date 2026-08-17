@@ -1,0 +1,2 @@
+f4db96ed4011fe0bb346458223251b9169602f64bd53392edd61a849f6526544  MaenShield-9.0.1-TestRelease.apk
+6190a0cf8d88a4a9da65a9dd9419576a1531775fa6ce9d0a299c1d2a9bf97d7b  MaenShield-9.0.1-TestRelease.aab

@@ -52,6 +52,7 @@ import com.aman.security.protection.ProtectionEventStore
 import com.aman.security.protection.ProtectionEventType
 import com.aman.security.protection.ProtectionNotifier
 import com.aman.security.protection.ProtectionPreferences
+import com.aman.security.protection.CrashGuard
 import com.aman.security.protection.ProtectionScheduler
 import com.aman.security.protection.ProtectionSeverity
 import com.aman.security.protection.PersistentScanMode
@@ -276,6 +277,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        CrashGuard.install(this)
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

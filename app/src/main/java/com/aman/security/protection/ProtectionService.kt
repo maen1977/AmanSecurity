@@ -92,6 +92,7 @@ class ProtectionService : Service() {
     }
 
     override fun onCreate() {
+        CrashGuard.install(this)
         super.onCreate()
         preferences = ProtectionPreferences(this)
         activityStore = ProtectionActivityStore(this)
@@ -470,6 +471,9 @@ class ProtectionService : Service() {
         val scanner = foregroundScanner ?: return
         val findings = runCatching { scanner.tick().toMutableList() }.getOrDefault(mutableListOf())
         val now = System.currentTimeMillis()
+        // Give the device a few minutes of settling after process start before
+        // running the heavier stealth audit (hidden apps, drain, beaconing).
+        if (lastStealthAuditAt <= 0L) lastStealthAuditAt = now - STEALTH_AUDIT_INTERVAL_MS + STEALTH_FIRST_AUDIT_DELAY_MS
         if (now - lastStealthAuditAt > STEALTH_AUDIT_INTERVAL_MS) {
             lastStealthAuditAt = now
             runCatching {
@@ -548,5 +552,6 @@ class ProtectionService : Service() {
         private const val HEARTBEAT_MS = 10 * 60_000L
         private const val STALE_RESTART_MS = 25 * 60_000L
         private const val STEALTH_AUDIT_INTERVAL_MS = 60 * 60_000L
+        private const val STEALTH_FIRST_AUDIT_DELAY_MS = 5 * 60_000L
     }
 }

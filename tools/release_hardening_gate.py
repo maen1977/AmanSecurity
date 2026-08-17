@@ -7,7 +7,7 @@ network=(ROOT/'app/src/main/res/xml/network_security_config.xml').read_text()
 workflow=(ROOT/'.github/workflows/build.yml').read_text()
 integrity=(ROOT/'app/src/main/java/com/aman/security/security/AppIntegrityInspector.kt').read_text()
 checks={
- 'version_4_0':'versionName = "9.0.0"' in gradle and 'versionCode = 58' in gradle,
+ 'version_4_0':'versionName = "9.0.1"' in gradle and 'versionCode = 59' in gradle,
  'release_minify':'isMinifyEnabled = true' in gradle and 'isShrinkResources = true' in gradle and 'isDebuggable = false' in gradle,
  'release_cert_pin':'AMAN_RELEASE_CERT_SHA256' in gradle and 'EXPECTED_RELEASE_CERT_SHA256' in gradle and 'SIGNATURE_MISMATCH' in integrity,
  'backup_off':'android:allowBackup="false"' in manifest and 'android:fullBackupContent="false"' in manifest,

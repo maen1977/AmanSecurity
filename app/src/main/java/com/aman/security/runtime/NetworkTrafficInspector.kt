@@ -82,6 +82,7 @@ public class NetworkTrafficInspector(private val nowProvider: () -> Long = { Sys
     }
 
     private fun knownUids(counters: (uid: Int) -> CounterSample): List<Int> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return emptyList()
         // Scan application uids (10000..MAX_UID). TrafficStats returns
         // NO_NETWORK_DATA_VALUE (-1) for inactive uids, which we skip.
         val found = mutableListOf<Int>()
