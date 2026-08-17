@@ -20,8 +20,9 @@ object AutonomousThreatScheduler {
     private const val ON_DEMAND_WORK = "aman-autonomous-threat-intelligence-now"
 
     private fun periodicNetworkConstraints(): Constraints = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.UNMETERED)
-        .setRequiresBatteryNotLow(true)
+        // The signed bundle is small and the user explicitly expects a daily update even
+        // when the device is using mobile data. WorkManager still waits for a connected network.
+        .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()
 
     private fun manualNetworkConstraints(): Constraints = Constraints.Builder()

@@ -879,7 +879,7 @@
     <string name="threat_update_transfer_known">تم تنزيل %1$s من %2$s من حزمة Maen Shield الموقعة</string>
     <string name="threat_update_transfer_unknown">تم تنزيل %1$s من حزمة Maen Shield الموقعة</string>
     <string name="threat_update_last_success">آخر تحديث ناجح: %1$s</string>
-    <string name="threat_update_next_check">موعد فحص واي فاي التلقائي اليومي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
+    <string name="threat_update_next_check">موعد الفحص الشبكي التلقائي اليومي التالي: قرابة %1$s (قد يؤخر أندرويد عمل الخلفية)</string>
     <string name="threat_update_due">حان موعد التحديث التلقائي وسيعمل عندما يسمح أندرويد بالشبكة والعمل في الخلفية.</string>
     <string name="threat_update_never_success">لم يتم تثبيت حزمة معلومات Maen Shield سحابية موقعة بعد.</string>
     <string name="threat_update_counts">المعلومات المحلية: %1$s بصمة برمجيات خبيثة • %2$s مضيف تصيد • %3$s رابط برمجيات خبيثة • %4$s مضيف C2 • %5$s ثغرة أندرويد</string>

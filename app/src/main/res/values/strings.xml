@@ -879,7 +879,7 @@
     <string name="threat_update_transfer_known">Downloaded %1$s of %2$s for the signed Maen Shield package</string>
     <string name="threat_update_transfer_unknown">Downloaded %1$s of the signed Maen Shield package</string>
     <string name="threat_update_last_success">Last successful update: %1$s</string>
-    <string name="threat_update_next_check">Next automatic daily Wi-Fi check: around %1$s (Android may delay background work)</string>
+    <string name="threat_update_next_check">Next automatic daily network check: around %1$s (Android may delay background work)</string>
     <string name="threat_update_due">Automatic update is due and will run when Android allows network/background work.</string>
     <string name="threat_update_never_success">No signed Maen Shield cloud-intelligence package has been installed yet.</string>
     <string name="threat_update_counts">Local intelligence: %1$s malware hashes • %2$s phishing hosts • %3$s malware URL hosts • %4$s C2 hosts • %5$s Android CVEs</string>

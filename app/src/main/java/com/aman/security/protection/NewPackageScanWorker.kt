@@ -99,7 +99,9 @@ class NewPackageScanWorker(
                 val isHighRisk = spywareReview.assessment.level == SpywareReviewLevel.HIGH
                 timeline.add(
                     kind = ProtectionActivityKind.SECURITY_AUDIT,
-                    state = if (isHighRisk) ProtectionActivityState.THREAT else ProtectionActivityState.ATTENTION,
+                    // SpywareAudit is a privacy-capability review; it must not paint the
+                    // antivirus threat state red, even when the strongest review level matches.
+                    state = ProtectionActivityState.ATTENTION,
                     title = applicationContext.getString(com.aman.security.R.string.timeline_spyware_review, spywareReview.appName),
                     detail = applicationContext.getString(
                         com.aman.security.R.string.timeline_spyware_review_detail,

@@ -329,9 +329,9 @@ class ProtectionService : Service() {
             preferences.markActivity(getString(R.string.activity_apps_rescan_complete, apps.scannedApps))
             activityStore.add(
                 kind = ProtectionActivityKind.APP_SCAN,
-                state = if (apps.knownThreats > 0 || apps.highRiskApps > 0 || files.alerts > 0 || audit.highFindings > 0 || spyware.highRiskApps > 0) {
+                state = if (apps.knownThreats > 0 || apps.highRiskApps > 0 || files.alerts > 0 || audit.highFindings > 0) {
                     ProtectionActivityState.THREAT
-                } else if (apps.reviewApps > 0 || audit.warningFindings > 0 || spyware.reviewApps > 0) {
+                } else if (apps.reviewApps > 0 || audit.warningFindings > 0 || spyware.reviewApps > 0 || spyware.highRiskApps > 0) {
                     ProtectionActivityState.ATTENTION
                 } else {
                     ProtectionActivityState.SAFE

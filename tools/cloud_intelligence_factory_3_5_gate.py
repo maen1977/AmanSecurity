@@ -18,7 +18,7 @@ scheduler=read('app/src/main/java/com/aman/security/autonomous/AutonomousThreatS
 builder=read('tools/build_cloud_threat_db.py')
 cleanup=read('tools/repository_cleanup_2_6.py')
 
-need('versionName = "9.0.8"' in gradle and 'versionCode = 66' in gradle,'version')
+need('versionName = "9.0.9"' in gradle and 'versionCode = 67' in gradle,'version')
 need('AMAN_THREAT_DB_BASE_URL' in gradle,'build_endpoint')
 need('schedule:' in workflow and '17 3 * * *' in workflow,'factory_schedule_daily')
 need('threat-intelligence:' in workflow and 'build_cloud_threat_db.py' in workflow and 'sign_cloud_threat_db.py' in workflow and 'verify_cloud_threat_db.py' in workflow,'factory_job')
@@ -41,7 +41,7 @@ need('MappedByteBuffer' in store and 'FileChannel.MapMode.READ_ONLY' in store an
 need('previous' in store and 'renameTo(currentDirectory)' in store and 'recordCloudFailure' in store,'last_known_good_atomic_swap')
 need('raw.githubusercontent.com' in http and 'parts[1] == "AmanSecurity-Threat-DB"' in http and 'parts[2] == "main"' in http and 'parts[3] == "latest"' in http,'narrow_endpoint_allowlist')
 need('instanceFollowRedirects = false' in http and 'MAX_BUNDLE_BYTES' in pkg and 'SHA256withRSA' in pkg,'transport_package_bounds')
-need('PeriodicWorkRequestBuilder<AutonomousThreatWorker>(24, TimeUnit.HOURS, 120, TimeUnit.MINUTES)' in scheduler and 'setInitialDelay' in scheduler and 'NetworkType.UNMETERED' in scheduler and 'setRequiresBatteryNotLow(true)' in scheduler,'daily_distributed_periodic_policy')
+need('PeriodicWorkRequestBuilder<AutonomousThreatWorker>(24, TimeUnit.HOURS, 120, TimeUnit.MINUTES)' in scheduler and 'setInitialDelay' in scheduler and 'NetworkType.CONNECTED' in scheduler and 'setRequiresBatteryNotLow(true)' not in scheduler,'daily_distributed_periodic_policy')
 need('NetworkType.CONNECTED' in scheduler,'manual_connected_update')
 need('hashes_only_no_raw_malicious_urls' in builder and 'No malware binaries are downloaded' in builder and 'phishtank_verified_online_urls' in builder and 'decompress_bz2_limited' in builder,'factory_privacy')
 need('keys' not in cleanup.split('obsolete_dirs =',1)[1].split(']',1)[0] if 'obsolete_dirs =' in cleanup else True,'public_key_cleanup')
@@ -70,4 +70,4 @@ with tempfile.TemporaryDirectory(prefix='aman-cloud-gate-') as td:
         joined=b'\n'.join(z.read(n) for n in names)
         need(b'https://' not in joined and b'http://' not in joined,'raw_url_leak_in_mobile_bundle')
 
-print('CLOUD_INTELLIGENCE_FACTORY_3_6_4_OK cloud_factory=1 signed_manifest=1 rollback_guard=1 phone_raw_feeds=0 mmap_indexes=1 periodic_unmetered_daily_24h=1 manual_connected=1 last_known_good=1 phishtank_optional=1 raw_urls_in_bundle=0')
+print('CLOUD_INTELLIGENCE_FACTORY_3_6_4_OK cloud_factory=1 signed_manifest=1 rollback_guard=1 phone_raw_feeds=0 mmap_indexes=1 periodic_connected_daily_24h=1 manual_connected=1 last_known_good=1 phishtank_optional=1 raw_urls_in_bundle=0')

@@ -81,8 +81,10 @@ class ScanFindingsStore(context: Context) {
             }
 
         spyware.findings.forEach { finding ->
+            // SpywareAudit reports capability/privacy risk, not confirmed malware. Even its
+            // strongest assessment stays in the review section of the scan findings UI.
             val severity = when (finding.assessment.level) {
-                SpywareReviewLevel.HIGH -> StoredScanFindingSeverity.HIGH
+                SpywareReviewLevel.HIGH,
                 SpywareReviewLevel.REVIEW -> StoredScanFindingSeverity.REVIEW
                 SpywareReviewLevel.LOW -> return@forEach
             }
