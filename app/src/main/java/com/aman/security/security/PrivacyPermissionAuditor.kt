@@ -45,12 +45,14 @@ class PrivacyPermissionAuditor(private val context: Context) {
         val appName = runCatching {
             info.applicationInfo?.loadLabel(packageManager)?.toString().orEmpty()
         }.getOrDefault("").ifBlank { info.packageName }
+        val installSource = installSource(info.packageName)
         PrivacyAppExposure(
             appName = appName,
             packageName = info.packageName,
             grantedSensitivePermissions = granted,
             grantedPermissions = grantedPermissions,
-            isTrustedInstall = isTrustedStoreInstall(info.packageName)
+            isTrustedInstall = isTrustedStoreInstall(installSource),
+            installSource = installSource
         )
     }
 
@@ -67,15 +69,35 @@ class PrivacyPermissionAuditor(private val context: Context) {
         return flags and ApplicationInfo.FLAG_SYSTEM != 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
     }
 
-    private fun isTrustedStoreInstall(packageName: String): Boolean = runCatching {
-        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            packageManager.getInstallSourceInfo(packageName).installingPackageName
+    private fun installSource(packageName: String): String = runCatching {
+        val sourceInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            packageManager.getInstallSourceInfo(packageName)
         } else {
-            @Suppress("DEPRECATION")
-            packageManager.getInstallerPackageName(packageName)
+            null
         }
-        PrivacyPermissionReviewPolicy.isTrustedInstaller(installer)
-    }.getOrDefault(false)
+        val installerIsTrusted = sourceInfo?.installingPackageName?.let {
+            PrivacyPermissionReviewPolicy.isTrustedInstaller(it)
+        } == true
+        when {
+            installerIsTrusted -> "STORE"
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && sourceInfo != null -> when (sourceInfo.packageSource) {
+                android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE -> "LOCAL_FILE"
+                android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE -> "DOWNLOADED_FILE"
+                android.content.pm.PackageInstaller.PACKAGE_SOURCE_OTHER -> "OTHER"
+                android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE -> "STORE"
+                else -> "UNKNOWN"
+            }
+            sourceInfo != null -> if (sourceInfo.installingPackageName.isNullOrBlank()) "UNKNOWN" else "OTHER"
+            else -> {
+                @Suppress("DEPRECATION")
+                packageManager.getInstallerPackageName(packageName)?.let { installer ->
+                    if (PrivacyPermissionReviewPolicy.isTrustedInstaller(installer)) "STORE" else "OTHER"
+                } ?: "UNKNOWN"
+            }
+        }
+    }.getOrDefault("UNKNOWN")
+
+    private fun isTrustedStoreInstall(installSource: String): Boolean = installSource == "STORE"
 
     companion object {
         private const val ELEVATED_PERMISSION_THRESHOLD = PrivacyPermissionReviewPolicy.ELEVATED_PERMISSION_THRESHOLD
@@ -115,8 +137,39 @@ internal object PrivacyPermissionReviewPolicy {
     )
 
     fun shouldReview(app: PrivacyAppExposure): Boolean =
-        app.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD && !app.isTrustedInstall
+        app.grantedSensitivePermissions >= ELEVATED_PERMISSION_THRESHOLD &&
+            !app.isTrustedInstall &&
+            !(isKnownOfficialPackage(app.packageName) && app.installSource in NON_PROVENANCE_SOURCES)
 
     fun isTrustedInstaller(installerPackageName: String?): Boolean =
         installerPackageName?.trim()?.lowercase() in TRUSTED_INSTALLERS
+
+    fun isKnownOfficialPackage(packageName: String): Boolean =
+        packageName.trim().lowercase() in OFFICIAL_CAPABILITY_ONLY_PACKAGES
+
+    private val NON_PROVENANCE_SOURCES = setOf("UNKNOWN", "OTHER")
+
+    private val OFFICIAL_CAPABILITY_ONLY_PACKAGES = setOf(
+        // Meta / WhatsApp official packages.
+        "com.whatsapp",
+        "com.whatsapp.w4b",
+        "com.facebook.orca", // Messenger
+        // Official Telegram and caller-ID applications.
+        "org.telegram.messenger",
+        "org.telegram.messenger.web",
+        "com.truecaller",
+        // Google productivity and device-finding applications.
+        "com.google.android.apps.docs",
+        "com.google.android.apps.adm", // Find My Device / Find Hub legacy package
+        "com.google.android.apps.findmydevice",
+        // Built-in and vendor screen-recording packages.
+        "com.miui.screenrecorder",
+        "com.android.screenrecord",
+        "com.samsung.android.app.screenrecorder",
+        "com.sec.android.app.screencapture",
+        "com.huawei.screenrecorder",
+        "com.oplus.screenrecorder",
+        "com.coloros.screenrecorder",
+        "com.vivo.screenrecorder"
+    )
 }

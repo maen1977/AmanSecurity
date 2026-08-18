@@ -47,7 +47,9 @@ data class PrivacyAppExposure(
     val packageName: String,
     val grantedSensitivePermissions: Int,
     val grantedPermissions: List<String> = emptyList(),
-    val isTrustedInstall: Boolean = false
+    val isTrustedInstall: Boolean = false,
+    /** Normalized install provenance used to invalidate legacy privacy-only findings safely. */
+    val installSource: String = ""
 )
 
 data class PrivacyPermissionAudit(

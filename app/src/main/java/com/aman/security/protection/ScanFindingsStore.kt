@@ -3,6 +3,7 @@ package com.aman.security.protection
 import android.content.Context
 import com.aman.security.scanner.AppRiskLevel
 import com.aman.security.scanner.InstalledAppsScanSummary
+import com.aman.security.security.PrivacyPermissionReviewPolicy
 import com.aman.security.security.SecurityAuditSeverity
 import com.aman.security.security.SecurityAuditSummary
 import com.aman.security.security.SpywareAuditSummary
@@ -119,7 +120,8 @@ class ScanFindingsStore(context: Context) {
                 severity = StoredScanFindingSeverity.REVIEW,
                 title = app.appName,
                 packageName = app.packageName,
-                reasonCodes = app.grantedPermissions.sorted()
+                reasonCodes = app.grantedPermissions.sorted(),
+                sourceCode = app.installSource
             )
         }
         audit.privacy.findings.forEach { finding ->
@@ -167,7 +169,10 @@ class ScanFindingsStore(context: Context) {
             val array = JSONArray(raw)
             buildList {
                 for (i in 0 until array.length()) {
-                    fromJson(array.optJSONObject(i) ?: continue)?.let { add(normalizeLegacySeverity(it)) }
+                    fromJson(array.optJSONObject(i) ?: continue)
+                        ?.let(::normalizeLegacySeverity)
+                        ?.takeUnless(::isStaleOfficialPrivacyReview)
+                        ?.let(::add)
                 }
             }
         }.getOrDefault(emptyList())
@@ -180,6 +185,13 @@ class ScanFindingsStore(context: Context) {
         if (prefs.getString(KEY_SESSION, "") == sessionId) return
         prefs.edit().clear().commit()
     }
+
+    private fun isStaleOfficialPrivacyReview(item: StoredScanFinding): Boolean =
+        item.kind == StoredScanFindingKind.PRIVACY &&
+            item.severity == StoredScanFindingSeverity.REVIEW &&
+            item.packageName.isNotBlank() &&
+            item.sourceCode.isBlank() &&
+            PrivacyPermissionReviewPolicy.isKnownOfficialPackage(item.packageName)
 
     private fun normalizeLegacySeverity(item: StoredScanFinding): StoredScanFinding {
         val shouldReview = when {

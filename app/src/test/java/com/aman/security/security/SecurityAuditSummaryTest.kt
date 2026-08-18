@@ -93,15 +93,38 @@ class SecurityAuditSummaryTest {
     }
 
     @Test
-    fun `sideloaded high-permission app remains a privacy review`() {
+    fun `known official package with unknown MIUI provenance is not a capability-only review`() {
+        val miuiScreenRecorder = PrivacyAppExposure(
+            appName = "Screen Recorder",
+            packageName = "com.miui.screenrecorder",
+            grantedSensitivePermissions = 5,
+            isTrustedInstall = false,
+            installSource = "UNKNOWN"
+        )
+
+        assertFalse(PrivacyPermissionReviewPolicy.shouldReview(miuiScreenRecorder))
+        assertTrue(PrivacyPermissionReviewPolicy.isKnownOfficialPackage("com.miui.screenrecorder"))
+
+        val whatsappWithVendorSource = miuiScreenRecorder.copy(
+            appName = "WhatsApp",
+            packageName = "com.whatsapp",
+            installSource = "OTHER"
+        )
+        assertFalse(PrivacyPermissionReviewPolicy.shouldReview(whatsappWithVendorSource))
+    }
+
+    @Test
+    fun `sideloaded official package remains a privacy review`() {
         val sideloadedWhatsApp = PrivacyAppExposure(
             appName = "WhatsApp",
             packageName = "com.whatsapp",
             grantedSensitivePermissions = 6,
-            isTrustedInstall = false
+            isTrustedInstall = false,
+            installSource = "LOCAL_FILE"
         )
 
         assertTrue(PrivacyPermissionReviewPolicy.shouldReview(sideloadedWhatsApp))
+        assertFalse(PrivacyPermissionReviewPolicy.isKnownOfficialPackage("com.whatsapp.mod"))
     }
 
     @Test
