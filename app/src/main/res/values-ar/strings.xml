@@ -245,6 +245,7 @@
     <string name="protection_event_file">ملف</string>
     <string name="protection_event_app">تطبيق</string>
     <string name="protection_severity_high">مؤشرات عالية الخطورة</string>
+    <string name="protection_severity_review">يحتاج إلى مراجعة</string>
     <string name="protection_severity_known">تهديد معروف</string>
     <string name="clear_protection_alerts_action">مسح نشاط الحماية</string>
     <string name="protection_disclosure_title">تفعيل الحماية في الخلفية؟</string>
@@ -421,6 +422,7 @@
     <string name="storage_scan_mode_full">كامل</string>
     <string name="storage_scan_finding_known">تهديد معروف</string>
     <string name="storage_scan_finding_high">عنصر عالي الخطورة</string>
+    <string name="storage_scan_finding_review">يحتاج إلى مراجعة — لم تُثبت برمجية خبيثة</string>
     <string name="storage_scan_permission_lost">لم يعد المجلد المختار متاحًا. اختره مرة أخرى.</string>
     <string name="storage_scan_failed">تعذر إكمال فحص التخزين. حاول اختيار المجلد مرة أخرى.</string>
     <string name="file_scan_running_detail">جارٍ التحقق من بصمة الملف وهويته وتحليل التطبيق الثابت ومعلومات التهديد المحلية.</string>

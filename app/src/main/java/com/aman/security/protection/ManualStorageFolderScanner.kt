@@ -33,6 +33,10 @@ class ManualStorageFolderScanner(
     private val cache: ManualStorageScanCache? = null,
     private val databaseVersion: String = ""
 ) {
+    // Bump this whenever a stored severity policy changes; old HIGH_RISK archive
+    // entries must not survive into the new REVIEW-only policy.
+    private val cacheDatabaseVersion = "storage-policy-v2:$databaseVersion"
+
     fun scan(
         treeUri: Uri,
         mode: ManualStorageScanMode = ManualStorageScanMode.FULL,
@@ -128,7 +132,7 @@ class ManualStorageFolderScanner(
                         documentId = documentId,
                         sizeBytes = size,
                         lastModified = lastModified,
-                        databaseVersion = databaseVersion
+                        databaseVersion = cacheDatabaseVersion
                     )
                     if (cached != null) {
                         scanned++
@@ -137,15 +141,17 @@ class ManualStorageFolderScanner(
                         val excluded = recordStore.isExcluded(cached.sha256)
                         val severity = cached.severity
                         if (severity != null && !excluded) {
-                            val event = eventStore.add(
-                                type = ProtectionEventType.FILE,
-                                displayName = cached.fileName.ifBlank { fileName },
-                                detail = cached.sha256,
-                                severity = severity
-                            )
-                            notifier(event)
-                            alerts++
-                            if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                            if (severity == ProtectionSeverity.KNOWN_THREAT || severity == ProtectionSeverity.HIGH_RISK) {
+                                val event = eventStore.add(
+                                    type = ProtectionEventType.FILE,
+                                    displayName = cached.fileName.ifBlank { fileName },
+                                    detail = cached.sha256,
+                                    severity = severity
+                                )
+                                notifier(event)
+                                alerts++
+                                if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                            }
                             findings += ManualStorageAlertFinding(
                                 displayName = cached.fileName.ifBlank { fileName },
                                 location = documentUri.toString(),
@@ -177,28 +183,30 @@ class ManualStorageFolderScanner(
                         documentId = documentId,
                         sizeBytes = size,
                         lastModified = lastModified,
-                        databaseVersion = databaseVersion,
+                        databaseVersion = cacheDatabaseVersion,
                         fileName = result.fileName,
                         sha256 = result.sha256,
                         severity = severity
                     )
                     if (severity != null && !excluded) {
-                        val event = eventStore.add(
-                            type = ProtectionEventType.FILE,
-                            displayName = result.fileName,
-                            detail = result.sha256,
-                            severity = severity
-                        )
-                        notifier(event)
-                        alerts++
-                        if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
-                        findings += ManualStorageAlertFinding(
+                        if (severity == ProtectionSeverity.KNOWN_THREAT || severity == ProtectionSeverity.HIGH_RISK) {
+                            val event = eventStore.add(
+                                type = ProtectionEventType.FILE,
                                 displayName = result.fileName,
-                                location = documentUri.toString(),
-                                sha256 = result.sha256,
-                                severity = severity,
-                                archiveEntryName = result.archiveFinding?.entryName
+                                detail = result.sha256,
+                                severity = severity
                             )
+                            notifier(event)
+                            alerts++
+                            if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                        }
+                        findings += ManualStorageAlertFinding(
+                            displayName = result.fileName,
+                            location = documentUri.toString(),
+                            sha256 = result.sha256,
+                            severity = severity,
+                            archiveEntryName = result.archiveFinding?.entryName
+                        )
                     }
                 }
             }

@@ -71,7 +71,9 @@ class SharedStorageScanner(private val context: Context) {
                 records.recordScan(result)
             }
             val excluded = records.isExcluded(result.sha256)
-            val severity = if (ProtectionPolicy.shouldNotifyFile(result, excluded)) ProtectionPolicy.severityForFile(result) else null
+            // Keep bounded/ambiguous archive results visible as REVIEW, but never count them
+            // as alerts or notify the user unless there is confirmed/strong evidence.
+            val severity = if (excluded) null else ProtectionPolicy.severityForFile(result)
             if (QuarantinePolicy.shouldAutoQuarantine(result.classification, excluded)) {
                 when (quarantineManager.quarantine(file, result)) {
                     is QuarantineManager.QuarantineResult.Success -> timeline.add(
@@ -85,15 +87,17 @@ class SharedStorageScanner(private val context: Context) {
                 }
             }
             if (severity != null) {
-                preferences.totalThreatsDetected += 1L
-                alerts++
-                if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
                 findings += SharedStorageAlertFinding(
                     displayName = result.fileName,
                     location = file.absolutePath,
                     sha256 = result.sha256,
                     severity = severity
                 )
+                if (severity == ProtectionSeverity.KNOWN_THREAT || severity == ProtectionSeverity.HIGH_RISK) {
+                    preferences.totalThreatsDetected += 1L
+                    alerts++
+                    if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                }
             }
             onProgress?.invoke(index + 1, candidates.size, file.name, file.absolutePath)
         }
@@ -108,7 +112,11 @@ class SharedStorageScanner(private val context: Context) {
             preferences.markActivity(context.getString(com.aman.security.R.string.activity_full_file_scan_complete, scanned))
             timeline.add(
                 kind = ProtectionActivityKind.FILE_SCAN,
-                state = if (alerts > 0) ProtectionActivityState.THREAT else ProtectionActivityState.SAFE,
+                state = when {
+                    alerts > 0 -> ProtectionActivityState.THREAT
+                    findings.any { it.severity == ProtectionSeverity.REVIEW } -> ProtectionActivityState.ATTENTION
+                    else -> ProtectionActivityState.SAFE
+                },
                 title = context.getString(com.aman.security.R.string.timeline_full_file_scan_complete, scanned),
                 detail = context.getString(com.aman.security.R.string.timeline_full_file_scan_detail, alerts)
             )

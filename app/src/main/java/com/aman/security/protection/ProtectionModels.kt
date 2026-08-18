@@ -6,6 +6,8 @@ enum class ProtectionEventType {
 }
 
 enum class ProtectionSeverity {
+    /** A heuristic signal that is not proof of malware and must not raise a high-risk alert. */
+    REVIEW,
     HIGH_RISK,
     KNOWN_THREAT
 }

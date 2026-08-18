@@ -43,14 +43,15 @@ object ProtectionPolicy {
         return sizeBytes < 0L || sizeBytes <= limit
     }
 
+    /**
+     * Only confirmed signatures and strong APK static evidence may raise a background alert.
+     * A bounded archive scan is a review condition, not evidence of malware.
+     */
     fun shouldNotifyFile(result: ScanResult, excluded: Boolean): Boolean {
         if (excluded) return false
-        if (result.classification == ScanClassification.KNOWN_THREAT) return true
-        return result.classification == ScanClassification.SUSPICIOUS &&
-            result.detectionReason in setOf(
-                ScanDetectionReason.APK_STATIC_HIGH_RISK,
-                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
-            )
+        return result.classification == ScanClassification.KNOWN_THREAT ||
+            (result.classification == ScanClassification.SUSPICIOUS &&
+                result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK)
     }
 
     fun shouldNotifyApp(level: AppRiskLevel): Boolean =
@@ -59,10 +60,13 @@ object ProtectionPolicy {
     fun severityForFile(result: ScanResult): ProtectionSeverity? = when {
         result.classification == ScanClassification.KNOWN_THREAT -> ProtectionSeverity.KNOWN_THREAT
         result.classification == ScanClassification.SUSPICIOUS &&
+            result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK -> ProtectionSeverity.HIGH_RISK
+        result.classification == ScanClassification.SUSPICIOUS &&
             result.detectionReason in setOf(
-                ScanDetectionReason.APK_STATIC_HIGH_RISK,
-                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED
-            ) -> ProtectionSeverity.HIGH_RISK
+                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED,
+                ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY,
+                ScanDetectionReason.DOUBLE_EXTENSION
+            ) -> ProtectionSeverity.REVIEW
         else -> null
     }
 

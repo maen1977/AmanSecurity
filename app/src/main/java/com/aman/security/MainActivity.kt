@@ -1731,10 +1731,10 @@ class MainActivity : AppCompatActivity() {
                         binding.txtStorageScanFindings.visibility = View.GONE
                     } else {
                         val lines = summary.findings.take(MAX_VISIBLE_SCAN_FINDINGS).joinToString("\\n") { finding ->
-                            val severityLabel = if (finding.severity == ProtectionSeverity.KNOWN_THREAT) {
-                                getString(R.string.storage_scan_finding_known)
-                            } else {
-                                getString(R.string.storage_scan_finding_high)
+                            val severityLabel = when (finding.severity) {
+                                ProtectionSeverity.KNOWN_THREAT -> getString(R.string.storage_scan_finding_known)
+                                ProtectionSeverity.HIGH_RISK -> getString(R.string.storage_scan_finding_high)
+                                ProtectionSeverity.REVIEW -> getString(R.string.storage_scan_finding_review)
                             }
                             val archiveDetail = finding.archiveEntryName?.let {
                                 getString(R.string.storage_scan_archive_entry_suffix, it)
@@ -1992,6 +1992,7 @@ class MainActivity : AppCompatActivity() {
         )
         val severity = getString(
             when (event.severity) {
+                ProtectionSeverity.REVIEW -> R.string.protection_severity_review
                 ProtectionSeverity.HIGH_RISK -> R.string.protection_severity_high
                 ProtectionSeverity.KNOWN_THREAT -> R.string.protection_severity_known
             }

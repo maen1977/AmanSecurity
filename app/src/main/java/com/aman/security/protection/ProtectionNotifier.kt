@@ -597,6 +597,7 @@ object ProtectionNotifier {
         )
 
         val title = when (event.severity) {
+            ProtectionSeverity.REVIEW -> return
             ProtectionSeverity.KNOWN_THREAT -> context.getString(R.string.protection_notification_known_title)
             ProtectionSeverity.HIGH_RISK -> context.getString(R.string.protection_notification_high_title)
         }

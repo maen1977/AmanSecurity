@@ -26,8 +26,10 @@ class ProtectionPolicyTest {
         val limitedArchive = result(ScanClassification.SUSPICIOUS, ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED)
         assertTrue(ProtectionPolicy.shouldNotifyFile(known, excluded = false))
         assertTrue(ProtectionPolicy.shouldNotifyFile(highApk, excluded = false))
-        assertTrue(ProtectionPolicy.shouldNotifyFile(limitedArchive, excluded = false))
+        assertFalse(ProtectionPolicy.shouldNotifyFile(limitedArchive, excluded = false))
         assertFalse(ProtectionPolicy.shouldNotifyFile(doubleExtension, excluded = false))
+        assertTrue(ProtectionPolicy.severityForFile(limitedArchive) == ProtectionSeverity.REVIEW)
+        assertTrue(ProtectionPolicy.severityForFile(doubleExtension) == ProtectionSeverity.REVIEW)
         assertFalse(ProtectionPolicy.shouldNotifyFile(invalidApk, excluded = false))
         assertFalse(ProtectionPolicy.shouldNotifyFile(known, excluded = true))
     }

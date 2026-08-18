@@ -245,6 +245,7 @@
     <string name="protection_event_file">File</string>
     <string name="protection_event_app">App</string>
     <string name="protection_severity_high">High-risk indicators</string>
+    <string name="protection_severity_review">Needs review</string>
     <string name="protection_severity_known">Known threat</string>
     <string name="clear_protection_alerts_action">Clear protection activity</string>
     <string name="protection_disclosure_title">Enable background protection?</string>
@@ -401,6 +402,7 @@
     <string name="storage_scan_mode_full">Full</string>
     <string name="storage_scan_finding_known">Known threat</string>
     <string name="storage_scan_finding_high">High-risk item</string>
+    <string name="storage_scan_finding_review">Needs review — not confirmed malware</string>
     <string name="storage_scan_permission_lost">The selected folder is no longer accessible. Choose it again.</string>
     <string name="storage_scan_failed">The storage scan could not finish. Try choosing the folder again.</string>
     <string name="quick_web_guard">Web protection</string>

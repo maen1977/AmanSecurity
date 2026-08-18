@@ -134,23 +134,25 @@ class ProtectedFolderScanner(
                     }
 
                     val excluded = recordStore.isExcluded(result.sha256)
-                    if (ProtectionPolicy.shouldNotifyFile(result, excluded)) {
-                        val severity = ProtectionPolicy.severityForFile(result) ?: continue
-                        val event = eventStore.add(
-                            type = ProtectionEventType.FILE,
-                            displayName = result.fileName,
-                            detail = result.sha256,
-                            severity = severity
-                        )
-                        notifier(event)
-                        alerts++
-                        if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                    val severity = if (excluded) null else ProtectionPolicy.severityForFile(result)
+                    if (severity != null) {
                         findings += ProtectedFolderAlertFinding(
                             displayName = result.fileName,
                             location = treeUri.toString() + "\n" + documentId,
                             sha256 = result.sha256,
                             severity = severity
                         )
+                        if (severity == ProtectionSeverity.KNOWN_THREAT || severity == ProtectionSeverity.HIGH_RISK) {
+                            val event = eventStore.add(
+                                type = ProtectionEventType.FILE,
+                                displayName = result.fileName,
+                                detail = result.sha256,
+                                severity = severity
+                            )
+                            notifier(event)
+                            alerts++
+                            if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
+                        }
                     }
                 }
             }
