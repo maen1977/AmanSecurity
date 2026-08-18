@@ -63,7 +63,6 @@ object ProtectionPolicy {
             result.detectionReason == ScanDetectionReason.APK_STATIC_HIGH_RISK -> ProtectionSeverity.HIGH_RISK
         result.classification == ScanClassification.SUSPICIOUS &&
             result.detectionReason in setOf(
-                ScanDetectionReason.ARCHIVE_SCAN_LIMIT_REACHED,
                 ScanDetectionReason.ARCHIVE_MISLEADING_ENTRY,
                 ScanDetectionReason.DOUBLE_EXTENSION
             ) -> ProtectionSeverity.REVIEW

@@ -72,7 +72,11 @@ class FileScanner(
             }
             archiveFinding?.knownThreat == true -> {
                 classification = ScanClassification.KNOWN_THREAT
-                reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                reason = if (archiveFinding.isExecutableEntry()) {
+                    ScanDetectionReason.ARCHIVE_EXECUTABLE_ENTRY
+                } else {
+                    ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                }
                 signatureId = archiveFinding.signatureId
             }
             archiveFinding?.scanLimited == true -> {
@@ -181,7 +185,11 @@ class FileScanner(
             }
             archiveFinding?.knownThreat == true -> {
                 classification = ScanClassification.KNOWN_THREAT
-                reason = ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                reason = if (archiveFinding.isExecutableEntry()) {
+                    ScanDetectionReason.ARCHIVE_EXECUTABLE_ENTRY
+                } else {
+                    ScanDetectionReason.ARCHIVE_KNOWN_SIGNATURE
+                }
                 signatureId = archiveFinding.signatureId
             }
             archiveFinding?.scanLimited == true -> {
@@ -253,9 +261,14 @@ class FileScanner(
         name.endsWith(it, ignoreCase = true)
     }
 
+    private fun ArchiveScanFinding.isExecutableEntry(): Boolean {
+        val lowerName = entryName.lowercase()
+        return lowerName.endsWith(".apk") || lowerName.endsWith(".jar") || lowerName.endsWith(".dex")
+    }
+
     private fun hasMisleadingDoubleExtension(name: String): Boolean {
         val lower = name.lowercase()
-        val executableEndings = listOf(".apk", ".exe", ".scr", ".bat", ".cmd", ".com", ".jar")
+        val executableEndings = listOf(".apk", ".exe", ".scr", ".bat", ".cmd", ".com", ".jar", ".dex")
         val decoyEndings = listOf(".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt")
         return executableEndings.any { executable ->
             lower.endsWith(executable) && decoyEndings.any { decoy -> lower.contains("$decoy$executable") }

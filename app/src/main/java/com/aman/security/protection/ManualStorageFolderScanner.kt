@@ -35,7 +35,7 @@ class ManualStorageFolderScanner(
 ) {
     // Bump this whenever a stored severity policy changes; old HIGH_RISK archive
     // entries must not survive into the new REVIEW-only policy.
-    private val cacheDatabaseVersion = "storage-policy-v2:$databaseVersion"
+    private val cacheDatabaseVersion = "storage-policy-v3:$databaseVersion"
 
     fun scan(
         treeUri: Uri,

@@ -82,10 +82,29 @@ class ArchiveScanAnalyzerTest {
     }
 
     @Test
-    fun flagsExecutablePayloadNestedInsideArchive() {
+    fun ignoresUnsignedExecutablePayloadNestedInsideArchive() {
         val archive = zipOf("holiday.jpg" to "photo data", "setup.apk" to "fake installer")
         val finding = ArchiveScanAnalyzer { null }.scan(ByteArrayInputStream(archive))
-        assertTrue("expected misleading nested apk", finding?.misleadingExtension == true)
+        assertTrue("ordinary nested APK must not be a finding", finding == null)
+    }
+
+    @Test
+    fun detectsKnownSignatureInExecutablePayloadNestedInsideArchive() {
+        val payload = "known installer payload".toByteArray()
+        val sha256 = MessageDigest.getInstance("SHA-256")
+            .digest(payload)
+            .joinToString("") { "%02x".format(it) }
+        val archive = zipOfBinary("setup.apk" to payload)
+
+        val finding = ArchiveScanAnalyzer { hash ->
+            if (hash == sha256) ThreatSignature(hash, "TEST-NESTED-APK", ScanClassification.KNOWN_THREAT) else null
+        }.scan(ByteArrayInputStream(archive))
+
+        assertTrue("expected confirmed nested APK threat", finding?.knownThreat == true)
+        assertEquals("setup.apk", finding?.entryName)
+        assertEquals("TEST-NESTED-APK", finding?.signatureId)
+        assertEquals(sha256, finding?.entrySha256)
+        assertTrue("confirmed executable entry is not a misleading-name finding", finding?.misleadingExtension == false)
     }
 
     @Test

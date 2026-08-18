@@ -1,5 +1,6 @@
 package com.aman.security.scanner
 
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
@@ -9,13 +10,10 @@ import java.util.zip.ZipInputStream
  * entries to disk and stops before archive contents can consume excessive RAM,
  * CPU, or battery.
  *
- * If the bounded inspection cannot finish, the result is explicitly marked as
- * limited so callers do not accidentally present the archive as clean.
- *
- * 5.0.0 — Two extra layers: a nested executable payload (APK/JAR/DEX inside a
- * regular archive) is flagged immediately as misleading, and nested archives
- * are opened once (depth two maximum) and their inner entries hashed in
- * memory against the threat database.
+ * A nested executable name is not malware evidence by itself. Every entry is
+ * hashed before any optional nested inspection, so an exact threat signature
+ * remains detectable while ordinary APK/JAR/DEX payloads remain unreported.
+ * Only a genuinely misleading double extension is a review signal.
  */
 class ArchiveScanAnalyzer(
     private val findSignature: (String) -> ThreatSignature?
@@ -42,32 +40,9 @@ class ArchiveScanAnalyzer(
                     limitedEntryName = name
                     val lowerName = name.lowercase()
 
-                    // 5.0.0 — Hidden executable payload: an APK, JAR or DEX
-                    // nested inside a regular archive is a classic drop-stage
-                    // tactic and always deserves review.
-                    if (lowerName.endsWith(".apk") || lowerName.endsWith(".jar") || lowerName.endsWith(".dex")) {
-                        return@runCatching ArchiveScanFinding(
-                            entryName = name,
-                            entrySha256 = "",
-                            signatureId = null,
-                            knownThreat = false,
-                            misleadingExtension = true
-                        )
-                    }
-
-                    // 5.0.0 — Bounded nested-archive inspection (depth two max).
-                    val nested = if (lowerName.endsWith(".zip") || lowerName.endsWith(".apk") ||
-                        lowerName.endsWith(".jar")) scanNested(archive, buffer, totalBytes) else null
-                    if (nested != null) {
-                        if (nested.scanLimited) scanLimited = true
-                        if (nested.knownThreat || nested.misleadingExtension) {
-                            return@runCatching nested
-                        }
-                        inspectedEntries++
-                        continue
-                    }
-
+                    val nestedCandidate = isNestedArchiveName(lowerName)
                     val digest = MessageDigest.getInstance("SHA-256")
+                    val nestedData = if (nestedCandidate) ByteArrayOutputStream() else null
                     var entryBytes = 0L
                     var entryLimited = false
                     while (true) {
@@ -81,8 +56,12 @@ class ArchiveScanAnalyzer(
                             break
                         }
                         digest.update(buffer, 0, read)
+                        nestedData?.write(buffer, 0, read)
                     }
                     if (entryLimited) break
+
+                    // Hash the complete entry before looking at its filename or contents.
+                    // This preserves exact-hash detection for an APK/JAR/DEX inside ZIP.
                     val sha256 = digest.digest().toHex()
                     val signature = findSignature(sha256)
                     val misleading = hasMisleadingDoubleExtension(name)
@@ -94,6 +73,17 @@ class ArchiveScanAnalyzer(
                             knownThreat = signature?.classification == ScanClassification.KNOWN_THREAT,
                             misleadingExtension = misleading
                         )
+                    }
+
+                    // The bounded nested scan is advisory only. Unsigned/unknown nested
+                    // executables remain unreported, while their exact inner signatures can
+                    // still produce a confirmed threat result.
+                    if (nestedData != null) {
+                        val nested = scanNested(nestedData.toByteArray(), buffer)
+                        if (nested?.scanLimited == true) scanLimited = true
+                        if (nested?.knownThreat == true || nested?.misleadingExtension == true) {
+                            return@runCatching nested
+                        }
                     }
                     inspectedEntries++
                 }
@@ -118,29 +108,12 @@ class ArchiveScanAnalyzer(
      * the signature database. Bounded by MAX_NESTED_ENTRIES and MAX_TOTAL_BYTES
      * so it can never consume unbounded memory, CPU, or battery.
      */
-    private fun scanNested(
-        outer: ZipInputStream,
-        buffer: ByteArray,
-        totalBytes: Long
-    ): ArchiveScanFinding? {
-        val nestedData = mutableListOf<Byte>()
-        var nestedBytes = 0L
-        var nestedLimited = false
-        while (true) {
-            val read = outer.read(buffer)
-            if (read <= 0) break
-            nestedBytes += read
-            if (nestedBytes > MAX_ENTRY_BYTES || nestedBytes > MAX_TOTAL_BYTES) {
-                nestedLimited = true
-                break
-            }
-            nestedData.addAll(buffer.take(read))
-        }
-        if (nestedLimited || nestedData.isEmpty()) return null
-        val nestedStream = nestedData.toByteArray().inputStream()
-        val nestedZip = runCatching { ZipInputStream(nestedStream) }.getOrNull() ?: return null
-        return nestedZip.use { nestedArchive ->
+    private fun scanNested(nestedData: ByteArray, buffer: ByteArray): ArchiveScanFinding? = runCatching {
+        if (nestedData.isEmpty()) return@runCatching null
+        val nestedZip = ZipInputStream(nestedData.inputStream())
+        nestedZip.use { nestedArchive ->
             var nestedInspected = 0
+            var nestedTotalBytes = 0L
             while (true) {
                 val entry = nestedArchive.nextEntry ?: break
                 if (entry.isDirectory) continue
@@ -154,6 +127,7 @@ class ArchiveScanAnalyzer(
                         scanLimited = true
                     )
                 }
+
                 val digest = MessageDigest.getInstance("SHA-256")
                 var entryBytes = 0L
                 var entryLimited = false
@@ -161,7 +135,8 @@ class ArchiveScanAnalyzer(
                     val read = nestedArchive.read(buffer)
                     if (read <= 0) break
                     entryBytes += read
-                    if (entryBytes > MAX_ENTRY_BYTES) {
+                    nestedTotalBytes += read
+                    if (entryBytes > MAX_ENTRY_BYTES || nestedTotalBytes > MAX_TOTAL_BYTES) {
                         entryLimited = true
                         break
                     }
@@ -178,11 +153,10 @@ class ArchiveScanAnalyzer(
                         scanLimited = true
                     )
                 }
+
                 val sha256 = digest.digest().toHex()
                 val signature = findSignature(sha256)
-                val misleading = name.lowercase().let { lower ->
-                    (lower.endsWith(".apk") || lower.endsWith(".jar") || lower.endsWith(".dex"))
-                }
+                val misleading = hasMisleadingDoubleExtension(name)
                 if (signature != null || misleading) {
                     return@use ArchiveScanFinding(
                         entryName = "nested:$name",
@@ -196,7 +170,10 @@ class ArchiveScanAnalyzer(
             }
             null
         }
-    }
+    }.getOrNull()
+
+    private fun isNestedArchiveName(lowerName: String): Boolean =
+        lowerName.endsWith(".zip") || lowerName.endsWith(".apk") || lowerName.endsWith(".jar")
 
     private fun hasMisleadingDoubleExtension(name: String): Boolean {
         val lower = name.lowercase()
