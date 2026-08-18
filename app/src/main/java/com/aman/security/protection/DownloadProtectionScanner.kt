@@ -49,6 +49,7 @@ class DownloadProtectionScanner(private val context: Context) {
 
     fun scanChangedFiles(
         specificFile: File? = null,
+        notifyPackageReviews: Boolean = true,
         onProgress: ((completed: Int, total: Int, currentName: String, currentPath: String) -> Unit)? = null
     ): DownloadScanSummary {
         if (!ProtectionAccess.hasDownloadsReadAccess(context)) {
@@ -70,6 +71,9 @@ class DownloadProtectionScanner(private val context: Context) {
         var quarantinedFiles = 0
         var quarantineFailures = 0
         var truncated = false
+        // A persistent FULL scan may overlap with the Downloads FileObserver. Keep the
+        // security review in the activity/report, but do not emit one notification per ZIP.
+        val suppressPackageReviewNotification = !notifyPackageReviews || isFullScanActive()
 
         for ((candidateIndex, file) in candidates.withIndex()) {
             if (visited >= MAX_DOWNLOAD_DOCUMENTS || scanned >= MAX_DOWNLOAD_SCANS_PER_RUN) {
@@ -105,7 +109,12 @@ class DownloadProtectionScanner(private val context: Context) {
                             ScanDetectionReason.KNOWN_FILE_SIGNATURE
                         }
                     )
-                    val outcome = handleResult(cachedResult, file, fromCachedReputation = true)
+                    val outcome = handleResult(
+                        cachedResult,
+                        file,
+                        fromCachedReputation = true,
+                        suppressPackageReviewNotification = suppressPackageReviewNotification
+                    )
                     alerts += outcome.alerts
                     known += outcome.known
                     high += outcome.high
@@ -137,7 +146,12 @@ class DownloadProtectionScanner(private val context: Context) {
                 lastSeenAt = System.currentTimeMillis()
             )
 
-            val handled = handleResult(result, file, fromCachedReputation = false)
+            val handled = handleResult(
+                result,
+                file,
+                fromCachedReputation = false,
+                suppressPackageReviewNotification = suppressPackageReviewNotification
+            )
             alerts += handled.alerts
             known += handled.known
             high += handled.high
@@ -163,7 +177,12 @@ class DownloadProtectionScanner(private val context: Context) {
         )
     }
 
-    private fun handleResult(result: ScanResult, file: File, fromCachedReputation: Boolean): ResultCounts {
+    private fun handleResult(
+        result: ScanResult,
+        file: File,
+        fromCachedReputation: Boolean,
+        suppressPackageReviewNotification: Boolean
+    ): ResultCounts {
         if (result.classification == ScanClassification.KNOWN_THREAT || result.classification == ScanClassification.SUSPICIOUS) {
             recordStore.recordScan(result)
         }
@@ -241,12 +260,14 @@ class DownloadProtectionScanner(private val context: Context) {
                     detail = detail,
                     dedupeKey = "download-review:${result.sha256}"
                 )
-                ProtectionNotifier.notifyDownloadedPackageReview(
-                    context,
-                    result.fileName,
-                    file.absolutePath,
-                    result.sha256
-                )
+                if (!suppressPackageReviewNotification) {
+                    ProtectionNotifier.notifyDownloadedPackageReview(
+                        context,
+                        result.fileName,
+                        file.absolutePath,
+                        result.sha256
+                    )
+                }
             } else {
                 activityStore.add(
                     kind = ProtectionActivityKind.DOWNLOAD_SCAN,
@@ -258,6 +279,11 @@ class DownloadProtectionScanner(private val context: Context) {
             }
         }
         return ResultCounts()
+    }
+
+    private fun isFullScanActive(): Boolean {
+        val snapshot = ScanSessionStore(context).snapshot()
+        return snapshot.isActive && snapshot.mode == PersistentScanMode.FULL
     }
 
     private fun isInstallablePackage(file: File): Boolean {

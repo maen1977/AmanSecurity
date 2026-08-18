@@ -181,7 +181,7 @@ object ProtectionScheduler {
     }
 
     fun scanDownloadedFile(context: Context, absolutePath: String) {
-        if (absolutePath.isBlank()) return
+        if (absolutePath.isBlank() || isFullScanActive(context)) return
         val request = OneTimeWorkRequestBuilder<DownloadProtectionWorker>()
             .setInputData(workDataOf(DownloadProtectionWorker.KEY_FILE_PATH to absolutePath))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -193,6 +193,15 @@ object ProtectionScheduler {
             ExistingWorkPolicy.REPLACE,
             request
         )
+    }
+
+    fun cancelDownloadScansForFullScan(context: Context) {
+        WorkManager.getInstance(context).cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
+    }
+
+    private fun isFullScanActive(context: Context): Boolean {
+        val snapshot = ScanSessionStore(context).snapshot()
+        return snapshot.isActive && snapshot.mode == PersistentScanMode.FULL
     }
 
     fun scanNewPackage(context: Context, packageName: String) {

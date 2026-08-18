@@ -234,6 +234,10 @@ class ProtectionService : Service() {
 
     private fun runPersistentScan(sessionId: String, mode: PersistentScanMode) {
         scanStore.markRunning(sessionId)
+        if (mode == PersistentScanMode.FULL) {
+            ProtectionScheduler.cancelDownloadScansForFullScan(applicationContext)
+            ProtectionNotifier.cancelDownloadedPackageReviewNotifications(applicationContext)
+        }
         updateScanProgress(sessionId, 1, "preparing", "", mode.name.lowercase())
         val database = SignatureDatabase(applicationContext)
         val appScanner = InstalledAppScanner(applicationContext, database)

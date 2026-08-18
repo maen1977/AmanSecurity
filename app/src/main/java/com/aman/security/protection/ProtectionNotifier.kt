@@ -34,7 +34,8 @@ object ProtectionNotifier {
     private const val BACKGROUND_ACTIVITY_ALERT_ID = 27500
     private const val SPYWARE_ALERT_ID = 27600
     private const val SIDELOAD_SENSITIVE_ALERT_ID = 27650
-    private const val DOWNLOAD_REVIEW_ALERT_ID = 27700
+    private const val LEGACY_DOWNLOAD_REVIEW_ALERT_ID = 27700
+    private const val DOWNLOAD_REVIEW_ALERT_ID = 28000
     private const val RUNTIME_OVERLAY_ALERT_ID = 27800
     private const val RUNTIME_MEDIA_ALERT_ID = 27810
     private const val RUNTIME_CLIPBOARD_ALERT_ID = 27820
@@ -621,6 +622,27 @@ object ProtectionNotifier {
             notification = notification
         )
         updateProtectionStatus(context)
+    }
+
+    fun cancelDownloadedPackageReviewNotifications(context: Context) {
+        val notificationManager = NotificationManagerCompat.from(context)
+        // Previous scans used one id per package hash. Clear both the legacy and current
+        // ranges, while preserving fixed ids used by other security notification types.
+        val reservedIds = setOf(
+            RUNTIME_OVERLAY_ALERT_ID,
+            RUNTIME_MEDIA_ALERT_ID,
+            RUNTIME_CLIPBOARD_ALERT_ID,
+            RUNTIME_HARDENING_ALERT_ID,
+            RUNTIME_INTEGRITY_ALERT_ID,
+            RUNTIME_HIDDEN_APP_ALERT_ID,
+            RUNTIME_DRAIN_ALERT_ID
+        )
+        listOf(LEGACY_DOWNLOAD_REVIEW_ALERT_ID, DOWNLOAD_REVIEW_ALERT_ID).forEach { baseId ->
+            for (offset in 0..0x1ff) {
+                val notificationId = baseId + offset
+                if (notificationId !in reservedIds) notificationManager.cancel(notificationId)
+            }
+        }
     }
 
     fun notifyDownloadedPackageReview(context: Context, fileName: String, path: String, sha256: String) {
