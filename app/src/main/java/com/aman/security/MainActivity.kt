@@ -80,6 +80,7 @@ import com.aman.security.scanner.FileScanner
 import com.aman.security.scanner.FileScanStage
 import java.util.concurrent.CancellationException
 import com.aman.security.scanner.InstalledAppScanResult
+import com.aman.security.scanner.InstalledAppReviewPolicy
 import com.aman.security.scanner.InstalledAppScanner
 import com.aman.security.scanner.InstalledAppsScanSummary
 import com.aman.security.scanner.MessageRiskLevel
@@ -2746,7 +2747,7 @@ class MainActivity : AppCompatActivity() {
             formatter.format(summary.knownThreats)
         )
 
-        val reviewResults = summary.results.filter { it.riskLevel != AppRiskLevel.LOW }
+        val reviewResults = summary.results.filter(InstalledAppReviewPolicy::shouldSurfaceInFullScan)
         binding.txtInstalledEmpty.visibility = if (reviewResults.isEmpty()) View.VISIBLE else View.GONE
         binding.installedResultsContainer.removeAllViews()
 

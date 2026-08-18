@@ -85,8 +85,6 @@ class SharedStorageScanner(private val context: Context) {
                 }
             }
             if (severity != null) {
-                val event = events.add(ProtectionEventType.FILE, result.fileName, file.absolutePath, severity)
-                ProtectionNotifier.notifyEvent(context, event)
                 preferences.totalThreatsDetected += 1L
                 alerts++
                 if (severity == ProtectionSeverity.KNOWN_THREAT) known++ else high++
@@ -100,6 +98,13 @@ class SharedStorageScanner(private val context: Context) {
             onProgress?.invoke(index + 1, candidates.size, file.name, file.absolutePath)
         }
         if (!cancelled()) {
+            if (alerts > 0) {
+                val summarySeverity = if (known > 0) ProtectionSeverity.KNOWN_THREAT else ProtectionSeverity.HIGH_RISK
+                val summaryName = context.getString(com.aman.security.R.string.timeline_full_file_scan_complete, scanned)
+                val summaryDetail = context.getString(com.aman.security.R.string.timeline_full_file_scan_detail, alerts)
+                val event = events.add(ProtectionEventType.FILE, summaryName, summaryDetail, summarySeverity)
+                ProtectionNotifier.notifyEvent(context, event)
+            }
             preferences.markActivity(context.getString(com.aman.security.R.string.activity_full_file_scan_complete, scanned))
             timeline.add(
                 kind = ProtectionActivityKind.FILE_SCAN,

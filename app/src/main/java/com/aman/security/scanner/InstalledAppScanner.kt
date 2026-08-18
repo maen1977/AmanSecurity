@@ -67,7 +67,7 @@ class InstalledAppScanner(
         val packages = scanned.sortedWith(
             compareByDescending<InstalledAppScanResult> { it.riskScore }.thenBy { it.appName.lowercase() }
         )
-        val review = packages.count { it.riskLevel != AppRiskLevel.LOW }
+        val review = packages.count(InstalledAppReviewPolicy::shouldSurfaceInFullScan)
         val high = packages.count { it.riskLevel == AppRiskLevel.HIGH }
         val known = packages.count { it.riskLevel == AppRiskLevel.KNOWN_THREAT }
         return InstalledAppsScanSummary(packages.size, review, high, known, packages)
