@@ -71,9 +71,8 @@ class DownloadProtectionScanner(private val context: Context) {
         var quarantinedFiles = 0
         var quarantineFailures = 0
         var truncated = false
-        // A persistent FULL scan may overlap with the Downloads FileObserver. Keep the
-        // security review in the activity/report, but do not emit one notification per ZIP.
-        val suppressPackageReviewNotification = !notifyPackageReviews || isFullScanActive()
+        // A persistent FULL scan may start while this worker is already scanning. The
+        // notification gate is evaluated when each result is handled, not only at start.
 
         for ((candidateIndex, file) in candidates.withIndex()) {
             if (visited >= MAX_DOWNLOAD_DOCUMENTS || scanned >= MAX_DOWNLOAD_SCANS_PER_RUN) {
@@ -113,7 +112,7 @@ class DownloadProtectionScanner(private val context: Context) {
                         cachedResult,
                         file,
                         fromCachedReputation = true,
-                        suppressPackageReviewNotification = suppressPackageReviewNotification
+                        notifyPackageReviews = notifyPackageReviews
                     )
                     alerts += outcome.alerts
                     known += outcome.known
@@ -150,7 +149,7 @@ class DownloadProtectionScanner(private val context: Context) {
                 result,
                 file,
                 fromCachedReputation = false,
-                suppressPackageReviewNotification = suppressPackageReviewNotification
+                notifyPackageReviews = notifyPackageReviews
             )
             alerts += handled.alerts
             known += handled.known
@@ -181,7 +180,7 @@ class DownloadProtectionScanner(private val context: Context) {
         result: ScanResult,
         file: File,
         fromCachedReputation: Boolean,
-        suppressPackageReviewNotification: Boolean
+        notifyPackageReviews: Boolean
     ): ResultCounts {
         if (result.classification == ScanClassification.KNOWN_THREAT || result.classification == ScanClassification.SUSPICIOUS) {
             recordStore.recordScan(result)
@@ -260,7 +259,7 @@ class DownloadProtectionScanner(private val context: Context) {
                     detail = detail,
                     dedupeKey = "download-review:${result.sha256}"
                 )
-                if (!suppressPackageReviewNotification) {
+                if (!shouldSuppressPackageReviewNotification(notifyPackageReviews)) {
                     ProtectionNotifier.notifyDownloadedPackageReview(
                         context,
                         result.fileName,
@@ -279,6 +278,10 @@ class DownloadProtectionScanner(private val context: Context) {
             }
         }
         return ResultCounts()
+    }
+
+    private fun shouldSuppressPackageReviewNotification(notifyPackageReviews: Boolean): Boolean {
+        return !notifyPackageReviews || isFullScanActive()
     }
 
     private fun isFullScanActive(): Boolean {

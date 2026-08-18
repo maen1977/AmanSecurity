@@ -237,6 +237,9 @@ class ProtectionService : Service() {
         if (mode == PersistentScanMode.FULL) {
             ProtectionScheduler.cancelDownloadScansForFullScan(applicationContext)
             ProtectionNotifier.cancelDownloadedPackageReviewNotifications(applicationContext)
+            // Keep the realtime Downloads observer disarmed for the whole durable FULL scan.
+            // ensureDownloadsObserver() also enforces this when heartbeat runs.
+            ensureDownloadsObserver()
         }
         updateScanProgress(sessionId, 1, "preparing", "", mode.name.lowercase())
         val database = SignatureDatabase(applicationContext)
@@ -443,6 +446,11 @@ class ProtectionService : Service() {
     }
 
     private fun ensureDownloadsObserver() {
+        if (scanStore.snapshot().isActive && scanStore.snapshot().mode == PersistentScanMode.FULL) {
+            downloadsObserver?.stopWatching()
+            downloadsObserver = null
+            return
+        }
         if (!preferences.enabled || !preferences.downloadsProtectionEnabled ||
             !ProtectionAccess.hasDownloadsReadAccess(this)
         ) {

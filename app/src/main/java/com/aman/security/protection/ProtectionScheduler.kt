@@ -56,6 +56,7 @@ object ProtectionScheduler {
 
         val downloadsRescan = PeriodicWorkRequestBuilder<DownloadProtectionWorker>(2, TimeUnit.HOURS, 30, TimeUnit.MINUTES)
             .setInitialDelay(2, TimeUnit.HOURS)
+            .addTag(DOWNLOAD_SCAN_TAG)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
@@ -135,6 +136,7 @@ object ProtectionScheduler {
 
 
     fun scanDownloadsNow(context: Context) {
+        if (isFullScanActive(context)) return
         val request = OneTimeWorkRequestBuilder<DownloadProtectionWorker>()
             .setConstraints(
                 Constraints.Builder()
@@ -196,7 +198,12 @@ object ProtectionScheduler {
     }
 
     fun cancelDownloadScansForFullScan(context: Context) {
-        WorkManager.getInstance(context).cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
+        val workManager = WorkManager.getInstance(context)
+        // Cancel both event-driven work and the periodic catch-up job. The periodic
+        // request is tagged as well, so already-enqueued instances are covered.
+        workManager.cancelUniqueWork(DOWNLOAD_RESCAN_WORK_NAME)
+        workManager.cancelUniqueWork(DOWNLOAD_RESCAN_NOW_WORK_NAME)
+        workManager.cancelAllWorkByTag(DOWNLOAD_SCAN_TAG)
     }
 
     private fun isFullScanActive(context: Context): Boolean {

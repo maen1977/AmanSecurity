@@ -75,7 +75,12 @@ class PrivacyPermissionAuditor(private val context: Context) {
         } else {
             null
         }
-        val installerIsTrusted = sourceInfo?.installingPackageName?.let {
+        val installingPackageName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            sourceInfo?.installingPackageName
+        } else {
+            null
+        }
+        val installerIsTrusted = installingPackageName?.let {
             PrivacyPermissionReviewPolicy.isTrustedInstaller(it)
         } == true
         when {
@@ -87,7 +92,7 @@ class PrivacyPermissionAuditor(private val context: Context) {
                 android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE -> "STORE"
                 else -> "UNKNOWN"
             }
-            sourceInfo != null -> if (sourceInfo.installingPackageName.isNullOrBlank()) "UNKNOWN" else "OTHER"
+            sourceInfo != null -> if (installingPackageName.isNullOrBlank()) "UNKNOWN" else "OTHER"
             else -> {
                 @Suppress("DEPRECATION")
                 packageManager.getInstallerPackageName(packageName)?.let { installer ->

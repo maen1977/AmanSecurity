@@ -646,6 +646,12 @@ object ProtectionNotifier {
     }
 
     fun notifyDownloadedPackageReview(context: Context, fileName: String, path: String, sha256: String) {
+        // This is a review signal for a newly downloaded package, not a confirmed threat.
+        // Never emit it while a durable FULL scan is active, even if an older worker
+        // started before the scan and reaches this method later.
+        val scan = ScanSessionStore(context).snapshot()
+        if (scan.isActive && scan.mode == PersistentScanMode.FULL) return
+
         ensureChannels(context)
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
