@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Build Aman's mobile threat-intelligence package in CI, never on the phone.
 
-The output contains only normalized SHA-256 indicators and Android CVE identifiers. Raw
-phishing/malware URLs and provider payloads are discarded in CI after normalization.
+The output contains only normalized SHA-256 indicators, APK identity indicators,
+behavioral detection rules, and Android CVE identifiers. Raw phishing/malware URLs and
+provider payloads are discarded in CI after normalization.
 No malware binaries are downloaded by this builder.
 """
 from __future__ import annotations
@@ -33,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HASH_RE = re.compile(r"^[a-f0-9]{64}$")
 CVE_RE = re.compile(r"CVE-20\d{2}-\d{4,8}", re.I)
 PATCH_RE = re.compile(r"20\d{2}-\d{2}-(?:01|05)")
+APK_ID_RE = re.compile(r"^(SIGNER|PACKAGE)\|([a-f0-9]{64})\|([A-Z0-9_]{3,96})\|(KNOWN_THREAT|TEST_SIGNATURE)$")
 SAMPLE_RE = re.compile(r"/sample/([a-f0-9]{64})/", re.I)
 HTTP_RE = re.compile(r"https?://[^\s\"'<>]+", re.I)
 IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
@@ -80,6 +82,8 @@ FILES = {
     "malware_url_hosts.sha256": 120_000,
     "c2_hosts.sha256": 50_000,
 }
+APK_INDICATOR_CAP = 100_000
+DETECTION_RULE_CAP = 50_000
 
 @dataclass
 class FetchResult:
@@ -124,7 +128,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/1.1.1.8 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/1.1.1.9 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -371,6 +375,39 @@ def phishtank_verified_online_urls(payload: bytes) -> list[str]:
     return urls
 
 
+def load_data_lines(path: Path) -> list[str]:
+    if not path.is_file():
+        raise FileNotFoundError(f"missing bundled threat source: {path}")
+    return [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+
+
+def build_apk_indicators() -> set[str]:
+    """Return only explicitly reviewed APK identity rows.
+
+    ThreatFox/MalwareBazaar SHA-256 IOCs are file identities and are intentionally
+    kept in malware_files.sha256; they are not signer/package identities.
+    """
+    indicators: set[str] = set()
+    path = ROOT / "app" / "src" / "main" / "assets" / "threat-db" / "apk_indicators.csv"
+    for line in load_data_lines(path):
+        if not APK_ID_RE.fullmatch(line):
+            raise ValueError(f"invalid bundled APK identity row: {line[:120]}")
+        indicators.add(line)
+    return indicators
+
+
+def build_detection_rules() -> list[str]:
+    path = ROOT / "app" / "src" / "main" / "assets" / "threat-db" / "detection_rules.csv"
+    rows = load_data_lines(path)
+    if len(rows) > DETECTION_RULE_CAP:
+        raise ValueError("bundled detection rule cap exceeded")
+    return rows
+
+
 def load_bundled_malware_seed() -> set[str]:
     out: set[str] = set()
     path = ROOT / "threat-db" / "signatures.csv"
@@ -485,6 +522,21 @@ def write_hash_file(path: Path, hashes: set[str], cap: int) -> int:
     return len(clean)
 
 
+def write_apk_indicator_file(path: Path, indicators: set[str], cap: int) -> int:
+    clean = sorted(indicators, key=lambda row: f"{row.split('|', 2)[0]}:{row.split('|', 2)[1]}")
+    if len(clean) > cap:
+        clean = clean[:cap]
+    path.write_text("".join(row + "\n" for row in clean), encoding="ascii")
+    return len(clean)
+
+
+def write_detection_rules_file(path: Path, rows: list[str], cap: int) -> int:
+    if len(rows) > cap:
+        raise ValueError("detection rule cap exceeded")
+    path.write_text("".join(row + "\n" for row in rows), encoding="utf-8")
+    return len(rows)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", default="dist/cloud-threat-db")
@@ -506,6 +558,8 @@ def main() -> int:
     malware_urls: set[str] = set()
     c2_hosts: set[str] = set()
     android_cves: set[str] = set()
+    apk_indicators = build_apk_indicators()
+    detection_rules = build_detection_rules()
     android_patch: str | None = None
 
     if args.offline_fixture:
@@ -656,6 +710,12 @@ def main() -> int:
     cves = sorted(set(android_cves))[:20_000]
     (payload_dir / "android_cves.txt").write_text("".join(x + "\n" for x in cves), encoding="ascii")
     counts["android_cves.txt"] = len(cves)
+    counts["apk_indicators.csv"] = write_apk_indicator_file(
+        payload_dir / "apk_indicators.csv", apk_indicators, APK_INDICATOR_CAP
+    )
+    counts["detection_rules.csv"] = write_detection_rules_file(
+        payload_dir / "detection_rules.csv", detection_rules, DETECTION_RULE_CAP
+    )
 
     # A publishable package must contain useful live web intelligence. Other categories may be zero
     # when an upstream is temporarily empty; the APK keeps its bundled baseline in parallel.
@@ -689,7 +749,7 @@ def main() -> int:
         "latestAndroidSecurityPatch": android_patch or "",
         "files": file_meta,
         "sources": [s.__dict__ for s in sources],
-        "privacy": "hashes_only_no_raw_malicious_urls",
+        "privacy": "normalized_hashes_and_rules_only_no_raw_malicious_urls",
     }
     manifest_bytes = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
     (out / "manifest.json").write_bytes(manifest_bytes)

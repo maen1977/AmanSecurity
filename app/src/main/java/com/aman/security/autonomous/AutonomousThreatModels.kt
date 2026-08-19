@@ -22,6 +22,8 @@ data class AutonomousIntelInfo(
     val c2Hosts: Int = 0,
     val latestAndroidSecurityPatch: String? = null,
     val androidCveCount: Int = 0,
+    val apkIdentityEntries: Int = 0,
+    val detectionRuleEntries: Int = 0,
     val successfulSourcesLastRun: Int = 0,
     val failedSourcesLastRun: Int = 0,
     val upstreamSourceCount: Int = 0,

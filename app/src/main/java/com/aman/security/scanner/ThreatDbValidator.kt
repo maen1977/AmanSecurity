@@ -112,7 +112,7 @@ object ThreatDbValidator {
         return UrlThreatIndicator(kind, hash, id, classification)
     }
 
-    private fun parseApkIdentityLine(line: String): ApkIdentityIndicator? {
+    internal fun parseApkIdentityLine(line: String): ApkIdentityIndicator? {
         val parts = line.split('|')
         if (parts.size != 4) return null
         val kind = runCatching { ApkIndicatorKind.valueOf(parts[0].trim()) }.getOrNull() ?: return null

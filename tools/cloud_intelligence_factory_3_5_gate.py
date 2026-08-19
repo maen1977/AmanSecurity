@@ -18,7 +18,7 @@ scheduler=read('app/src/main/java/com/aman/security/autonomous/AutonomousThreatS
 builder=read('tools/build_cloud_threat_db.py')
 cleanup=read('tools/repository_cleanup_2_6.py')
 
-need('versionName = "1.1.1.8"' in gradle and 'versionCode = 81' in gradle,'version')
+need('versionName = "1.1.1.9"' in gradle and 'versionCode = 82' in gradle,'version')
 need('AMAN_THREAT_DB_BASE_URL' in gradle,'build_endpoint')
 need('schedule:' in workflow and '17 3 * * *' in workflow,'factory_schedule_daily')
 need('threat-intelligence:' in workflow and 'build_cloud_threat_db.py' in workflow and 'sign_cloud_threat_db.py' in workflow and 'verify_cloud_threat_db.py' in workflow,'factory_job')
@@ -43,7 +43,7 @@ need('raw.githubusercontent.com' in http and 'parts[1] == "AmanSecurity-Threat-D
 need('instanceFollowRedirects = false' in http and 'MAX_BUNDLE_BYTES' in pkg and 'SHA256withRSA' in pkg,'transport_package_bounds')
 need('PeriodicWorkRequestBuilder<AutonomousThreatWorker>(24, TimeUnit.HOURS, 120, TimeUnit.MINUTES)' in scheduler and 'setInitialDelay' in scheduler and 'NetworkType.CONNECTED' in scheduler and 'setRequiresBatteryNotLow(true)' in scheduler and 'setRequiresStorageNotLow(true)' in scheduler,'daily_distributed_periodic_policy')
 need('NetworkType.CONNECTED' in scheduler,'manual_connected_update')
-need('hashes_only_no_raw_malicious_urls' in builder and 'No malware binaries are downloaded' in builder and 'phishtank_verified_online_urls' in builder and 'decompress_bz2_limited' in builder,'factory_privacy')
+need(('normalized_hashes_and_rules_only_no_raw_malicious_urls' in builder or 'hashes_only_no_raw_malicious_urls' in builder) and 'No malware binaries are downloaded' in builder and 'phishtank_verified_online_urls' in builder and 'decompress_bz2_limited' in builder,'factory_privacy')
 need('keys' not in cleanup.split('obsolete_dirs =',1)[1].split(']',1)[0] if 'obsolete_dirs =' in cleanup else True,'public_key_cleanup')
 
 pub=ROOT/'app/src/main/assets/keys/aman-threat-db-public.pem'
@@ -66,8 +66,8 @@ with tempfile.TemporaryDirectory(prefix='aman-cloud-gate-') as td:
     subprocess.run([sys.executable,str(ROOT/'tools/verify_cloud_threat_db.py'),'--dir',str(out)],check=True,stdout=subprocess.DEVNULL)
     with zipfile.ZipFile(out/'aman-threat-db-999.zip') as z:
         names=set(z.namelist())
-        need(names=={'malware_files.sha256','phishing_primary.sha256','phishing_openphish.sha256','phishing_community.sha256','malware_url_hosts.sha256','c2_hosts.sha256','android_cves.txt'},'fixture_exact_entries')
+        need(names=={'malware_files.sha256','phishing_primary.sha256','phishing_openphish.sha256','phishing_community.sha256','malware_url_hosts.sha256','c2_hosts.sha256','android_cves.txt','apk_indicators.csv','detection_rules.csv'},'fixture_exact_entries')
         joined=b'\n'.join(z.read(n) for n in names)
         need(b'https://' not in joined and b'http://' not in joined,'raw_url_leak_in_mobile_bundle')
 
-print('CLOUD_INTELLIGENCE_FACTORY_3_6_4_OK cloud_factory=1 signed_manifest=1 rollback_guard=1 phone_raw_feeds=0 mmap_indexes=1 periodic_connected_daily_24h=1 manual_connected=1 last_known_good=1 phishtank_optional=1 raw_urls_in_bundle=0')
+print('CLOUD_INTELLIGENCE_FACTORY_3_6_4_OK cloud_factory=1 signed_manifest=1 rollback_guard=1 phone_raw_feeds=0 mmap_indexes=1 apk_identity=1 detection_rules=1 periodic_connected_daily_24h=1 manual_connected=1 last_known_good=1 phishtank_optional=1 raw_urls_in_bundle=0')

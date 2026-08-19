@@ -35,8 +35,10 @@ class SignatureDatabase(private val context: Context) {
 
     fun find(sha256: String): ThreatSignature? = autonomousStore.findFile(sha256) ?: bundled.signatures[sha256.lowercase()]
     fun findUrl(kind: UrlIndicatorKind, sha256: String): UrlThreatIndicator? = autonomousStore.findUrl(kind, sha256) ?: bundled.urlIndicators["$kind:${sha256.lowercase()}"]
-    fun findApk(kind: ApkIndicatorKind, sha256: String): ApkIdentityIndicator? = bundled.apkIdentityIndicators["$kind:${sha256.lowercase()}"]
-    fun findReputation(kind: ReputationKind, sha256: String): ReputationIndicator? = bundled.detectionRuleset.findReputation(kind, sha256)
+    fun findApk(kind: ApkIndicatorKind, sha256: String): ApkIdentityIndicator? =
+        autonomousStore.findApk(kind, sha256) ?: bundled.apkIdentityIndicators["$kind:${sha256.lowercase()}"]
+    fun findReputation(kind: ReputationKind, sha256: String): ReputationIndicator? =
+        autonomousStore.findReputation(kind, sha256) ?: bundled.detectionRuleset.findReputation(kind, sha256)
     fun canaryHealthy(): Boolean = ThreatDbCanary.valid(bundled.signatures.values)
     @Synchronized fun reloadAutonomous() = autonomousStore.reload()
 

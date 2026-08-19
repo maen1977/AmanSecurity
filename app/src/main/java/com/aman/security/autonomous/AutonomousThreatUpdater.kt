@@ -2,6 +2,7 @@ package com.aman.security.autonomous
 
 import android.content.Context
 import com.aman.security.scanner.SignatureDatabase
+import com.aman.security.scanner.ThreatDbValidator
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -182,26 +183,42 @@ class AutonomousThreatUpdater(
     }
 
     private fun validateIndexFile(file: File, meta: CloudThreatFileMeta) {
-        var count = 0
-        var previous: String? = null
-        file.bufferedReader(Charsets.US_ASCII, 16 * 1024).useLines { lines ->
-            lines.forEach { line ->
-                when {
-                    meta.name.endsWith(".sha256") -> {
-                        if (!HASH.matches(line)) throw SecurityException("Invalid cloud SHA-256 index")
-                        if (previous != null && previous!! >= line) throw SecurityException("Cloud SHA-256 index is not strictly sorted")
-                    }
-                    meta.name == AutonomousThreatStore.FILE_ANDROID_CVES -> {
-                        if (!CVE.matches(line)) throw SecurityException("Invalid Android CVE index")
-                        if (previous != null && previous!! >= line) throw SecurityException("Android CVE index is not strictly sorted")
-                    }
+        val charset = if (meta.name == AutonomousThreatStore.FILE_DETECTION_RULES) Charsets.UTF_8 else Charsets.US_ASCII
+        val lines = file.bufferedReader(charset, 16 * 1024).use { it.readLines() }
+        val dataLines = lines.filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
+        when {
+            meta.name.endsWith(".sha256") -> {
+                var previous: String? = null
+                dataLines.forEach { line ->
+                    if (!HASH.matches(line)) throw SecurityException("Invalid cloud SHA-256 index")
+                    if (previous?.let { it >= line } == true) throw SecurityException("Cloud SHA-256 index is not strictly sorted")
+                    previous = line
                 }
-                previous = line
-                count++
-                if (count > meta.entries) throw SecurityException("Cloud threat index entry overflow")
+            }
+            meta.name == AutonomousThreatStore.FILE_ANDROID_CVES -> {
+                var previous: String? = null
+                dataLines.forEach { line ->
+                    if (!CVE.matches(line)) throw SecurityException("Invalid Android CVE index")
+                    if (previous?.let { it >= line } == true) throw SecurityException("Android CVE index is not strictly sorted")
+                    previous = line
+                }
+            }
+            meta.name == AutonomousThreatStore.FILE_APK_IDENTITIES -> {
+                var previous: String? = null
+                dataLines.forEach { line ->
+                    val parsed = ThreatDbValidator.parseApkIdentityLine(line)
+                        ?: throw SecurityException("Invalid cloud APK identity index")
+                    val key = "${parsed.kind}:${parsed.sha256}"
+                    if (previous?.let { it >= key } == true) throw SecurityException("Cloud APK identity index is not strictly sorted")
+                    previous = key
+                }
+            }
+            meta.name == AutonomousThreatStore.FILE_DETECTION_RULES -> {
+                runCatching { ThreatDbValidator.parseDetectionRules(file.readBytes(), dataLines.size) }
+                    .getOrElse { throw SecurityException("Invalid cloud detection rules") }
             }
         }
-        if (count != meta.entries) throw SecurityException("Cloud threat index count mismatch")
+        if (dataLines.size != meta.entries) throw SecurityException("Cloud threat index count mismatch")
     }
 
     companion object {

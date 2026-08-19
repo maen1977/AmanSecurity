@@ -46,7 +46,9 @@ data class CloudThreatManifest(
             "phishing_community.sha256",
             "malware_url_hosts.sha256",
             "c2_hosts.sha256",
-            "android_cves.txt"
+            "android_cves.txt",
+            "apk_indicators.csv",
+            "detection_rules.csv"
         )
 
         fun parse(bytes: ByteArray): CloudThreatManifest {
@@ -127,10 +129,17 @@ data class CloudThreatManifest(
             "malware_url_hosts.sha256" -> 200_000
             "c2_hosts.sha256" -> 50_000
             "android_cves.txt" -> 20_000
+            "apk_indicators.csv" -> 100_000
+            "detection_rules.csv" -> 50_000
             else -> 0
         }
 
-        private fun maxBytes(name: String): Long = if (name.endsWith(".sha256")) maxEntries(name).toLong() * 65L else 2L * 1024L * 1024L
+        private fun maxBytes(name: String): Long = when {
+            name.endsWith(".sha256") -> maxEntries(name).toLong() * 65L
+            name == "apk_indicators.csv" -> 8L * 1024L * 1024L
+            name == "detection_rules.csv" -> 16L * 1024L * 1024L
+            else -> 2L * 1024L * 1024L
+        }
         private val HASH = Regex("^[a-f0-9]{64}$")
         const val MAX_BUNDLE_BYTES = 24L * 1024L * 1024L
     }

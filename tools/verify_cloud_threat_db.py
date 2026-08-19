@@ -13,6 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HASH = re.compile(r"^[a-f0-9]{64}$")
 BUNDLE_NAME = re.compile(r"^aman-threat-db-[0-9]+\.zip$")
+APK_ID = re.compile(r"^(SIGNER|PACKAGE)\|[a-f0-9]{64}\|[A-Z0-9_]{3,96}\|(KNOWN_THREAT|TEST_SIGNATURE)$")
+DETECTION_KINDS = {"RULE", "BRAND", "BRAND_SIGNER", "LINK", "MODEL", "REASONING", "REPUTATION", "META"}
 ALLOWED = {
     "malware_files.sha256",
     "phishing_primary.sha256",
@@ -21,6 +23,8 @@ ALLOWED = {
     "malware_url_hosts.sha256",
     "c2_hosts.sha256",
     "android_cves.txt",
+    "apk_indicators.csv",
+    "detection_rules.csv",
 }
 
 
@@ -67,11 +71,18 @@ def main() -> None:
             data = archive.read(name)
             metadata = manifest["files"][name]
             assert sha(data) == metadata["sha256"] and len(data) == metadata["bytes"]
-            lines = [line for line in data.decode("ascii").splitlines() if line]
+            lines = [line for line in data.decode("utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")]
             assert len(lines) == metadata["entries"]
             if name.endswith(".sha256"):
                 assert lines == sorted(set(lines))
                 assert all(HASH.fullmatch(line) for line in lines)
+            elif name == "apk_indicators.csv":
+                assert all(APK_ID.fullmatch(line) for line in lines)
+                keys = [f"{line.split('|', 2)[0]}:{line.split('|', 2)[1]}" for line in lines]
+                assert keys == sorted(set(keys))
+            elif name == "detection_rules.csv":
+                assert all(line.split('|', 1)[0] in DETECTION_KINDS for line in lines)
+                assert not any("http://" in line.lower() or "https://" in line.lower() for line in lines)
     print(
         f"CLOUD_THREAT_DB_VERIFY_OK serial={manifest['serial']} "
         f"bundle={bundle_name} bytes={manifest['bundleBytes']} "
