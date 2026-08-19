@@ -8,13 +8,13 @@ namespace MaenShield.App
 {
     internal static class Program
     {
-        internal const int AppVersionCode = 1;
-        internal const string AppVersionName = "1.1.1.11-windows";
+        internal const int AppVersionCode = 2;
+        internal const string AppVersionName = "1.1.9-windows";
 
         [STAThread]
         private static void Main(string[] args)
         {
-            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MaenShield", "Windows");
+            var root = AppDomain.CurrentDomain.BaseDirectory;
             if (args != null && Array.Exists(args, x => string.Equals(x, "--update-only", StringComparison.OrdinalIgnoreCase)))
             {
                 var service = new CloudUpdateService(root, AppVersionCode, CloudUpdateService.DefaultBaseUrl);

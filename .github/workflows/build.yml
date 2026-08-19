@@ -136,7 +136,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.11-Cloud-Threat-Package
+          name: MaenShield-1.1.9-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -240,15 +240,15 @@ jobs:
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-1.1.1.11-TestRelease-unsigned.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-1.1.9-TestRelease-unsigned.apk
           "$ANDROID_HOME/build-tools/37.0.0/apksigner" sign \
             --ks "$HOME/.android/debug.keystore" \
             --ks-key-alias AndroidDebugKey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MaenShield-1.1.1.11-TestRelease.apk \
-            MaenShield-1.1.1.11-TestRelease-unsigned.apk
-          test -s MaenShield-1.1.1.11-TestRelease.apk
+            --out MaenShield-1.1.9-TestRelease.apk \
+            MaenShield-1.1.9-TestRelease-unsigned.apk
+          test -s MaenShield-1.1.9-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -256,7 +256,7 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-1.1.1.11-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-1.1.9-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Publish latest Android build to GitHub Release
@@ -266,10 +266,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="v1.1.1.11"
-          release_report="MaenShield-1.1.1.11-Verification-Reports.txt"
+          tag="v1.1.9"
+          release_report="MaenShield-1.1.9-Verification-Reports.txt"
           {
-            echo "Maen Shield v1.1.1.11"
+            echo "Maen Shield v1.1.9"
             echo
             echo "Built by Aman Security Pipeline from commit ${GITHUB_SHA}."
             echo
@@ -277,7 +277,7 @@ jobs:
           } > "$release_report"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" \
-              MaenShield-1.1.1.11-TestRelease.apk \
+              MaenShield-1.1.9-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
@@ -285,28 +285,28 @@ jobs:
               --clobber
           else
             gh release create "$tag" \
-              MaenShield-1.1.1.11-TestRelease.apk \
+              MaenShield-1.1.9-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "Maen Shield v1.1.1.11" \
+              --title "Maen Shield v1.1.9" \
               --notes "تم بناء الإصدار بواسطة Aman Security Pipeline من نفس commit التطبيق."
           fi
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.11-TestRelease-APK
-          path: MaenShield-1.1.1.11-TestRelease.apk
+          name: MaenShield-1.1.9-TestRelease-APK
+          path: MaenShield-1.1.9-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.11-Unsigned-Release-AAB
+          name: MaenShield-1.1.9-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -315,7 +315,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.11-Verification-Reports
+          name: MaenShield-1.1.9-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/
@@ -353,6 +353,10 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+
       - name: Build Windows application
         shell: pwsh
         run: |
@@ -363,35 +367,54 @@ jobs:
         run: |
           msbuild windows\tests\MaenShield.Windows.Tests.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /m
 
-      - name: Prepare embedded Windows payload
+      - name: Prepare traditional Windows installer payload
         shell: pwsh
         run: |
-          $payload = Join-Path $env:RUNNER_TEMP 'maenshield-windows-payload'
+          $payload = 'windows\MaenShield.Installer\payload'
           Remove-Item $payload -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path $payload | Out-Null
+          New-Item -ItemType Directory -Path $payload -Force | Out-Null
           $app = 'windows\MaenShield.App\bin\Release'
           Copy-Item (Join-Path $app 'MaenShield.Windows.exe') $payload
           Copy-Item (Join-Path $app 'MaenShield.Core.dll') $payload
           Copy-Item (Join-Path $app 'MaenShield.Infrastructure.dll') $payload
           Copy-Item (Join-Path $app 'aman-threat-db-public.pem') $payload
-          $zip = 'windows\MaenShield.Installer\InstallerPayload.zip'
-          Remove-Item $zip -Force -ErrorAction SilentlyContinue
-          Compress-Archive -Path (Join-Path $payload '*') -DestinationPath $zip -CompressionLevel Optimal
+          Copy-Item 'windows\MaenShield.Installer\MaenShield.ico' $payload
 
-      - name: Build single-click Windows installer EXE
+      - name: Build traditional Windows installer
         shell: pwsh
         run: |
-          msbuild windows\MaenShield.Installer\MaenShield.Installer.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /m
+          $version = $env:WINDOWS_RELEASE_VERSION
+          $output = 'windows\MaenShield.Installer\bin\Release'
+          New-Item -ItemType Directory -Path $output -Force | Out-Null
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          $sourceDir = (Resolve-Path 'windows\MaenShield.Installer\payload').Path
+          $outputDir = (Resolve-Path $output).Path
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$sourceDir" "/DOutputDir=$outputDir" 'windows\MaenShield.Installer\MaenShield.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed.' }
 
-      - name: Verify embedded installer payload
+      - name: Verify traditional Windows installation
         shell: pwsh
         run: |
-          $setup = "windows\MaenShield.Installer\bin\Release\MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.exe"
-          $verification = (& $setup /verify-only 2>&1 | Out-String)
-          $verification
-          if ($verification -notmatch 'WINDOWS_INSTALLER_PAYLOAD_OK') {
-            throw 'Windows installer payload verification failed.'
+          $version = $env:WINDOWS_RELEASE_VERSION
+          $setup = (Resolve-Path "windows\MaenShield.Installer\bin\Release\MaenShield-$version-Windows-Setup.exe").Path
+          if (!(Test-Path -LiteralPath $setup)) { throw 'Windows setup EXE was not produced.' }
+          $testDir = Join-Path $env:RUNNER_TEMP 'maenshield-install-test'
+          Remove-Item $testDir -Recurse -Force -ErrorAction SilentlyContinue
+          $desktop = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Maen Shield.lnk'
+          Remove-Item $desktop -Force -ErrorAction SilentlyContinue
+          $setupLog = Join-Path $env:RUNNER_TEMP 'maenshield-setup.log'
+          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$setupLog" "/DIR=$testDir" /TASKS=desktopicon
+          if ($LASTEXITCODE -ne 0) { throw "Windows setup silent install failed with exit code $LASTEXITCODE." }
+          foreach ($file in @('MaenShield.Windows.exe', 'MaenShield.Core.dll', 'MaenShield.Infrastructure.dll', 'aman-threat-db-public.pem')) {
+            if (!(Test-Path (Join-Path $testDir $file))) { throw "Installed file is missing: $file" }
           }
+          if (!(Test-Path -LiteralPath $desktop)) { throw 'Desktop shortcut was not created.' }
+          $task = & schtasks.exe /Query /TN 'Maen Shield\Daily Intelligence Update' 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw 'Daily update task was not registered.' }
+          Get-Item $setup | Select-Object FullName,Length
+          Get-FileHash $setup -Algorithm SHA256
+          Remove-Item $desktop -Force -ErrorAction SilentlyContinue
+          & schtasks.exe /Delete /TN 'Maen Shield\Daily Intelligence Update' /F | Out-Null
 
       - name: Download public intelligence sample for Windows tests
         shell: pwsh
