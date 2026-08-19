@@ -9,7 +9,7 @@ namespace MaenShield.App
     internal static class Program
     {
         internal const int AppVersionCode = 1;
-        internal const string AppVersionName = "0.1.0-windows";
+        internal const string AppVersionName = "1.1.1.10-windows";
 
         [STAThread]
         private static void Main(string[] args)

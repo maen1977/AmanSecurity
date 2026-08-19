@@ -4,9 +4,11 @@ This directory contains the first lightweight Windows implementation of Maen Shi
 
 `https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest`
 
-## Scope of this preview
+## Scope of the Windows release
 
-The preview includes a .NET Framework 4.8 / WinForms application, a shared scanning core, signed cloud-package validation, atomic installation with rollback, manual file and folder scanning, ZIP/APK/XAPK/APKM member inspection, conservative URL checks, reversible quarantine, and a daily per-user Task Scheduler update path.
+The Windows release includes a .NET Framework 4.8 / WinForms application, a shared scanning core, signed cloud-package validation, atomic installation with rollback, manual file and folder scanning, ZIP/APK/XAPK/APKM member inspection, conservative URL checks, reversible quarantine, and a daily per-user Task Scheduler update path.
+
+The single-click `MaenShield-1.1.1.10-Windows-Setup.exe` extracts the application for the current user, registers the daily update task, and starts Maen Shield. GitHub Actions builds this EXE and attaches it to the **same GitHub Release tag as Android**, rather than publishing a separate Windows Preview page.
 
 The cloud package is accepted only after manifest signature verification, bundle-size enforcement, path-traversal protection, per-file SHA-256 verification, schema validation, and a complete required-file check. Metadata rows such as `BRAND`, `MODEL`, `META`, and `REPUTATION` are retained as reference data; they do not create a malware verdict by themselves. A file is labeled confirmed only when an exact confirmed indicator matches, or when an inspected archive member matches.
 
@@ -38,7 +40,7 @@ MaenShield.Windows.exe --update-only
 
 ## Current limitations
 
-This is the first Windows preview, not a replacement for a commercial kernel-level antivirus. It does not yet ship a Windows File-System Minifilter Driver, process-injection prevention driver, exploit mitigation engine, or signed installer. Those capabilities require separate Windows-specific engineering and broad testing, especially if Windows 7 remains a target. The preview therefore provides strong free on-demand scanning and signed intelligence updates without claiming complete real-time system interception.
+This is a lightweight free Windows release, not a replacement for a commercial kernel-level antivirus. It does not yet ship a Windows File-System Minifilter Driver, process-injection prevention driver, or exploit mitigation engine. Those capabilities require separate Windows-specific engineering and broad testing, especially if Windows 7 remains a target. The EXE installer is not Authenticode code-signed in this release because no paid Windows publisher certificate is used; the threat-intelligence package itself is independently signature-verified before installation. The release therefore provides strong free on-demand scanning and signed intelligence updates without claiming complete real-time system interception.
 
 No file is deleted automatically. Confirmed items may be moved to reversible quarantine when the user chooses that action. Suspicious heuristic matches remain review findings and are not treated as confirmed malware merely because a file is executable.
 

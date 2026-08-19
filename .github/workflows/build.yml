@@ -322,3 +322,128 @@ jobs:
             build-artifact-sha256.txt
           if-no-files-found: ignore
           retention-days: 14
+
+
+  build-windows:
+    name: Build Windows installer and attach to Android release
+    if: ${{ needs.build.result == 'success' && github.event_name != 'schedule' }}
+    needs: build
+    runs-on: windows-latest
+    env:
+      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Read Android release tag
+        shell: pwsh
+        run: |
+          $line = Select-String -Path 'app/build.gradle.kts' -Pattern 'versionName\s*=\s*"([^"]+)"' | Select-Object -First 1
+          if ($null -eq $line) { throw 'Android versionName was not found.' }
+          if ($line.Line -notmatch 'versionName\s*=\s*"([^"]+)"') { throw 'Android versionName could not be parsed.' }
+          $tag = "v$($Matches[1])"
+          "WINDOWS_RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WINDOWS_RELEASE_TAG=$tag"
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Windows application
+        shell: pwsh
+        run: |
+          msbuild windows\MaenShield.App\MaenShield.App.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /m
+
+      - name: Build Windows core tests
+        shell: pwsh
+        run: |
+          msbuild windows\tests\MaenShield.Windows.Tests.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /m
+
+      - name: Prepare embedded Windows payload
+        shell: pwsh
+        run: |
+          $payload = Join-Path $env:RUNNER_TEMP 'maenshield-windows-payload'
+          Remove-Item $payload -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $payload | Out-Null
+          $app = 'windows\MaenShield.App\bin\Release'
+          Copy-Item (Join-Path $app 'MaenShield.Windows.exe') $payload
+          Copy-Item (Join-Path $app 'MaenShield.Core.dll') $payload
+          Copy-Item (Join-Path $app 'MaenShield.Infrastructure.dll') $payload
+          Copy-Item (Join-Path $app 'aman-threat-db-public.pem') $payload
+          $zip = 'windows\MaenShield.Installer\InstallerPayload.zip'
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+          Compress-Archive -Path (Join-Path $payload '*') -DestinationPath $zip -CompressionLevel Optimal
+
+      - name: Build single-click Windows installer EXE
+        shell: pwsh
+        run: |
+          msbuild windows\MaenShield.Installer\MaenShield.Installer.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /m
+
+      - name: Verify embedded installer payload
+        shell: pwsh
+        run: |
+          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          & $setup /verify-only
+          if ($LASTEXITCODE -ne 0) { throw 'Windows installer payload verification failed.' }
+
+      - name: Download public intelligence sample for Windows tests
+        shell: pwsh
+        run: |
+          $sample = Join-Path $env:RUNNER_TEMP 'aman-cloud-sample'
+          $package = Join-Path $sample 'package'
+          New-Item -ItemType Directory -Path $package -Force | Out-Null
+          $manifestUrl = "$env:AMAN_THREAT_DB_BASE_URL/manifest.json"
+          Invoke-WebRequest $manifestUrl -OutFile (Join-Path $package 'manifest.json')
+          $manifest = Get-Content (Join-Path $package 'manifest.json') -Raw | ConvertFrom-Json
+          $bundleUrl = "$env:AMAN_THREAT_DB_BASE_URL/$($manifest.bundlePath)"
+          $bundle = Join-Path $env:RUNNER_TEMP 'aman-threat-bundle.zip'
+          Invoke-WebRequest $bundleUrl -OutFile $bundle
+          Expand-Archive -Path $bundle -DestinationPath $package -Force
+          "SAMPLE=$sample" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Run Windows core tests
+        shell: pwsh
+        run: |
+          $test = 'windows\tests\bin\Release\MaenShield.Windows.Tests.exe'
+          & $test $env:SAMPLE
+          if ($LASTEXITCODE -ne 0) { throw 'Windows core tests failed.' }
+
+      - name: Generate Windows checksum
+        shell: pwsh
+        run: |
+          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  MaenShield-1.1.1.10-Windows-Setup.exe" | Out-File 'MaenShield-1.1.1.10-Windows-Setup.sha256' -Encoding ascii
+          Get-Content 'MaenShield-1.1.1.10-Windows-Setup.sha256'
+
+      - name: Attach Windows installer to the same Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = $env:WINDOWS_RELEASE_TAG
+          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          gh release upload $tag `
+            $setup `
+            'MaenShield-1.1.1.10-Windows-Setup.sha256' `
+            --repo $env:GITHUB_REPOSITORY `
+            --clobber
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaenShield-1.1.1.10-Windows-Installer
+          path: |
+            windows/MaenShield.Installer/bin/Release/MaenShield-1.1.1.10-Windows-Setup.exe
+            MaenShield-1.1.1.10-Windows-Setup.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Windows verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaenShield-1.1.1.10-Windows-Verification
+          path: windows/TEST-REPORT.md
+          if-no-files-found: ignore
+          retention-days: 14
