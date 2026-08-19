@@ -11,10 +11,9 @@
 #define AppName "Maen Shield"
 #define AppPublisher "Maen Shield Project"
 #define AppExeName "MaenShield.Windows.exe"
-#define AppId "{B7A0E56F-39F7-4E1D-A8DB-0D4B6D5D91C0}"
 
 [Setup]
-AppId={#AppId}
+AppId={{B7A0E56F-39F7-4E1D-A8DB-0D4B6D5D91C0}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
