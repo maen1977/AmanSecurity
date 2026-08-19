@@ -239,12 +239,15 @@ class DownloadProtectionScanner(private val context: Context) {
         }
 
         if (!fromCachedReputation) {
-            val state = when {
-                isInstallablePackage(file) -> ProtectionActivityState.ATTENTION
-                result.classification == ScanClassification.SUSPICIOUS || result.classification == ScanClassification.UNKNOWN_APK -> ProtectionActivityState.ATTENTION
-                else -> ProtectionActivityState.SAFE
-            }
-            if (isInstallablePackage(file)) {
+            // A normal archive is not an untrusted package merely because its suffix is
+            // .zip. Keep review entries evidence-based: an unknown installable package or
+            // an explicit REVIEW verdict, never a clean archive/package extension alone.
+            val reviewSeverity = ProtectionPolicy.severityForFile(result)
+            val packageNeedsReview = isInstallablePackage(file) && (
+                result.classification == ScanClassification.UNKNOWN_APK ||
+                    reviewSeverity == ProtectionSeverity.REVIEW
+                )
+            if (packageNeedsReview) {
                 val detail = context.getString(
                     com.aman.security.R.string.timeline_download_untrusted_source_detail,
                     file.absolutePath
@@ -267,15 +270,10 @@ class DownloadProtectionScanner(private val context: Context) {
                         result.sha256
                     )
                 }
-            } else {
-                activityStore.add(
-                    kind = ProtectionActivityKind.DOWNLOAD_SCAN,
-                    state = state,
-                    title = context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName),
-                    detail = file.parent ?: Environment.DIRECTORY_DOWNLOADS,
-                    dedupeKey = "${ProtectionActivityKind.DOWNLOAD_SCAN}:${context.getString(com.aman.security.R.string.timeline_download_checked, result.fileName)}:${file.parent ?: Environment.DIRECTORY_DOWNLOADS}"
-                )
             }
+            // CLEAN files intentionally do not create per-file activity rows. The scan
+            // summary is sufficient and avoids turning a successful scan into a noisy
+            // report full of harmless filenames.
         }
         return ResultCounts()
     }
@@ -292,7 +290,7 @@ class DownloadProtectionScanner(private val context: Context) {
     private fun isInstallablePackage(file: File): Boolean {
         val name = file.name.lowercase()
         return name.endsWith(".apk") || name.endsWith(".apks") ||
-            name.endsWith(".xapk") || name.endsWith(".apkm") || name.endsWith(".zip")
+            name.endsWith(".xapk") || name.endsWith(".apkm")
     }
 
     private fun enumerateDownloads(): Sequence<File> = sequence {

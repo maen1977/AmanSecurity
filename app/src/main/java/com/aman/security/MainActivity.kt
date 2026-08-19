@@ -1178,7 +1178,7 @@ class MainActivity : AppCompatActivity() {
             .distinctBy { it.activityInfo?.packageName }
             .mapNotNull { resolve ->
                 val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
-                val label = runCatching { resolve.loadLabel(packageManager)?.toString().orEmpty() }
+                val label = runCatching { resolve.loadLabel(packageManager).toString() }
                     .getOrDefault("").ifBlank { packageName }
                 label to packageName
             }

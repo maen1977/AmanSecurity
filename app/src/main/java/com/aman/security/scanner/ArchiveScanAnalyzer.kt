@@ -172,8 +172,9 @@ class ArchiveScanAnalyzer(
         }
     }.getOrNull()
 
-    private fun isNestedArchiveName(lowerName: String): Boolean =
-        lowerName.endsWith(".zip") || lowerName.endsWith(".apk") || lowerName.endsWith(".jar")
+    private fun isNestedArchiveName(lowerName: String): Boolean = listOf(
+        ".zip", ".apk", ".aab", ".aar", ".jar", ".apks", ".xapk", ".apkm"
+    ).any { lowerName.endsWith(it) }
 
     private fun hasMisleadingDoubleExtension(name: String): Boolean {
         val lower = name.lowercase()

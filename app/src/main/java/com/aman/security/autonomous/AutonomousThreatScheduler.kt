@@ -22,7 +22,10 @@ object AutonomousThreatScheduler {
     private fun periodicNetworkConstraints(): Constraints = Constraints.Builder()
         // The signed bundle is small and the user explicitly expects a daily update even
         // when the device is using mobile data. WorkManager still waits for a connected network.
+        // Do not wake a device that is critically low on power or storage for maintenance work.
         .setRequiredNetworkType(NetworkType.CONNECTED)
+        .setRequiresBatteryNotLow(true)
+        .setRequiresStorageNotLow(true)
         .build()
 
     private fun manualNetworkConstraints(): Constraints = Constraints.Builder()

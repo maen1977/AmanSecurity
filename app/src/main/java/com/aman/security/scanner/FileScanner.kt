@@ -257,7 +257,14 @@ class FileScanner(
         return FileMeta(name, size)
     }
 
-    private fun isArchive(name: String): Boolean = listOf(".zip", ".jar", ".apk").any {
+    /**
+     * Android package containers are ZIP-based and must be inspected by content,
+     * not judged from their filename alone. Unsupported archive formats are left
+     * to the normal hash/reputation path rather than pretending to be inspected.
+     */
+    private fun isArchive(name: String): Boolean = listOf(
+        ".zip", ".jar", ".apk", ".aab", ".aar", ".apks", ".xapk", ".apkm"
+    ).any {
         name.endsWith(it, ignoreCase = true)
     }
 

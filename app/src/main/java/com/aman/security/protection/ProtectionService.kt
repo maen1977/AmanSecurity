@@ -72,6 +72,7 @@ class ProtectionService : Service() {
     private var foregroundScanner: ForegroundAppScanner? = null
     private var runtimeInitialized = false
     private var lastStealthAuditAt = 0L
+    private val stealthNotificationGate = FindingNotificationGate(STEALTH_NOTIFICATION_COOLDOWN_MS)
 
 
     private val heartbeat = object : Runnable {
@@ -515,19 +516,25 @@ class ProtectionService : Service() {
                     ProtectionNotifier.notifyHardeningWeakness(this, report)
                 }
                 ForegroundKind.HIDDEN_APP -> {
-                    val label = packageLabel(finding.detail)
-                    preferences.lastStealthFindingAt = System.currentTimeMillis()
-                    ProtectionNotifier.notifyHiddenApp(this, label, finding.detail)
+                    if (stealthNotificationGate.shouldNotify("hidden:${finding.detail}", now)) {
+                        val label = packageLabel(finding.detail)
+                        preferences.lastStealthFindingAt = now
+                        ProtectionNotifier.notifyHiddenApp(this, label, finding.detail)
+                    }
                 }
                 ForegroundKind.BATTERY_DRAIN -> {
-                    val label = packageLabel(finding.detail)
-                    preferences.lastStealthFindingAt = System.currentTimeMillis()
-                    ProtectionNotifier.notifyBatteryDrain(this, label, finding.detail)
+                    if (stealthNotificationGate.shouldNotify("battery:${finding.detail}", now)) {
+                        val label = packageLabel(finding.detail)
+                        preferences.lastStealthFindingAt = now
+                        ProtectionNotifier.notifyBatteryDrain(this, label, finding.detail)
+                    }
                 }
                 ForegroundKind.NETWORK_BEACON -> {
-                    val label = packageLabel(finding.detail)
-                    preferences.lastStealthFindingAt = System.currentTimeMillis()
-                    ProtectionNotifier.notifyNetworkBeacon(this, label, finding.detail)
+                    if (stealthNotificationGate.shouldNotify("beacon:${finding.detail}", now)) {
+                        val label = packageLabel(finding.detail)
+                        preferences.lastStealthFindingAt = now
+                        ProtectionNotifier.notifyNetworkBeacon(this, label, finding.detail)
+                    }
                 }
                 ForegroundKind.LINK_RISK -> ProtectionNotifier.notifyLinkRisk(this, finding.detail)
             }
@@ -565,5 +572,6 @@ class ProtectionService : Service() {
         private const val STALE_RESTART_MS = 25 * 60_000L
         private const val STEALTH_AUDIT_INTERVAL_MS = 60 * 60_000L
         private const val STEALTH_FIRST_AUDIT_DELAY_MS = 5 * 60_000L
+        private const val STEALTH_NOTIFICATION_COOLDOWN_MS = 6 * 60 * 60_000L
     }
 }

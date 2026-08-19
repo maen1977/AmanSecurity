@@ -124,6 +124,22 @@ class ArchiveScanAnalyzerTest {
     }
 
     @Test
+    fun hashesEntriesInsideNestedAndroidContainer() {
+        val innerPayload = "nested Android container threat"
+        val sha256 = MessageDigest.getInstance("SHA-256")
+            .digest(innerPayload.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val inner = zipOf("classes.dex" to innerPayload)
+        val outer = zipOfBinary("bundle.xapk" to inner)
+        val finding = ArchiveScanAnalyzer { hash ->
+            if (hash == sha256) ThreatSignature(hash, "TEST-NESTED-XAPK", ScanClassification.KNOWN_THREAT) else null
+        }.scan(ByteArrayInputStream(outer))
+        assertTrue("expected known threat inside nested Android container", finding?.knownThreat == true)
+        assertEquals("TEST-NESTED-XAPK", finding?.signatureId)
+        assertTrue(finding?.entryName?.startsWith("nested:") == true)
+    }
+
+    @Test
     fun reportsLimitedWhenNestedEntryCountExceedsBound() {
         val entries = Array(33) { index -> "nested-$index.bin" to "payload-$index" }
         val inner = zipOf(*entries)
