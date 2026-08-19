@@ -28,12 +28,13 @@ namespace MaenShield.Installer
                 {
                     VerifyPayload();
                     Console.WriteLine("WINDOWS_INSTALLER_PAYLOAD_OK");
+                    Environment.Exit(0);
                     return;
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine("WINDOWS_INSTALLER_PAYLOAD_FAILED: " + ex.Message);
-                    Environment.ExitCode = 1;
+                    Environment.Exit(1);
                     return;
                 }
             }

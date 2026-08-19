@@ -15,7 +15,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' Or '$(Configuration)|$(Platform)' == 'Release|Any CPU' ">
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <OutputPath>bin\Release\</OutputPath>
