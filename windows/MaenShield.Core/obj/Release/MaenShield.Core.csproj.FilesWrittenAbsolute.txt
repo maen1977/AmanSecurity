@@ -1,5 +1,0 @@
-/home/ubuntu/AmanSecurity_live/windows/MaenShield.Core/obj/Release/.NETFramework,Version=v4.8.AssemblyAttribute.cs
-/home/ubuntu/AmanSecurity_live/windows/MaenShield.Core/bin/Release/MaenShield.Core.dll.mdb
-/home/ubuntu/AmanSecurity_live/windows/MaenShield.Core/bin/Release/MaenShield.Core.dll
-/home/ubuntu/AmanSecurity_live/windows/MaenShield.Core/obj/Release/MaenShield.Core.dll
-/home/ubuntu/AmanSecurity_live/windows/MaenShield.Core/obj/Release/MaenShield.Core.dll.mdb

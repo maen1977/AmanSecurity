@@ -16,6 +16,10 @@ release-signing.properties
 *.pfx
 
 tools/__pycache__/
+
+# Windows/.NET build outputs
+windows/**/bin/
+windows/**/obj/
 MaenShield-*.apk
 MaenShield-*.apk.idsig
 build-artifact-sha256.txt
