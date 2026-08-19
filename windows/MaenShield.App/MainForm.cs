@@ -201,7 +201,7 @@ namespace MaenShield.App
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34F));
-            quickUpdateButton = AddActionCard(actions, 0, "Intelligence", "Keep your protection current", "Update", accentColor, (s, e) => UpdateAsync());
+            quickUpdateButton = AddActionCard(actions, 0, "Intelligence", "Keep your protection current", "Update", accentColor, async (s, e) => await UpdateAsync());
             AddActionCard(actions, 1, "Quarantine", "Review isolated files safely", "Open", Color.FromArgb(87, 105, 126), (s, e) => { RefreshQuarantine(); ShowPage("quarantine"); });
             AddActionCard(actions, 2, "Privacy", "Local-first protection controls", "Settings", Color.FromArgb(87, 105, 126), (s, e) => ShowPage("settings"));
             page.Controls.Add(actions);
