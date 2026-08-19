@@ -383,8 +383,11 @@ jobs:
         shell: pwsh
         run: |
           $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
-          & $setup /verify-only
-          if ($LASTEXITCODE -ne 0) { throw 'Windows installer payload verification failed.' }
+          $verification = (& $setup /verify-only 2>&1 | Out-String)
+          $verification
+          if ($verification -notmatch 'WINDOWS_INSTALLER_PAYLOAD_OK') {
+            throw 'Windows installer payload verification failed.'
+          }
 
       - name: Download public intelligence sample for Windows tests
         shell: pwsh
