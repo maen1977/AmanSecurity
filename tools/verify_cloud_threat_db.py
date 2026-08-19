@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HASH = re.compile(r"^[a-f0-9]{64}$")
-BUNDLE_NAME = re.compile(r"^aman-threat-db-[0-9]+\.zip$")
+BUNDLE_NAME = re.compile(r"^aman-threat-db(?:-[0-9]+)?\.zip$")
 APK_ID = re.compile(r"^(SIGNER|PACKAGE)\|[a-f0-9]{64}\|[A-Z0-9_]{3,96}\|(KNOWN_THREAT|TEST_SIGNATURE)$")
 DETECTION_KINDS = {"RULE", "BRAND", "BRAND_SIGNER", "LINK", "MODEL", "REASONING", "REPUTATION", "META"}
 ALLOWED = {

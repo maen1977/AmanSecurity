@@ -1958,6 +1958,8 @@ class MainActivity : AppCompatActivity() {
             binding.txtProtectionScoreValue.text = valueText
             binding.txtProtectionScoreDetail.text = when {
                 report.exposureLevel == ExposureLevel.HIGH -> getString(R.string.protection_score_detail_exposure)
+                report.dataExfiltrationHigh -> getString(R.string.protection_score_detail_exfiltration_high)
+                report.dataExfiltrationSignal -> getString(R.string.protection_score_detail_exfiltration)
                 report.anomalyLevel != AnomalyLevel.NONE -> getString(R.string.protection_score_detail_anomaly)
                 else -> getString(R.string.protection_score_detail_normal)
             }

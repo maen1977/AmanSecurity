@@ -27,7 +27,7 @@ import urllib.request
 import zipfile
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -128,7 +128,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/1.1.1.9 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/1.1.1.10 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -461,12 +461,27 @@ def malware_bazaar_hashes(auth_key: str | None) -> tuple[set[str], str]:
     return hashes, "MalwareBazaar Android browse metadata + bundled baseline"
 
 
-def threatfox_enrichment(auth_key: str | None) -> tuple[set[str], set[str], set[str]]:
+def _threatfox_timestamp(value: object) -> datetime | None:
+    """Parse ThreatFox ISO timestamps without trusting malformed provider data."""
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def threatfox_enrichment(auth_key: str | None) -> tuple[set[str], set[str], set[str], dict[str, int]]:
     malware_hashes: set[str] = set()
     malware_net: set[str] = set()
     c2: set[str] = set()
+    stats = {"accepted": 0, "low_confidence": 0, "stale": 0, "malformed": 0}
     if not auth_key:
-        return malware_hashes, malware_net, c2
+        return malware_hashes, malware_net, c2, stats
     raw = post_json(
         THREATFOX_API,
         {"query": "get_iocs", "days": 7},
@@ -476,17 +491,34 @@ def threatfox_enrichment(auth_key: str | None) -> tuple[set[str], set[str], set[
     payload = json.loads(raw)
     if payload.get("query_status") != "ok":
         raise ValueError(f"ThreatFox status={payload.get('query_status')}")
+    freshness_floor = datetime.now(timezone.utc) - timedelta(days=7)
     for item in payload.get("data") or []:
+        if not isinstance(item, dict):
+            stats["malformed"] += 1
+            continue
         confidence = int(item.get("confidence_level") or 0)
         if confidence < 75:
+            stats["low_confidence"] += 1
+            continue
+        # get_iocs(days=7) is expected to be fresh, but enforce the contract locally so
+        # a provider-side cache or future API change cannot reintroduce stale IOCs.
+        last_seen = _threatfox_timestamp(item.get("last_seen"))
+        first_seen = _threatfox_timestamp(item.get("first_seen"))
+        if (last_seen and last_seen < freshness_floor) or (not last_seen and first_seen and first_seen < freshness_floor):
+            stats["stale"] += 1
             continue
         ioc = str(item.get("ioc") or "").strip()
         ioc_type = str(item.get("ioc_type") or "")
         threat_type = str(item.get("threat_type") or "")
+        if not ioc or ioc_type not in {"domain", "ip:port", "url", "file"}:
+            stats["malformed"] += 1
+            continue
         reference = str(item.get("reference") or "")
         for h in re.findall(r"[a-fA-F0-9]{64}", reference):
             malware_hashes.add(h.lower())
-        if ioc_type == "domain":
+        if ioc_type == "file" and HASH_RE.fullmatch(ioc.lower()):
+            malware_hashes.add(ioc.lower())
+        elif ioc_type == "domain":
             host = normalize_host(ioc)
             if host:
                 (c2 if threat_type == "botnet_cc" else malware_net).add(sha256_text(host))
@@ -496,7 +528,8 @@ def threatfox_enrichment(auth_key: str | None) -> tuple[set[str], set[str], set[
                 c2.add(sha256_text(host))
         elif ioc_type == "url":
             malware_net.update(url_indicators([ioc], 10))
-    return malware_hashes, malware_net, c2
+        stats["accepted"] += 1
+    return malware_hashes, malware_net, c2, stats
 
 
 def fetch_android_bulletin() -> tuple[str | None, set[str]]:
@@ -686,11 +719,16 @@ def main() -> int:
             sources.append(FetchResult("feodo", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 
         try:
-            t_hashes, t_net, t_c2 = threatfox_enrichment(abuse_key)
+            t_hashes, t_net, t_c2, t_stats = threatfox_enrichment(abuse_key)
             malware_files |= t_hashes
             malware_urls |= t_net
             c2_hosts |= t_c2
-            sources.append(FetchResult("threatfox", True, len(t_hashes) + len(t_net) + len(t_c2), "auth-key enabled" if abuse_key else "skipped: ABUSECH_AUTH_KEY not configured"))
+            detail = (
+                "auth-key enabled "
+                f"accepted={t_stats['accepted']} low_confidence={t_stats['low_confidence']} "
+                f"stale={t_stats['stale']} malformed={t_stats['malformed']}"
+            ) if abuse_key else "skipped: ABUSECH_AUTH_KEY not configured"
+            sources.append(FetchResult("threatfox", True, len(t_hashes) + len(t_net) + len(t_c2), detail))
         except Exception as e:
             sources.append(FetchResult("threatfox", False, 0, safe_source_detail(e, abuse_key, phishtank_key)))
 

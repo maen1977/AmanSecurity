@@ -1019,6 +1019,8 @@
     <string name="protection_score_value_low">جاهزية الحماية: %1$d من 100 — تحتاج اهتمامًا</string>
     <string name="protection_score_detail_normal">كل حراس التشغيل الحية سليمة وحصانة النظام مكتملة.</string>
     <string name="protection_score_detail_anomaly">رُصدت مجموعة أحداث حية عالية الخطورة. أبقِ قضبان الحراسة مفعّلة.</string>
+    <string name="protection_score_detail_exfiltration">رُصد نشاط حديث لتدفق البيانات يحتاج إلى مراجعة. افحص تفاصيل التطبيق والنشاط الشبكي؛ هذا لا يثبت وحده وجود برمجية خبيثة.</string>
+    <string name="protection_score_detail_exfiltration_high">رُصدت إشارات حديثة عالية الخطورة لتدفق البيانات. راجع التطبيق والنشاط الشبكي المدرجَين سريعًا؛ لم يوقف Maen Shield التطبيق تلقائيًا.</string>
     <string name="protection_score_detail_exposure">تعرض الخصوصية مرتفع. راجع الصلاحيات الحساسة وخدمات الإتاحة النشطة.</string>
     <string name="runtime_integrity_notification_title">تطبيق معدّل مكتشف</string>
 

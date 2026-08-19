@@ -42,7 +42,9 @@ internal class RuntimeShieldCoordinator(private val context: Context) {
             score = score,
             anomalyLevel = anomaly.level,
             exposureLevel = exposure.level,
-            hardeningGrade = if (hardening.isHardened) HardeningGrade.FULL else HardeningGrade.PARTIAL
+            hardeningGrade = if (hardening.isHardened) HardeningGrade.FULL else HardeningGrade.PARTIAL,
+            dataExfiltrationSignal = anomaly.exfiltrationReview || anomaly.exfiltrationHigh,
+            dataExfiltrationHigh = anomaly.exfiltrationHigh
         )
     }.getOrDefault(
         ProtectionScoreReport(score = 0, anomalyLevel = AnomalyLevel.NONE, exposureLevel = ExposureLevel.NONE, hardeningGrade = HardeningGrade.PARTIAL)
@@ -92,5 +94,7 @@ internal data class ProtectionScoreReport(
     val score: Int,
     val anomalyLevel: AnomalyLevel,
     val exposureLevel: ExposureLevel,
-    val hardeningGrade: HardeningGrade
+    val hardeningGrade: HardeningGrade,
+    val dataExfiltrationSignal: Boolean = false,
+    val dataExfiltrationHigh: Boolean = false
 )

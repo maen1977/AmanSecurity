@@ -27,8 +27,12 @@ internal class BehaviorAnomalyDetector(private val context: Context) {
         val overlayActive = isActive(preferences.lastOverlayAlertAt, now)
         val mediaActive = isActive(preferences.lastCameraMicAlertAt, now)
         val clipboardActive = isActive(preferences.lastClipboardProtectAt, now)
-        val activeSignals = listOf(overlayActive, mediaActive, clipboardActive).count { it }
-        val recencyBoost = recencyScore(now)
+        val exfilHighActive = isRecent(preferences.lastDataExfilCheckAt, now) &&
+            preferences.lastDataExfilHighCount > 0
+        val exfilReviewActive = isRecent(preferences.lastDataExfilCheckAt, now) &&
+            preferences.lastDataExfilReviewCount > 0
+        val activeSignals = listOf(overlayActive, mediaActive, clipboardActive, exfilHighActive).count { it }
+        val recencyBoost = recencyScore(now, exfilHighActive, exfilReviewActive)
         val densityBoost = densityScore(now)
         val score = (activeSignals * SIGNAL_WEIGHT + recencyBoost + densityBoost).coerceAtMost(100)
         val level = when {
@@ -36,7 +40,12 @@ internal class BehaviorAnomalyDetector(private val context: Context) {
             score >= REVIEW_THRESHOLD -> AnomalyLevel.REVIEW
             else -> AnomalyLevel.NONE
         }
-        AnomalyVerdict(score = score, level = level)
+        AnomalyVerdict(
+            score = score,
+            level = level,
+            exfiltrationHigh = exfilHighActive,
+            exfiltrationReview = exfilReviewActive
+        )
     }.getOrDefault(AnomalyVerdict(score = 0, level = AnomalyLevel.NONE))
 
     /** Snapshot the raw deltas used for scoring (for UI/test visibility). */
@@ -47,19 +56,27 @@ internal class BehaviorAnomalyDetector(private val context: Context) {
             clipboardLastMs = preferences.lastClipboardProtectAt,
             overlayTotal = preferences.totalOverlayAlerts,
             mediaTotal = preferences.totalCameraMicAlerts,
-            clipboardTotal = preferences.totalClipboardGuards
+            clipboardTotal = preferences.totalClipboardGuards,
+            exfilLastMs = preferences.lastDataExfilCheckAt,
+            exfilReviewCount = preferences.lastDataExfilReviewCount,
+            exfilHighCount = preferences.lastDataExfilHighCount
         )
     }.getOrDefault(AnomalyDeltas())
 
     private fun isActive(lastAt: Long, now: Long): Boolean =
-        lastAt > 0L && now - lastAt <= SIGNAL_FRESH_MS
+        lastAt > 0L && now - lastAt in 0..SIGNAL_FRESH_MS
 
-    private fun recencyScore(now: Long): Int {
+    private fun isRecent(lastAt: Long, now: Long): Boolean =
+        lastAt > 0L && now - lastAt in 0..EXFIL_SIGNAL_FRESH_MS
+
+    private fun recencyScore(now: Long, exfilHighActive: Boolean, exfilReviewActive: Boolean): Int {
         // Recent activity from several independent channels amplifies risk.
         var score = 0
         if (isActive(preferences.lastOverlayAlertAt, now)) score += RECENT_POINTS
         if (isActive(preferences.lastCameraMicAlertAt, now)) score += RECENT_POINTS
         if (isActive(preferences.lastClipboardProtectAt, now)) score += RECENT_POINTS
+        if (exfilHighActive) score += EXFIL_HIGH_POINTS
+        else if (exfilReviewActive) score += EXFIL_REVIEW_POINTS
         return score
     }
 
@@ -69,8 +86,11 @@ internal class BehaviorAnomalyDetector(private val context: Context) {
 
     companion object {
         private const val SIGNAL_FRESH_MS = 30 * 60_000L
+        private const val EXFIL_SIGNAL_FRESH_MS = 2 * 60 * 60_000L
         private const val SIGNAL_WEIGHT = 15
         private const val RECENT_POINTS = 12
+        private const val EXFIL_REVIEW_POINTS = 8
+        private const val EXFIL_HIGH_POINTS = 18
         private const val DENSITY_CAP = 24
         private const val HIGH_THRESHOLD = 60
         private const val REVIEW_THRESHOLD = 25
@@ -79,7 +99,12 @@ internal class BehaviorAnomalyDetector(private val context: Context) {
 
 internal enum class AnomalyLevel { NONE, REVIEW, HIGH }
 
-internal data class AnomalyVerdict(val score: Int, val level: AnomalyLevel)
+internal data class AnomalyVerdict(
+    val score: Int,
+    val level: AnomalyLevel,
+    val exfiltrationHigh: Boolean = false,
+    val exfiltrationReview: Boolean = false
+)
 
 internal data class AnomalyDeltas(
     val overlayLastMs: Long = 0L,
@@ -87,5 +112,8 @@ internal data class AnomalyDeltas(
     val clipboardLastMs: Long = 0L,
     val overlayTotal: Long = 0L,
     val mediaTotal: Long = 0L,
-    val clipboardTotal: Long = 0L
+    val clipboardTotal: Long = 0L,
+    val exfilLastMs: Long = 0L,
+    val exfilReviewCount: Int = 0,
+    val exfilHighCount: Int = 0
 )

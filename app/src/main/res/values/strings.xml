@@ -1019,6 +1019,8 @@
     <string name="protection_score_value_low">Protection readiness: %1$d / 100 — attention needed</string>
     <string name="protection_score_detail_normal">All runtime guards are healthy and system hardening is intact.</string>
     <string name="protection_score_detail_anomaly">A cluster of high-risk live events was detected. Keep the guard rails turned on.</string>
+    <string name="protection_score_detail_exfiltration">Recent data-flow activity needs review. Check the app and network activity details; this is not proof of malware by itself.</string>
+    <string name="protection_score_detail_exfiltration_high">Recent high-risk data-flow signals were recorded. Review the listed app and network activity promptly; Maen Shield has not stopped the app automatically.</string>
     <string name="protection_score_detail_exposure">Privacy exposure is elevated. Review sensitive permissions and active accessibility services.</string>
     <string name="runtime_integrity_notification_title">Modified app detected</string>
 
