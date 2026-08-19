@@ -1,0 +1,3 @@
+93596de165b0582e17dc606938e205ea616f441b517f433ac8b7d029c57094a6  artifacts/1.1.1.7/MaenShield-1.1.1.7.apk
+5737bc6db322fe6e2a3d13471893c074de39058cebdb9f6d9a797ed9f00274ff  artifacts/1.1.1.7/MaenShield-1.1.1.7-unsigned.apk
+c510147590b711dbe5a49360ce0dd98066053fb330c776ef280234ed0e571b7e  artifacts/1.1.1.7/MaenShield-1.1.1.7-unsigned.aab

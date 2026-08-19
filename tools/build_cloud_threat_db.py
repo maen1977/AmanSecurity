@@ -54,6 +54,12 @@ URLHAUS_JSON_RECENT = "https://urlhaus.abuse.ch/downloads/json_recent/"
 FEODO = "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.json"
 ANDROID_OVERVIEW = "https://source.android.com/docs/security/bulletin/asb-overview?hl=en"
 MALWARE_BAZAAR_BROWSE = "https://bazaar.abuse.ch/browse/tag/Android/"
+# Metadata-only categories. They broaden Android coverage without downloading samples.
+# The resulting hashes are still capped, deduplicated, signed, and stored locally as SHA-256.
+MALWARE_BAZAAR_TAGS = (
+    "Android", "apk", "spyware", "banker", "stalkerware", "rat",
+    "ransomware", "trojan", "dropper", "loader", "stealer", "adware", "backdoor",
+)
 MALWARE_BAZAAR_API = "https://mb-api.abuse.ch/api/v1/"
 THREATFOX_API = "https://threatfox-api.abuse.ch/api/v1/"
 PHISHTANK_DATA = "https://data.phishtank.com/data"
@@ -118,7 +124,7 @@ def source_deadline(seconds: int):
 def fetch(url: str, *, max_bytes: int, timeout: int = SOURCE_TIMEOUT_SECONDS, method: str = "GET", data: bytes | None = None,
           headers: dict[str, str] | None = None) -> bytes:
     req_headers = {
-        "User-Agent": "MaenShield-IntelFactory/1.1.1.6 (+GitHub-Actions)",
+        "User-Agent": "MaenShield-IntelFactory/1.1.1.7 (+GitHub-Actions)",
         "Accept": "text/plain,application/json,text/html;q=0.8,*/*;q=0.2",
     }
     if headers:
@@ -383,20 +389,33 @@ def load_bundled_malware_seed() -> set[str]:
 def malware_bazaar_hashes(auth_key: str | None) -> tuple[set[str], str]:
     hashes = load_bundled_malware_seed()
     if auth_key:
-        raw = post_form(
-            MALWARE_BAZAAR_API,
-            {"query": "get_taginfo", "tag": "Android", "limit": "1000"},
-            max_bytes=12 * 1024 * 1024,
-            headers={"Auth-Key": auth_key},
-        )
-        payload = json.loads(raw)
-        if payload.get("query_status") not in {"ok", "no_results"}:
-            raise ValueError(f"MalwareBazaar status={payload.get('query_status')}")
-        for item in payload.get("data") or []:
-            h = str(item.get("sha256_hash", "")).lower()
-            if HASH_RE.fullmatch(h):
-                hashes.add(h)
-        return hashes, "MalwareBazaar API + bundled baseline"
+        succeeded: list[str] = []
+        failed: list[str] = []
+        for tag in MALWARE_BAZAAR_TAGS:
+            try:
+                raw = post_form(
+                    MALWARE_BAZAAR_API,
+                    {"query": "get_taginfo", "tag": tag, "limit": "1000"},
+                    max_bytes=12 * 1024 * 1024,
+                    headers={"Auth-Key": auth_key},
+                )
+                payload = json.loads(raw)
+                status = payload.get("query_status")
+                if status not in {"ok", "no_results"}:
+                    raise ValueError(f"status={status}")
+                for item in payload.get("data") or []:
+                    h = str(item.get("sha256_hash", "")).lower()
+                    if HASH_RE.fullmatch(h):
+                        hashes.add(h)
+                succeeded.append(tag)
+            except Exception as exc:
+                failed.append(f"{tag}:{safe_source_detail(exc, auth_key)}")
+        if not succeeded:
+            raise ValueError("MalwareBazaar all tag queries failed: " + "; ".join(failed))
+        detail = "MalwareBazaar API tags=" + ",".join(succeeded)
+        if failed:
+            detail += "; partial_failures=" + ",".join(failed)[:160]
+        return hashes, detail
 
     # Safe metadata-only fallback: the browse page exposes hashes in /sample/<sha256>/ links.
     raw = fetch(MALWARE_BAZAAR_BROWSE, max_bytes=8 * 1024 * 1024)

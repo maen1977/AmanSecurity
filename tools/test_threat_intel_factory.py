@@ -66,6 +66,28 @@ class ThreatIntelFactoryTest(unittest.TestCase):
             "https://source.android.com/docs/security/bulletin/2026/2026-08-01?hl=en",
         )
 
+    def test_malware_bazaar_queries_multiple_mobile_categories(self) -> None:
+        requested: list[str] = []
+        first_hash = "a" * 64
+
+        def fake_post(_url: str, fields: dict[str, str], **_kwargs: object) -> bytes:
+            tag = fields["tag"]
+            requested.append(tag)
+            if tag == "rat":
+                raise RuntimeError("fixture source failure")
+            return json.dumps({
+                "query_status": "ok",
+                "data": [{"sha256_hash": first_hash}, {"sha256_hash": "not-a-hash"}],
+            }).encode("utf-8")
+
+        with patch.object(builder, "post_form", side_effect=fake_post):
+            hashes, detail = builder.malware_bazaar_hashes("fixture-auth")
+
+        self.assertEqual(requested, list(builder.MALWARE_BAZAAR_TAGS))
+        self.assertIn(first_hash, hashes)
+        self.assertNotIn("not-a-hash", hashes)
+        self.assertIn("partial_failures=rat:", detail)
+
     def test_retired_destroy_tools_feeds_are_skipped(self) -> None:
         self.assertIsNone(builder.PRIMARY_PHISH)
         self.assertIsNone(builder.COMMUNITY_PHISH)
