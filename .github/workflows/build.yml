@@ -104,8 +104,8 @@ jobs:
           fi
           if [ "$push_succeeded" -ne 1 ] && [ -n "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
             install -d -m 700 "$HOME/.ssh"
-            printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25619"
-            chmod 600 "$HOME/.ssh/id_ed25619"
+            printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
+            chmod 600 "$HOME/.ssh/id_ed25519"
             ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
             git remote add threat-public "git@github.com:maen1977/AmanSecurity-Threat-DB.git"
             if git push --force threat-public HEAD:main; then

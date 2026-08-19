@@ -24,3 +24,14 @@ ThreatFox provides a free Community API under fair-use principles. The API expos
 Source: https://openphish.com/phishing_feeds.html
 
 OpenPhish lists a Community feed with a 12-hour update frequency and limited phishing URLs, delivered as a text file. It does not provide the richer targeted-brand, IP/ASN, GeoIP, industry, archive, language, or SSL metadata shown for paid tiers. The build should therefore treat it as a URL feed only, normalize hosts carefully, respect its terms of use, and avoid claiming premium metadata or coverage.
+
+
+## GitHub Actions hosting and billing constraints
+
+Source checked: https://docs.github.com/billing/managing-billing-for-github-actions/about-billing-for-github-actions
+
+GitHub documents that standard GitHub-hosted runners are free for public repositories, while private repositories consume the account plan's included minutes. GitHub Free includes 2,000 standard-runner minutes per month and 500 MB shared artifact/Packages storage; usage is blocked after the included quota when no valid payment method is configured. The repository `maen1977/AmanSecurity` is currently private, so its Actions jobs depend on the account's available quota or billing configuration. GitHub also documents that jobs can fail or be blocked before steps begin when the account cannot run more Actions, which matches the observed jobs with `runner=null` and `steps=[]` but does not alone prove the exact account-level reason.
+
+Additional limits reference: https://docs.github.com/en/actions/reference/limits
+
+The workflow's current use of standard `ubuntu-latest` is compatible with GitHub-hosted standard runners. No code-level scanner failure was observed in the local build; the remaining production verification depends on a successful GitHub-hosted runner allocation. Making the repository public would make standard GitHub-hosted Actions free, but that is a privacy/visibility change requiring the owner's explicit confirmation and was not performed.
