@@ -403,8 +403,9 @@ jobs:
           $desktop = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Maen Shield.lnk'
           Remove-Item $desktop -Force -ErrorAction SilentlyContinue
           $setupLog = Join-Path $env:RUNNER_TEMP 'maenshield-setup.log'
-          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$setupLog" "/DIR=$testDir" /TASKS=desktopicon
-          if ($LASTEXITCODE -ne 0) { throw "Windows setup silent install failed with exit code $LASTEXITCODE." }
+          $setupArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=$setupLog", "/DIR=$testDir", '/TASKS=desktopicon')
+          $setupProcess = Start-Process -FilePath $setup -ArgumentList $setupArgs -Wait -PassThru
+          if ($setupProcess.ExitCode -ne 0) { throw "Windows setup silent install failed with exit code $($setupProcess.ExitCode)." }
           foreach ($file in @('MaenShield.Windows.exe', 'MaenShield.Core.dll', 'MaenShield.Infrastructure.dll', 'aman-threat-db-public.pem')) {
             if (!(Test-Path (Join-Path $testDir $file))) { throw "Installed file is missing: $file" }
           }
