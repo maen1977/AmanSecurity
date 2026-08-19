@@ -10,7 +10,7 @@ namespace MaenShield.Installer
 {
     internal static class InstallerProgram
     {
-        private const string AppVersion = "1.1.1.10-windows";
+        private const string AppVersion = "1.1.1.11-windows";
         private const string TaskName = "Maen Shield\\Daily Intelligence Update";
 
         [STAThread]

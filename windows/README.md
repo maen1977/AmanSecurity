@@ -8,7 +8,7 @@ This directory contains the first lightweight Windows implementation of Maen Shi
 
 The Windows release includes a .NET Framework 4.8 / WinForms application, a shared scanning core, signed cloud-package validation, atomic installation with rollback, manual file and folder scanning, ZIP/APK/XAPK/APKM member inspection, conservative URL checks, reversible quarantine, and a daily per-user Task Scheduler update path.
 
-The single-click `MaenShield-1.1.1.10-Windows-Setup.exe` extracts the application for the current user, registers the daily update task, and starts Maen Shield. GitHub Actions builds this EXE and attaches it to the **same GitHub Release tag as Android**, rather than publishing a separate Windows Preview page.
+The single-click `MaenShield-1.1.1.11-Windows-Setup.exe` extracts the application for the current user, registers the daily update task, and starts Maen Shield. GitHub Actions builds this EXE and attaches it to the **same GitHub Release tag as Android**, rather than publishing a separate Windows Preview page.
 
 The cloud package is accepted only after manifest signature verification, bundle-size enforcement, path-traversal protection, per-file SHA-256 verification, schema validation, and a complete required-file check. Metadata rows such as `BRAND`, `MODEL`, `META`, and `REPUTATION` are retained as reference data; they do not create a malware verdict by themselves. A file is labeled confirmed only when an exact confirmed indicator matches, or when an inspected archive member matches.
 

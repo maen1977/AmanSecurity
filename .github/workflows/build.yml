@@ -136,7 +136,7 @@ jobs:
         if: always() && steps.intel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-Cloud-Threat-Package
+          name: MaenShield-1.1.1.11-Cloud-Threat-Package
           path: dist/cloud-threat-db/
           if-no-files-found: error
           retention-days: 7
@@ -240,15 +240,15 @@ jobs:
       - name: Sign release test APK with CI test key
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-1.1.1.10-TestRelease-unsigned.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MaenShield-1.1.1.11-TestRelease-unsigned.apk
           "$ANDROID_HOME/build-tools/37.0.0/apksigner" sign \
             --ks "$HOME/.android/debug.keystore" \
             --ks-key-alias AndroidDebugKey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MaenShield-1.1.1.10-TestRelease.apk \
-            MaenShield-1.1.1.10-TestRelease-unsigned.apk
-          test -s MaenShield-1.1.1.10-TestRelease.apk
+            --out MaenShield-1.1.1.11-TestRelease.apk \
+            MaenShield-1.1.1.11-TestRelease-unsigned.apk
+          test -s MaenShield-1.1.1.11-TestRelease.apk
 
       - name: Build unsigned release App Bundle
         run: gradle :app:bundleRelease --stacktrace
@@ -256,7 +256,7 @@ jobs:
       - name: Generate build artifact checksums
         shell: bash
         run: |
-          sha256sum MaenShield-1.1.1.10-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
+          sha256sum MaenShield-1.1.1.11-TestRelease.apk app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab > build-artifact-sha256.txt
           cat build-artifact-sha256.txt
 
       - name: Publish latest Android build to GitHub Release
@@ -266,10 +266,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="v1.1.1.10"
-          release_report="MaenShield-1.1.1.10-Verification-Reports.txt"
+          tag="v1.1.1.11"
+          release_report="MaenShield-1.1.1.11-Verification-Reports.txt"
           {
-            echo "Maen Shield v1.1.1.10"
+            echo "Maen Shield v1.1.1.11"
             echo
             echo "Built by Aman Security Pipeline from commit ${GITHUB_SHA}."
             echo
@@ -277,7 +277,7 @@ jobs:
           } > "$release_report"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" \
-              MaenShield-1.1.1.10-TestRelease.apk \
+              MaenShield-1.1.1.11-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
@@ -285,28 +285,28 @@ jobs:
               --clobber
           else
             gh release create "$tag" \
-              MaenShield-1.1.1.10-TestRelease.apk \
+              MaenShield-1.1.1.11-TestRelease.apk \
               app/build/outputs/bundle/release/*.aab \
               build-artifact-sha256.txt \
               "$release_report" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "Maen Shield v1.1.1.10" \
+              --title "Maen Shield v1.1.1.11" \
               --notes "تم بناء الإصدار بواسطة Aman Security Pipeline من نفس commit التطبيق."
           fi
 
       - name: Upload direct-install APK
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-TestRelease-APK
-          path: MaenShield-1.1.1.10-TestRelease.apk
+          name: MaenShield-1.1.1.11-TestRelease-APK
+          path: MaenShield-1.1.1.11-TestRelease.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-Unsigned-Release-AAB
+          name: MaenShield-1.1.1.11-Unsigned-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -315,7 +315,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-Verification-Reports
+          name: MaenShield-1.1.1.11-Verification-Reports
           path: |
             app/build/reports/
             app/build/test-results/
@@ -337,13 +337,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Read Android release tag
+        id: windows_version
         shell: pwsh
         run: |
           $line = Select-String -Path 'app/build.gradle.kts' -Pattern 'versionName\s*=\s*"([^"]+)"' | Select-Object -First 1
           if ($null -eq $line) { throw 'Android versionName was not found.' }
           if ($line.Line -notmatch 'versionName\s*=\s*"([^"]+)"') { throw 'Android versionName could not be parsed.' }
-          $tag = "v$($Matches[1])"
+          $version = $Matches[1]
+          $tag = "v$version"
           "WINDOWS_RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WINDOWS_RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "WINDOWS_RELEASE_TAG=$tag"
 
       - name: Set up MSBuild
@@ -382,7 +386,7 @@ jobs:
       - name: Verify embedded installer payload
         shell: pwsh
         run: |
-          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          $setup = "windows\MaenShield.Installer\bin\Release\MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.exe"
           $verification = (& $setup /verify-only 2>&1 | Out-String)
           $verification
           if ($verification -notmatch 'WINDOWS_INSTALLER_PAYLOAD_OK') {
@@ -414,10 +418,11 @@ jobs:
       - name: Generate Windows checksum
         shell: pwsh
         run: |
-          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          $setupName = "MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.exe"
+          $setup = "windows\MaenShield.Installer\bin\Release\$setupName"
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  MaenShield-1.1.1.10-Windows-Setup.exe" | Out-File 'MaenShield-1.1.1.10-Windows-Setup.sha256' -Encoding ascii
-          Get-Content 'MaenShield-1.1.1.10-Windows-Setup.sha256'
+          "$hash  $setupName" | Out-File "MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.sha256" -Encoding ascii
+          Get-Content "MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.sha256"
 
       - name: Attach Windows installer to the same Android release
         env:
@@ -425,20 +430,22 @@ jobs:
         shell: pwsh
         run: |
           $tag = $env:WINDOWS_RELEASE_TAG
-          $setup = 'windows\MaenShield.Installer\bin\Release\MaenShield-1.1.1.10-Windows-Setup.exe'
+          $setupName = "MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.exe"
+          $setup = "windows\MaenShield.Installer\bin\Release\$setupName"
+          $checksumName = "MaenShield-$env:WINDOWS_RELEASE_VERSION-Windows-Setup.sha256"
           gh release upload $tag `
             $setup `
-            'MaenShield-1.1.1.10-Windows-Setup.sha256' `
+            $checksumName `
             --repo $env:GITHUB_REPOSITORY `
             --clobber
 
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-Windows-Installer
+          name: MaenShield-${{ steps.windows_version.outputs.version }}-Windows-Installer
           path: |
-            windows/MaenShield.Installer/bin/Release/MaenShield-1.1.1.10-Windows-Setup.exe
-            MaenShield-1.1.1.10-Windows-Setup.sha256
+            windows/MaenShield.Installer/bin/Release/MaenShield-${{ steps.windows_version.outputs.version }}-Windows-Setup.exe
+            MaenShield-${{ steps.windows_version.outputs.version }}-Windows-Setup.sha256
           if-no-files-found: error
           retention-days: 14
 
@@ -446,7 +453,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MaenShield-1.1.1.10-Windows-Verification
+          name: MaenShield-${{ steps.windows_version.outputs.version }}-Windows-Verification
           path: windows/TEST-REPORT.md
           if-no-files-found: ignore
           retention-days: 14

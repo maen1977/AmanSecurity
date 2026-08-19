@@ -5,7 +5,7 @@
     <ProjectGuid>{A5A9CFB2-4E65-45F8-9A04-CBE7C70A2F41}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>MaenShield.Installer</RootNamespace>
-    <AssemblyName>MaenShield-1.1.1.10-Windows-Setup</AssemblyName>
+    <AssemblyName>MaenShield-1.1.1.11-Windows-Setup</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

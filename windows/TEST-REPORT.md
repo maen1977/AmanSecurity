@@ -4,7 +4,7 @@
 
 The Windows release builds successfully as a Release `AnyCPU` solution under the available Mono/xbuild compatibility environment. The solution contains the Core, Infrastructure, WinForms App, Windows Tests, and single-click Installer projects and targets .NET Framework 4.8 with C# 7.2-compatible syntax.
 
-The installer build produces `MaenShield-1.1.1.10-Windows-Setup.exe`. Its `/verify-only` mode completed with `WINDOWS_INSTALLER_PAYLOAD_OK`, confirming that the EXE embeds the Windows application, Core and Infrastructure assemblies, and the public threat-package verification key. The GitHub Actions workflow now builds this EXE on `windows-latest` and uploads it to the same `v1.1.1.10` Release used by Android.
+The installer build produces `MaenShield-1.1.1.11-Windows-Setup.exe`. Its `/verify-only` mode completed with `WINDOWS_INSTALLER_PAYLOAD_OK`, confirming that the EXE embeds the Windows application, Core and Infrastructure assemblies, and the public threat-package verification key. The GitHub Actions workflow now builds this EXE on `windows-latest` and uploads it to the same `v1.1.1.11` Release used by Android.
 
 The local compatibility build prints the expected warning that the installed Mono/xbuild toolset does not fully declare .NET Framework 4.8 support. This is a toolset warning, not a source error. The same solution is intended to be built with Visual Studio/MSBuild on Windows.
 
