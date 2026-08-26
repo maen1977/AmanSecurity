@@ -14,7 +14,7 @@ The mobile lookup path currently supports file hashes, URL/host indicators, and 
 
 ## Current workflow and deployment
 
-`.github/workflows/build.yml` runs the intelligence job on pushes, a daily schedule, and manual dispatch. It requires `AMAN_THREAT_DB_PRIVATE_KEY_B64` and `AMAN_THREAT_PUBLISH_TOKEN`, while `ABUSECH_AUTH_KEY` is optional. The public mirror publish step is intentionally non-blocking so an intelligence package can still be tested when the mirror token is not write-capable. The known operational issue is that the current publish token can return HTTP 403 against `AmanSecurity-Threat-DB`; this must be repaired separately from feed expansion.
+`.github/workflows/build.yml` runs the intelligence job on pushes, a daily schedule, and manual dispatch. It requires `AMAN_THREAT_DB_PRIVATE_KEY_B64` and a write-capable mirror credential: `AMAN_THREAT_PUBLISH_TOKEN` over HTTPS or `AMAN_THREAT_DEPLOY_KEY` over SSH. `ABUSECH_AUTH_KEY` is optional. Mirror publication is blocking so devices cannot silently remain on an old package. The HTTPS token is validated defensively: an expired, revoked, or unauthorized token no longer aborts the step before the SSH fallback is attempted. If both credentials fail, the run stops with an explicit credential error; the maintainer must rotate the HTTPS secret or repair the deploy key.
 
 ## Expansion gaps
 
@@ -68,7 +68,7 @@ The live factory was rerun after the 3.6.4 CI investigation. It produced a valid
 
 The former `destroy.tools` primary/community endpoints returned HTTP 500 during live checks and were retired from active fetching. Their legacy output files remain in the schema for backward compatibility and are recorded as `skipped`, not as a false source failure. PhishTank and ThreatFox remain optional because they require their respective credentials; the factory continues safely with public sources when those secrets are absent.
 
-The public mirror is a directory prefix, not a file. The correct verification paths are `latest/manifest.json`, `latest/manifest.sig`, `latest/build-report.json`, and the immutable ZIP named by `manifest.bundlePath`; requesting the bare `/latest` path can legitimately return 404. The workflow now supports `AMAN_THREAT_DEPLOY_KEY` as an SSH fallback, and mirror publication is no longer non-blocking: a failed publish blocks the release instead of allowing devices to remain silently on an old package.
+The public mirror is a directory prefix, not a file. The correct verification paths are `latest/manifest.json`, `latest/manifest.sig`, `latest/build-report.json`, and the immutable ZIP named by `manifest.bundlePath`; requesting the bare `/latest` path can legitimately return 404. The workflow supports `AMAN_THREAT_DEPLOY_KEY` as an SSH fallback, validates the HTTPS credential without allowing a 401/403 response to bypass that fallback, and keeps publication blocking so a failed publish cannot leave devices silently on an old package.
 
 No malware binaries or raw provider URLs are shipped. The package remains hashes-only and signed before Android accepts it.
 

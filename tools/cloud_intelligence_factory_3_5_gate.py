@@ -25,6 +25,7 @@ need('threat-intelligence:' in workflow and 'build_cloud_threat_db.py' in workfl
 need('AMAN_THREAT_DB_PRIVATE_KEY_B64' in workflow and 'ABUSECH_AUTH_KEY' in workflow and 'PHISHTANK_APP_KEY' in workflow,'factory_secrets')
 need('AMAN_THREAT_PUBLISH_TOKEN' in workflow,'publish_token')
 need('http.extraheader=AUTHORIZATION: basic ${auth_header}' in workflow and 'git config --local --unset-all http.https://github.com/.extraheader' in workflow,'publish_public_repo_https')
+need('if token_login=' in workflow and '[[ "$token_repo_access" == push=True,* ]]' in workflow and 'attempting configured SSH deploy-key fallback.' in workflow,'publish_credential_fallback_guard')
 need("if: github.event_name != 'schedule'" in workflow,'scheduled_intel_without_apk_build')
 need('AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest' in workflow,'consumer_endpoint')
 

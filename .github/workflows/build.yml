@@ -88,18 +88,23 @@ jobs:
           git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
           push_succeeded=0
           if [ -n "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
-            # Use an explicit Authorization header so Git cannot silently fall back to GITHUB_TOKEN.
+            # Validate the HTTPS token defensively. An expired/revoked token must not
+            # abort this step before the configured SSH deploy-key fallback is tried.
             # The token value is never placed in the remote URL or printed to the log.
-            auth_header="$(printf 'x-access-token:%s' "$AMAN_THREAT_PUBLISH_TOKEN" | base64 -w0)"
-            token_login="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/user | python3 -c 'import json,sys; print(json.load(sys.stdin).get("login", "unknown"))')"
-            token_repo_access="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/repos/maen1977/AmanSecurity-Threat-DB | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d.get("permissions", {}); print("push=" + str(bool(p.get("push"))) + ",admin=" + str(bool(p.get("admin"))))')"
-            echo "Mirror publish token identity: ${token_login}; repository access: ${token_repo_access}"
-            git remote add threat-public "https://github.com/maen1977/AmanSecurity-Threat-DB.git"
-            if git -c "http.extraheader=AUTHORIZATION: basic ${auth_header}" push --force threat-public HEAD:main; then
-              push_succeeded=1
+            if token_login="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/user 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("login", "unknown"))' 2>/dev/null)" \
+              && token_repo_access="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/repos/maen1977/AmanSecurity-Threat-DB 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d.get("permissions", {}); print("push=" + str(bool(p.get("push"))) + ",admin=" + str(bool(p.get("admin"))))' 2>/dev/null)" \
+              && [[ "$token_repo_access" == push=True,* ]]; then
+              echo "Mirror publish token identity: ${token_login}; repository access: ${token_repo_access}"
+              auth_header="$(printf 'x-access-token:%s' "$AMAN_THREAT_PUBLISH_TOKEN" | base64 -w0)"
+              git remote add threat-public "https://github.com/maen1977/AmanSecurity-Threat-DB.git"
+              if git -c "http.extraheader=AUTHORIZATION: basic ${auth_header}" push --force threat-public HEAD:main; then
+                push_succeeded=1
+              else
+                echo "Repository-scoped token push failed; attempting configured SSH deploy-key fallback." >&2
+                git remote remove threat-public
+              fi
             else
-              echo "Repository-scoped token push failed; attempting configured SSH deploy-key fallback." >&2
-              git remote remove threat-public
+              echo "Configured HTTPS mirror token was rejected or lacks push access; attempting configured SSH deploy-key fallback." >&2
             fi
           fi
           if [ "$push_succeeded" -ne 1 ] && [ -n "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
