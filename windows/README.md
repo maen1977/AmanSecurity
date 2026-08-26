@@ -1,8 +1,8 @@
 # Maen Shield for Windows 1.1.9
 
-This directory contains the lightweight Windows implementation of Maen Shield. It reuses the signed nine-file threat-intelligence package published by the existing GitHub workflow:
+This directory contains the lightweight Windows implementation of Maen Shield. It reuses the signed nine-file threat-intelligence package published by the existing GitHub workflow to the package-only `aman-threat-db` branch:
 
-`https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest`
+`https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest`
 
 ## Windows installer
 

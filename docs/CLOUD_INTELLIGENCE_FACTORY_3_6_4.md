@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The factory expands the signed, data-only threat package without expanding the APK with a large static database. GitHub Actions retrieves public intelligence, filters and normalizes it in CI, writes only SHA-256 indicators and Android CVE identifiers, signs the manifest, and publishes an immutable package to the public mirror.
+The factory expands the signed, data-only threat package without expanding the APK with a large static database. GitHub Actions retrieves public intelligence, filters and normalizes it in CI, writes only SHA-256 indicators and Android CVE identifiers, signs the manifest, and publishes an immutable package to the package-only `aman-threat-db` branch in this repository.
 
 The device never downloads malware samples, raw malicious URLs, YARA files, provider credentials, or executable detection code. The Android application continues to validate the signature, manifest, file hashes, package size, minimum app version, and allowed mirror before replacing the last-known-good package.
 
@@ -55,4 +55,4 @@ The former `destroy.tools` primary and community phishing endpoints are retired 
 
 The Android bulletin fetcher uses the official year-qualified URL form, for example `https://source.android.com/docs/security/bulletin/2026/2026-08-01?hl=en`. The bare `latest` mirror prefix is not itself a file; smoke tests must request `latest/manifest.json`, `latest/manifest.sig`, `latest/build-report.json`, and the ZIP named in the manifest.
 
-The public-mirror publish step accepts either `AMAN_THREAT_PUBLISH_TOKEN` or `AMAN_THREAT_DEPLOY_KEY`. It no longer permits a failed publication to pass silently: if the mirror cannot be updated, the release job fails so users are not led to believe that the daily intelligence package was published when devices would still receive an older package.
+The public-package publish step uses the workflow's built-in `GITHUB_TOKEN` with `contents: write` permission to force-update the package-only `aman-threat-db` branch. It no longer depends on a long-lived cross-repository token or deploy key, and it does not permit a failed publication to pass silently: if the branch cannot be updated, the release job fails so users are not led to believe that the daily intelligence package was published when devices would still receive an older package.

@@ -4,26 +4,27 @@ Aman Security uses `.github/workflows/build.yml` for both the signed threat-inte
 
 ## Secrets
 
-The private `AmanSecurity` repository requires the following Actions secrets:
+The workflow requires one Actions secret:
 
 - `AMAN_THREAT_DB_PRIVATE_KEY_B64`: base64-encoded RSA private key corresponding to `app/src/main/assets/keys/aman-threat-db-public.pem`. It is used only on the ephemeral CI runner to sign the manifest.
-- `AMAN_THREAT_PUBLISH_TOKEN`: write-capable GitHub token used only to publish the signed package mirror to the public `maen1977/AmanSecurity-Threat-DB` repository over HTTPS.
+
+Publication uses the workflow's built-in `GITHUB_TOKEN`, which is granted `contents: write` for this repository and is used only to update the package-only `aman-threat-db` branch. No long-lived cross-repository publish token is required.
 
 `ABUSECH_AUTH_KEY` is optional and enables authenticated MalwareBazaar/ThreatFox enrichment. The factory still has non-authenticated public sources when this secret is absent. No secret is bundled in the APK.
 
 ## Update sequence
 
-The workflow checks that both required secrets are present and fails fast when either is missing. The source repository uses read-only contents permission; cross-repository publication is performed through the repository-scoped `AMAN_THREAT_PUBLISH_TOKEN`, not the source workflow's `GITHUB_TOKEN`. It then fetches bounded provider metadata, normalizes indicators, discards raw provider payloads, builds the compact seven-file mobile ZIP, signs and verifies the manifest, and force-publishes only `latest/` to the public threat-package repository. The Android client downloads only the manifest, signature, and a newer signed package from the narrow public endpoint:
+The workflow checks that the signing secret is present. It then fetches bounded provider metadata, normalizes indicators, discards raw provider payloads, builds the compact seven-file mobile ZIP, signs and verifies the manifest, and force-publishes only `latest/` to the package-only `aman-threat-db` branch using the built-in workflow token. The Android and Windows clients download only the manifest, signature, and a newer signed package from the narrow public endpoint:
 
 ```text
-https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest
 ```
 
 The client verifies the RSA signature, rejects rollback serials, checks exact package names, sizes, hashes, and counts, and swaps the verified staging directory atomically. The last-known-good database remains active if a download, signature, package, or source update fails.
 
 ## Repository permissions
 
-The private source workflow uses `contents: read`; it does not need write permission in the source repository. The publishing token is scoped to the public threat repository only. The public repository contains no application source, API credentials, private signing material, raw malicious URLs, or malware binaries.
+The source workflow uses `contents: write` only so it can update the package-only `aman-threat-db` branch. That branch contains no application source, API credentials, private signing material, raw malicious URLs, or malware binaries.
 
 ## Source-health behavior
 
@@ -31,4 +32,4 @@ External feeds are attempted independently. A transient provider failure is reco
 
 ## Validation
 
-After a manual run, verify that the public repository contains `latest/manifest.json`, `latest/manifest.sig`, `latest/aman-threat-db-{RUN_ID}.zip (the exact name is referenced by `manifest.json`)`, and `latest/build-report.json`. Also verify that the two metadata URLs return HTTP 200 without authentication and inspect the uploaded diagnostics artifact before installing the resulting APK.
+After a manual run, verify that the `aman-threat-db` branch contains `latest/manifest.json`, `latest/manifest.sig`, `latest/aman-threat-db-{RUN_ID}.zip` (the exact name is referenced by `manifest.json`), and `latest/build-report.json`. Also verify that the two metadata URLs return HTTP 200 without authentication and inspect the uploaded diagnostics artifact before installing the resulting release.

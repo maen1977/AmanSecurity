@@ -14,7 +14,7 @@ namespace MaenShield.Infrastructure
 {
     public sealed class CloudUpdateService
     {
-        public const string DefaultBaseUrl = "https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest";
+        public const string DefaultBaseUrl = "https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest";
         private const long MaxManifestBytes = 64L * 1024L;
         private const long MaxSignatureBytes = 4096L;
         private const long MaxBundleBytes = 24L * 1024L * 1024L;

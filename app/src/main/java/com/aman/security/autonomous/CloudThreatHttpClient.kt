@@ -128,8 +128,8 @@ class CloudThreatHttpClient {
             val parts = uri.path.orEmpty().split('/').filter(String::isNotBlank)
             return parts.size == 4 &&
                 parts[0] == "maen1977" &&
-                parts[1] == "AmanSecurity-Threat-DB" &&
-                parts[2] == "main" && parts[3] == "latest"
+                parts[1] == "AmanSecurity" &&
+                parts[2] == "aman-threat-db" && parts[3] == "latest"
         }
     }
 }

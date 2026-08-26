@@ -30,18 +30,12 @@ jobs:
         shell: bash
         env:
           AMAN_THREAT_DB_PRIVATE_KEY_B64: ${{ secrets.AMAN_THREAT_DB_PRIVATE_KEY_B64 }}
-          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
-          AMAN_THREAT_DEPLOY_KEY: ${{ secrets.AMAN_THREAT_DEPLOY_KEY }}
           ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
           PHISHTANK_APP_KEY: ${{ secrets.PHISHTANK_APP_KEY }}
         run: |
           set -euo pipefail
           if [ -z "${AMAN_THREAT_DB_PRIVATE_KEY_B64:-}" ]; then
             echo "::error::AMAN_THREAT_DB_PRIVATE_KEY_B64 is not configured. Add the signing secret before running the intelligence factory."
-            exit 1
-          fi
-          if [ -z "${AMAN_THREAT_PUBLISH_TOKEN:-}" ] && [ -z "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
-            echo "::error::Configure AMAN_THREAT_PUBLISH_TOKEN or AMAN_THREAT_DEPLOY_KEY with write access to AmanSecurity-Threat-DB."
             exit 1
           fi
           python3 tools/build_cloud_threat_db.py --output dist/cloud-threat-db --min-app-version-code 80
@@ -54,19 +48,12 @@ jobs:
           python3 tools/verify_cloud_threat_db.py --dir dist/cloud-threat-db
           echo "publish=true" >> "$GITHUB_OUTPUT"
 
-      - name: Publish immutable-format latest package to public threat repository
+      - name: Publish immutable-format latest package to public threat branch
         id: publish
         if: steps.intel.outcome == 'success'
         shell: bash
-        env:
-          AMAN_THREAT_PUBLISH_TOKEN: ${{ secrets.AMAN_THREAT_PUBLISH_TOKEN }}
-          AMAN_THREAT_DEPLOY_KEY: ${{ secrets.AMAN_THREAT_DEPLOY_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${AMAN_THREAT_PUBLISH_TOKEN:-}" ] && [ -z "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
-            echo "No write-capable mirror credential configured" >&2
-            exit 1
-          fi
           mkdir -p /tmp/aman-cloud-intel/latest
           cp dist/cloud-threat-db/manifest.json /tmp/aman-cloud-intel/latest/
           cp dist/cloud-threat-db/manifest.sig /tmp/aman-cloud-intel/latest/
@@ -83,56 +70,23 @@ jobs:
           touch .nojekyll
           git add .nojekyll latest
           git commit -m "Aman threat intelligence $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          # actions/checkout stores its GITHUB_TOKEN in local Git config; remove it so the
-          # repository-scoped mirror token below is the only Authorization header sent.
-          git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
-          push_succeeded=0
-          if [ -n "${AMAN_THREAT_PUBLISH_TOKEN:-}" ]; then
-            # Validate the HTTPS token defensively. An expired/revoked token must not
-            # abort this step before the configured SSH deploy-key fallback is tried.
-            # The token value is never placed in the remote URL or printed to the log.
-            if token_login="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/user 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("login", "unknown"))' 2>/dev/null)" \
-              && token_repo_access="$(curl -fsS -H "Authorization: Bearer $AMAN_THREAT_PUBLISH_TOKEN" https://api.github.com/repos/maen1977/AmanSecurity-Threat-DB 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d.get("permissions", {}); print("push=" + str(bool(p.get("push"))) + ",admin=" + str(bool(p.get("admin"))))' 2>/dev/null)" \
-              && [[ "$token_repo_access" == push=True,* ]]; then
-              echo "Mirror publish token identity: ${token_login}; repository access: ${token_repo_access}"
-              auth_header="$(printf 'x-access-token:%s' "$AMAN_THREAT_PUBLISH_TOKEN" | base64 -w0)"
-              git remote add threat-public "https://github.com/maen1977/AmanSecurity-Threat-DB.git"
-              if git -c "http.extraheader=AUTHORIZATION: basic ${auth_header}" push --force threat-public HEAD:main; then
-                push_succeeded=1
-              else
-                echo "Repository-scoped token push failed; attempting configured SSH deploy-key fallback." >&2
-                git remote remove threat-public
-              fi
-            else
-              echo "Configured HTTPS mirror token was rejected or lacks push access; attempting configured SSH deploy-key fallback." >&2
-            fi
-          fi
-          if [ "$push_succeeded" -ne 1 ] && [ -n "${AMAN_THREAT_DEPLOY_KEY:-}" ]; then
-            install -d -m 700 "$HOME/.ssh"
-            printf '%s\n' "$AMAN_THREAT_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
-            chmod 600 "$HOME/.ssh/id_ed25519"
-            ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
-            git remote add threat-public "git@github.com:maen1977/AmanSecurity-Threat-DB.git"
-            if git push --force threat-public HEAD:main; then
-              push_succeeded=1
-            fi
-          fi
-          git remote remove threat-public 2>/dev/null || true
-          if [ "$push_succeeded" -ne 1 ]; then
-            echo "No configured credential could write to maen1977/AmanSecurity-Threat-DB." >&2
+          # actions/checkout configures origin with the workflow GITHUB_TOKEN. Publish
+          # only the generated package to a dedicated public branch in this repository.
+          if ! git push --force origin HEAD:aman-threat-db; then
+            echo "The built threat package could not be published to the aman-threat-db branch." >&2
             exit 1
           fi
 
-      - name: Report threat mirror publish warning
+      - name: Report threat branch publish warning
         if: steps.publish.outcome == 'failure'
         shell: bash
-        run: echo "::error::Threat mirror publish failed; the release is blocked so devices cannot silently remain on an old intelligence package."
+        run: echo "::error::Public threat branch publish failed; the release is blocked so devices cannot silently remain on an old intelligence package."
 
       - name: Smoke-test public threat mirror
         if: steps.intel.outcome == 'success' && steps.publish.outcome == 'success'
         shell: bash
         env:
-          AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+          AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest
         run: |
           set -euo pipefail
           python3 /tmp/aman-cloud-intel/verify_public_threat_mirror.py "$AMAN_THREAT_DB_BASE_URL"
@@ -154,7 +108,7 @@ jobs:
     needs: threat-intelligence
     runs-on: ubuntu-latest
     env:
-      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest
 
     steps:
       - name: Checkout project
@@ -335,7 +289,7 @@ jobs:
     needs: build
     runs-on: windows-latest
     env:
-      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest
+      AMAN_THREAT_DB_BASE_URL: https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest
 
     steps:
       - name: Checkout project

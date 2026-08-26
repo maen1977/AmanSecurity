@@ -5,7 +5,7 @@ val expectedReleaseCert = expectedReleaseCertRaw.takeIf { Regex("^[a-f0-9]{64}$"
 
 val cloudThreatDbBaseUrlRaw = providers.environmentVariable("AMAN_THREAT_DB_BASE_URL").orNull
     ?: providers.gradleProperty("AMAN_THREAT_DB_BASE_URL").orNull
-    ?: "https://raw.githubusercontent.com/maen1977/AmanSecurity-Threat-DB/main/latest"
+    ?: "https://raw.githubusercontent.com/maen1977/AmanSecurity/aman-threat-db/latest"
 val cloudThreatDbBaseUrl = cloudThreatDbBaseUrlRaw.trim().replace("\\", "\\\\").replace("\"", "\\\"")
 
 plugins {
