@@ -19,7 +19,7 @@ def main() -> None:
     english = (ROOT / "app/src/main/res/values/strings.xml").read_text()
     arabic = (ROOT / "app/src/main/res/values-ar/strings.xml").read_text()
 
-    need('versionName = "1.1.9"' in build and "versionCode = 85" in build, "version")
+    need('versionName = "1.1.9"' in build and "versionCode = 86" in build, "version")
     need("MAX_TEXT_LENGTH = 4096" in extractor and "MAX_URLS_PER_MESSAGE = 8" in extractor, "bounded_extraction")
     need("class MessageScanner" in scanner and "KNOWN_THREAT_URL" in scanner, "message_scanner")
     for signal in ("URGENT_LANGUAGE", "CREDENTIAL_REQUEST", "PAYMENT_REQUEST", "IMPERSONATION", "SHORTENED_URL"):
