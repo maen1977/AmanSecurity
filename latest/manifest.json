@@ -1,0 +1,133 @@
+{
+  "bundleBytes": 4822922,
+  "bundlePath": "aman-threat-db-33953078084.zip",
+  "bundleSha256": "912b041edff457b246f986984f72b57fde0acc86d02af470c96e042f3304de49",
+  "files": {
+    "android_cves.txt": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "apk_indicators.csv": {
+      "bytes": 199,
+      "entries": 2,
+      "sha256": "67248d38e81094c1eab7b777ce7a73066528bff4994124dc17a895119e936798"
+    },
+    "c2_hosts.sha256": {
+      "bytes": 65,
+      "entries": 1,
+      "sha256": "822b9c3c1b2caa844ee151115a6481bbe7d4d74f8580dbd71e42584bfa33080e"
+    },
+    "detection_rules.csv": {
+      "bytes": 12089,
+      "entries": 164,
+      "sha256": "e74edf7aa67b76e0bcf50084b0047fda42e0da1358a93fe7df34d5887740bbb6"
+    },
+    "malware_files.sha256": {
+      "bytes": 585,
+      "entries": 9,
+      "sha256": "252d5994e69f26bced28e5765f35f6ab1c72019c7b585337802654bea8923b32"
+    },
+    "malware_url_hosts.sha256": {
+      "bytes": 4591925,
+      "entries": 70645,
+      "sha256": "8ab41fbabf144dc9ed548cc13c3b3780a007b9a14b52a1dc4942038e20cd2e6e"
+    },
+    "phishing_community.sha256": {
+      "bytes": 3900000,
+      "entries": 60000,
+      "sha256": "888cf2651d9a827419a131c3aaaa2d4fabd88d28af99e06eec1e54df43e5c14c"
+    },
+    "phishing_openphish.sha256": {
+      "bytes": 30875,
+      "entries": 475,
+      "sha256": "d6e6e1d92b9dd504b3faabb2591c444090e626c72943fbb9fafbbdf11cc017bf"
+    },
+    "phishing_primary.sha256": {
+      "bytes": 0,
+      "entries": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "generatedAt": "2026-09-05T07:38:14Z",
+  "latestAndroidSecurityPatch": "2026-08-05",
+  "minAppVersionCode": 80,
+  "privacy": "normalized_hashes_and_rules_only_no_raw_malicious_urls",
+  "schema": 1,
+  "serial": 1788593894,
+  "sources": [
+    {
+      "count": 9,
+      "detail": "MalwareBazaar Android browse metadata + bundled baseline",
+      "name": "malware_bazaar_android",
+      "ok": true
+    },
+    {
+      "count": 475,
+      "detail": "",
+      "name": "openphish",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "primary_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "community_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: PHISHTANK_APP_KEY not configured",
+      "name": "phishtank",
+      "ok": true
+    },
+    {
+      "count": 60000,
+      "detail": "",
+      "name": "cert_pl_phishing_army",
+      "ok": true
+    },
+    {
+      "count": 61088,
+      "detail": "",
+      "name": "urlhaus",
+      "ok": true
+    },
+    {
+      "count": 9557,
+      "detail": "",
+      "name": "urlhaus_csv",
+      "ok": true
+    },
+    {
+      "count": 14942,
+      "detail": "payload_hosts=2471 dropped=9",
+      "name": "urlhaus_json_recent",
+      "ok": true
+    },
+    {
+      "count": 1,
+      "detail": "",
+      "name": "feodo",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: ABUSECH_AUTH_KEY not configured",
+      "name": "threatfox",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "2026-08-05",
+      "name": "android_security_bulletin",
+      "ok": true
+    }
+  ],
+  "version": "2026.09.05.0738"
+}

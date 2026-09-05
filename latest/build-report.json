@@ -1,0 +1,87 @@
+{
+  "counts": {
+    "android_cves.txt": 0,
+    "apk_indicators.csv": 2,
+    "c2_hosts.sha256": 1,
+    "detection_rules.csv": 164,
+    "malware_files.sha256": 9,
+    "malware_url_hosts.sha256": 70645,
+    "phishing_community.sha256": 60000,
+    "phishing_openphish.sha256": 475,
+    "phishing_primary.sha256": 0
+  },
+  "sources": [
+    {
+      "count": 9,
+      "detail": "MalwareBazaar Android browse metadata + bundled baseline",
+      "name": "malware_bazaar_android",
+      "ok": true
+    },
+    {
+      "count": 475,
+      "detail": "",
+      "name": "openphish",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "primary_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: retired provider endpoint",
+      "name": "community_phishing",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: PHISHTANK_APP_KEY not configured",
+      "name": "phishtank",
+      "ok": true
+    },
+    {
+      "count": 60000,
+      "detail": "",
+      "name": "cert_pl_phishing_army",
+      "ok": true
+    },
+    {
+      "count": 61088,
+      "detail": "",
+      "name": "urlhaus",
+      "ok": true
+    },
+    {
+      "count": 9557,
+      "detail": "",
+      "name": "urlhaus_csv",
+      "ok": true
+    },
+    {
+      "count": 14942,
+      "detail": "payload_hosts=2471 dropped=9",
+      "name": "urlhaus_json_recent",
+      "ok": true
+    },
+    {
+      "count": 1,
+      "detail": "",
+      "name": "feodo",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "skipped: ABUSECH_AUTH_KEY not configured",
+      "name": "threatfox",
+      "ok": true
+    },
+    {
+      "count": 0,
+      "detail": "2026-08-05",
+      "name": "android_security_bulletin",
+      "ok": true
+    }
+  ]
+}
